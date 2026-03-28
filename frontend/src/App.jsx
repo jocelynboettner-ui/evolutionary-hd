@@ -112,7 +112,7 @@ function StarterChip({ starter, onClick, delay }) {
   const [hovered, setHovered] = useState(false);
   return (
     <button onClick={() => onClick(starter.label)} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
-      style={{ background: hovered ? "rgba(109,40,217,0.2)" : "rgba(255,255,255,0.03)", border: hovered ? "1px solid rgba(167,139,250,0.4)" : "1px solid rgba(255,255,255,0.08)", borderRadius: 40, padding: "9px 16px", color: hovered ? "#e9d5ff" : "#b8a8d8", fontSize: 12.5, cursor: "pointer", display: "flex", alignItems: "center", gap: 7, transition: "all 0.2s ease", backdropFilter: "blur(8px)", fontFamily: "Georgia, serif", letterSpacing: "0.02em", animation: "chipIn 0.5s " + delay + "s cubic-bezier(0.16,1,0.3,1) forwards", opacity: 0, whiteSpace: "nowrap" }}>
+      style={{ background: hovered ? "rgba(109,40,217,0.2)" : "rgba(255,255,255,0.06)", border: hovered ? "1px solid rgba(167,139,250,0.6)" : "1px solid rgba(167,139,250,0.3)", borderRadius: 40, padding: "9px 16px", color: hovered ? "#e9d5ff" : "#c4b5fd", fontSize: 12.5, cursor: "pointer", display: "flex", alignItems: "center", gap: 7, transition: "all 0.2s ease", backdropFilter: "blur(8px)", fontFamily: "Georgia, serif", letterSpacing: "0.02em", animation: "chipIn 0.5s " + delay + "s cubic-bezier(0.16,1,0.3,1) forwards", opacity: 0, whiteSpace: "nowrap" }}>
       <span style={{ color: "#a78bfa", fontSize: 11 }}>{starter.icon}</span>
       {starter.label}
     </button>
@@ -177,7 +177,7 @@ export default function EvolutionaryHD() {
         ::-webkit-scrollbar{width:4px}
         ::-webkit-scrollbar-thumb{background:rgba(167,139,250,0.4);border-radius:4px}
         textarea{resize:none;outline:none}
-        textarea::placeholder{color:rgba(200,180,255,0.55);font-family:Georgia,serif;font-style:italic}
+        textarea::placeholder{color:rgba(220,200,255,0.75);font-family:Georgia,serif;font-style:italic;font-size:14px}
         @keyframes msgIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
         @keyframes chipIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
         @keyframes hdpulse{0%,80%,100%{transform:scale(0.85);opacity:0.4}40%{transform:scale(1.2);opacity:1}}
@@ -185,13 +185,13 @@ export default function EvolutionaryHD() {
         @keyframes orbFloat{0%,100%{transform:translateY(0px)}50%{transform:translateY(-14px)}}
       `}</style>
       <StarField />
-      <header style={{ position: "relative", zIndex: 10, padding: "26px 32px 18px", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, borderBottom: "1px solid rgba(255,255,255,0.04)", background: "linear-gradient(180deg, rgba(7,4,21,0.92) 0%, transparent 100%)", backdropFilter: "blur(20px)" }}>
+      <header style={{ position: "relative", zIndex: 10, padding: "26px 32px 18px", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, borderBottom: "1px solid rgba(255,255,255,0.07)", background: "linear-gradient(180deg, rgba(7,4,21,0.95) 0%, rgba(7,4,21,0.6) 100%)", backdropFilter: "blur(20px)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <div style={{ width: 1, height: 24, background: "linear-gradient(180deg, transparent, rgba(167,139,250,0.4), transparent)" }} />
           <h1 style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: 13, letterSpacing: "0.24em", color: "#f5eeff", fontWeight: 400, textTransform: "uppercase", margin: 0 }}>Evolutionary Human Design</h1>
           <div style={{ width: 1, height: 24, background: "linear-gradient(180deg, transparent, rgba(167,139,250,0.4), transparent)" }} />
         </div>
-        <p style={{ fontFamily: "Georgia, serif", fontSize: 11.5, color: "rgba(200,170,255,0.65)", margin: 0, letterSpacing: "0.14em", textTransform: "uppercase", fontStyle: "italic" }}>Your design evolves through every cycle</p>
+        <p style={{ fontFamily: "Georgia, serif", fontSize: 11.5, color: "rgba(200,170,255,0.75)", margin: 0, letterSpacing: "0.14em", textTransform: "uppercase", fontStyle: "italic" }}>Your design evolves through every cycle</p>
       </header>
       <div style={{ flex: 1, overflowY: "auto", padding: "28px 20px 20px", position: "relative", zIndex: 5, maxWidth: 780, width: "100%", margin: "0 auto", display: "flex", flexDirection: "column" }}>
         {messages.map((msg, idx) => <Message key={idx} msg={msg} isNew={idx === newMsgIdx} />)}
@@ -208,15 +208,23 @@ export default function EvolutionaryHD() {
         )}
         <div ref={bottomRef} />
       </div>
-      <div style={{ position: "relative", zIndex: 10, padding: "14px 20px 22px", background: "linear-gradient(0deg, rgba(7,4,21,0.97) 0%, transparent 100%)", backdropFilter: "blur(24px)", borderTop: "1px solid rgba(255,255,255,0.04)" }}>
-        <div style={{ maxWidth: 780, margin: "0 auto", display: "flex", gap: 10, alignItems: "flex-end", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(167,139,250,0.35)", borderRadius: 20, padding: "10px 12px 10px 18px", backdropFilter: "blur(16px)" }}>
-          <textarea ref={textareaRef} value={input} onChange={(e) => { setInput(e.target.value); autoResize(); }} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }} placeholder="Share your birth date, time, and city to begin…" rows={1} style={{ flex: 1, background: "transparent", border: "none", color: "#ffffff", fontSize: 14, lineHeight: 1.6, fontFamily: "Georgia, serif", minHeight: 44, maxHeight: 130, paddingTop: 10, paddingBottom: 10 }} />
-          <button onClick={() => send()} disabled={!input.trim() || loading} style={{ width: 40, height: 40, borderRadius: "50%", background: input.trim() && !loading ? "linear-gradient(135deg, #7c3aed 0%, #4338ca 100%)" : "rgba(255,255,255,0.05)", border: "1px solid rgba(167,139,250,0.2)", cursor: input.trim() && !loading ? "pointer" : "not-allowed", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.2s ease" }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M12 5l7 7-7 7" stroke={input.trim() && !loading ? "#e9d5ff" : "rgba(167,139,250,0.3)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+      <div style={{ position: "relative", zIndex: 10, padding: "14px 20px 22px", background: "linear-gradient(0deg, rgba(7,4,21,0.98) 0%, rgba(7,4,21,0.7) 100%)", backdropFilter: "blur(24px)", borderTop: "1px solid rgba(167,139,250,0.2)" }}>
+        <div style={{ maxWidth: 780, margin: "0 auto", display: "flex", gap: 10, alignItems: "flex-end", background: "rgba(255,255,255,0.12)", border: "1.5px solid rgba(167,139,250,0.6)", borderRadius: 20, padding: "10px 12px 10px 18px", backdropFilter: "blur(16px)", boxShadow: "0 0 0 1px rgba(109,40,217,0.15), 0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08)" }}>
+          <textarea
+            ref={textareaRef}
+            value={input}
+            onChange={(e) => { setInput(e.target.value); autoResize(); }}
+            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
+            placeholder="Share your birth date, time, and city to begin…"
+            rows={1}
+            style={{ flex: 1, background: "transparent", border: "none", color: "#ffffff", fontSize: 14, lineHeight: 1.6, fontFamily: "Georgia, serif", minHeight: 44, maxHeight: 130, paddingTop: 10, paddingBottom: 10 }}
+          />
+          <button onClick={() => send()} disabled={!input.trim() || loading} style={{ width: 40, height: 40, borderRadius: "50%", background: input.trim() && !loading ? "linear-gradient(135deg, #7c3aed 0%, #4338ca 100%)" : "rgba(167,139,250,0.15)", border: "1px solid rgba(167,139,250,0.4)", cursor: input.trim() && !loading ? "pointer" : "not-allowed", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.2s ease", boxShadow: input.trim() && !loading ? "0 0 20px rgba(109,40,217,0.38)" : "none" }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M12 5l7 7-7 7" stroke={input.trim() && !loading ? "#e9d5ff" : "rgba(167,139,250,0.5)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </button>
         </div>
-        <p style={{ textAlign: "center", color: "rgba(167,139,250,0.2)", fontSize: 10, letterSpacing: "0.12em", marginTop: 10, fontFamily: "Georgia, serif", textTransform: "uppercase" }}>Saturn Return · Uranus Opposition · Chiron Return · Second Saturn Return</p>
+        <p style={{ textAlign: "center", color: "rgba(167,139,250,0.35)", fontSize: 10, letterSpacing: "0.12em", marginTop: 10, fontFamily: "Georgia, serif", textTransform: "uppercase" }}>Saturn Return · Uranus Opposition · Chiron Return · Second Saturn Return</p>
       </div>
     </div>
   );
-                                                                                                                                                                                                                                                                                                                                                                                    }
+      }
