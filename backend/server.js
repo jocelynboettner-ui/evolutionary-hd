@@ -26,9 +26,9 @@ DATA RULES -- CRITICAL
 =======================================================
 1. ALL natal chart details come ONLY from the NATAL CHART DATA block.
 2. ALL overlay details come ONLY from the TRANSIT CYCLE DATA block.
-3. NEVER use hardcoded profiles, crosses, channels, or centers. Every overlay is unique and comes from real calculated chart data.
-4. If overlay data is missing, say so honestly -- do not substitute template values.
-5. The overlay profile, incarnation cross, channels, and centers are what they actually are for this specific person -- never a fixed template.
+3. NEVER use hardcoded profiles, crosses, channels, or centers. Every reading uses ONLY what is in the data.
+4. If chart data is missing or incomplete, say so honestly.
+5. The overlay profile, incarnation cross, channels, and centers are what they actually are for this specific person.
 
 =======================================================
 READING STRUCTURE
@@ -65,7 +65,7 @@ THE FOUR DEVELOPMENTAL CYCLES:
 - The Flowering Cycle (Chiron Return): ages 46.5-53.5, apex at 50
 - The Legacy Cycle (Second Saturn Return): ages 55.5-62.5, apex at 59
 
-[Based on their age and the transit data, identify which cycle is active or most recent]
+[Based on their age and the transit data, identify which cycle is active]
 
 **Saturn Return window:** [start] to [end], peak [peak]
 **Uranus Opposition window:** [start] to [end], peak [peak]
@@ -73,7 +73,7 @@ THE FOUR DEVELOPMENTAL CYCLES:
 
 ---
 ## WHAT THIS CYCLE IS TEACHING YOU | The Core Invitation
-[3-4 rich paragraphs synthesizing natal chart + real transit cycle data. Warm, precise, powerful.]
+[3-4 rich paragraphs synthesizing natal chart + transit cycle data. Warm, precise, powerful.]
 
 ---
 ## LIVING IT NOW | Practical Guidance
@@ -83,31 +83,29 @@ THE FOUR DEVELOPMENTAL CYCLES:
 ### The Body's Intelligence
 
 =======================================================
-TONE: Professional, warm, precise. Never guess. Never hardcode. Use ONLY the data provided.
+TONE: Professional, warm, precise. Use ONLY the data provided in the blocks below.
 =======================================================`;
 
 // -------------------------------------------------------
 // Parse any date string into { year, month, day } integers
-// Handles: "1973-09-30", "30-Sep-1973", "September 30, 1973", "30/09/1973"
 // -------------------------------------------------------
 function parseDate(dateStr) {
   if (!dateStr) return null;
   const s = String(dateStr).trim();
-
   const MONTHS = { jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12 };
 
   // ISO: 1973-09-30
-  let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
   if (m) return { year: +m[1], month: +m[2], day: +m[3] };
 
-  // DD-Mon-YYYY or DD/Mon/YYYY: 30-Sep-1973
+  // DD-Mon-YYYY: 30-Sep-1973
   m = s.match(/^(\d{1,2})[-\/]([A-Za-z]{3,9})[-\/](\d{4})$/);
   if (m) {
     const mo = MONTHS[m[2].toLowerCase().slice(0,3)];
     if (mo) return { year: +m[3], month: mo, day: +m[1] };
   }
 
-  // Mon DD, YYYY or Month DD, YYYY: September 30, 1973
+  // Month DD, YYYY: September 30, 1973
   m = s.match(/^([A-Za-z]{3,9})\s+(\d{1,2}),?\s+(\d{4})$/);
   if (m) {
     const mo = MONTHS[m[1].toLowerCase().slice(0,3)];
@@ -121,23 +119,15 @@ function parseDate(dateStr) {
     if (mo) return { year: +m[3], month: mo, day: +m[1] };
   }
 
-  // DD/MM/YYYY or MM/DD/YYYY -- assume DD/MM/YYYY if day>12
-  m = s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
-  if (m) {
-    const a = +m[1], b = +m[2], yr = +m[3];
-    if (a > 12) return { year: yr, month: b, day: a };
-    return { year: yr, month: a, day: b };
-  }
-
-  // Fallback: try Date constructor then pull UTC parts
+  // Fallback
   const d = new Date(s);
   if (!isNaN(d)) return { year: d.getUTCFullYear(), month: d.getUTCMonth()+1, day: d.getUTCDate() };
-
   return null;
 }
 
 // -------------------------------------------------------
-// Fetch natal Human Design chart directly from humandesign.ai
+// Fetch natal Human Design chart from humandesign.ai
+// Uses GET with query params: date (ISO 8601), timezone, api_key
 // -------------------------------------------------------
 async function fetchHumanDesign(birthdate, birthtime, location) {
   const timezone = getTimezone(location);
@@ -145,30 +135,34 @@ async function fetchHumanDesign(birthdate, birthtime, location) {
   if (!parsed) throw new Error('Could not parse birth date: ' + birthdate);
 
   const { year, month, day } = parsed;
-
-  // Parse time
   const timeParts = (birthtime || '12:00').match(/^(\d{1,2}):(\d{2})/);
-  const hour = timeParts ? +timeParts[1] : 12;
-  const minute = timeParts ? +timeParts[2] : 0;
+  const hour = String(timeParts ? +timeParts[1] : 12).padStart(2, '0');
+  const minute = String(timeParts ? +timeParts[2] : 0).padStart(2, '0');
+  const monthStr = String(month).padStart(2, '0');
+  const dayStr = String(day).padStart(2, '0');
 
-  const payload = { year, month, day, hour, minute, second: 0, timezone, location: location || 'New York, NY' };
-  console.log('Fetching HD chart from humandesign.ai:', JSON.stringify(payload));
+  // ISO 8601 format: 1973-09-30T05:07:00
+  const isoDate = year + '-' + monthStr + '-' + dayStr + 'T' + hour + ':' + minute + ':00';
 
-  const response = await fetch('https://api.humandesign.ai/v3/hd-data', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-API-Key': HD_AI_API_KEY,
-      'Authorization': 'Bearer ' + HD_AI_API_KEY,
-    },
-    body: JSON.stringify(payload),
+  const params = new URLSearchParams({
+    date: isoDate,
+    timezone: timezone,
+    api_key: HD_AI_API_KEY,
+  });
+
+  const url = 'https://api.humandesign.ai/v2/hd-data?' + params.toString();
+  console.log('Fetching HD chart from humandesign.ai v2, date:', isoDate, 'tz:', timezone);
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: { 'X-Api-Key': HD_AI_API_KEY },
   });
 
   const responseText = await response.text();
-  console.log('humandesign.ai status:', response.status, 'body:', responseText.slice(0, 300));
+  console.log('humandesign.ai status:', response.status, 'body preview:', responseText.slice(0, 400));
 
   if (!response.ok) {
-    throw new Error('humandesign.ai error ' + response.status + ': ' + responseText.slice(0, 200));
+    throw new Error('humandesign.ai error ' + response.status + ': ' + responseText.slice(0, 300));
   }
 
   const raw = JSON.parse(responseText);
@@ -176,44 +170,52 @@ async function fetchHumanDesign(birthdate, birthtime, location) {
 }
 
 // -------------------------------------------------------
-// Transform humandesign.ai v3 response into our format
+// Transform humandesign.ai response into our format
+// v2 returns structured chart data
 // -------------------------------------------------------
 function transformHDResponse(raw) {
-  // Try multiple response shapes
   const chart = raw?.chart || raw?.data || raw;
+
+  // Centers: try multiple shapes
   const centers = chart?.centers || raw?.centers || {};
+  let definedCenters = [], openCenters = [];
+  if (Array.isArray(centers)) {
+    definedCenters = centers.filter(c => c?.defined).map(c => c?.name || c?.center);
+    openCenters = centers.filter(c => !c?.defined).map(c => c?.name || c?.center);
+  } else {
+    definedCenters = Object.entries(centers).filter(([,v]) => v === true || v?.defined === true || v?.active === true).map(([k]) => k);
+    openCenters = Object.entries(centers).filter(([,v]) => v === false || v?.defined === false || v?.active === false).map(([k]) => k);
+  }
+
+  // Channels
   const channels = chart?.channels || raw?.channels || [];
-  const gates = chart?.gates || raw?.gates || [];
-
-  const definedCenters = Object.entries(centers)
-    .filter(([, v]) => v === true || v?.defined === true || v?.active === true)
-    .map(([k]) => k);
-  const openCenters = Object.entries(centers)
-    .filter(([, v]) => v === false || v?.defined === false || v?.active === false)
-    .map(([k]) => k);
-
   const channelNames = Array.isArray(channels)
-    ? channels.map(c => typeof c === 'string' ? c : c?.name || c?.channel || JSON.stringify(c))
-    : [];
-  const gateNumbers = Array.isArray(gates)
-    ? gates.map(g => typeof g === 'number' ? g : g?.gate || g?.number || g)
+    ? channels.map(c => typeof c === 'string' ? c : (c?.name || c?.channel || c?.gates?.join('-') || JSON.stringify(c)))
     : [];
 
-  return {
-    type: chart?.type || chart?.design_type || raw?.type || 'unknown',
+  // Gates
+  const gates = chart?.gates || raw?.gates || [];
+  const gateList = Array.isArray(gates)
+    ? gates.map(g => typeof g === 'number' || typeof g === 'string' ? g : (g?.gate || g?.number || g?.id))
+    : [];
+
+  const result = {
+    type: chart?.type || raw?.type || raw?.design_type || 'unknown',
     strategy: chart?.strategy || raw?.strategy || '',
-    authority: chart?.authority || chart?.inner_authority || raw?.authority || '',
+    authority: chart?.authority || chart?.inner_authority || raw?.authority || raw?.inner_authority || '',
     profile: chart?.profile || raw?.profile || '',
-    incarnation_cross: chart?.incarnation_cross || chart?.cross || raw?.incarnation_cross || '',
+    incarnation_cross: chart?.incarnation_cross || chart?.cross || raw?.incarnation_cross || raw?.cross || '',
     definition: chart?.definition || raw?.definition || '',
     signature: chart?.signature || raw?.signature || '',
     not_self: chart?.not_self || chart?.not_self_theme || raw?.not_self || '',
-    defined_centers: definedCenters,
-    open_centers: openCenters,
-    channels: channelNames,
-    gates: gateNumbers,
-    raw_response: JSON.stringify(raw).slice(0, 500),
+    defined_centers: definedCenters.filter(Boolean),
+    open_centers: openCenters.filter(Boolean),
+    channels: channelNames.filter(Boolean),
+    gates: gateList.filter(Boolean),
   };
+
+  console.log('Transformed HD chart - type:', result.type, 'profile:', result.profile, 'centers:', result.defined_centers.length);
+  return result;
 }
 
 // -------------------------------------------------------
@@ -227,10 +229,10 @@ function calculateTransitCycles(birthdate) {
 
   const addYears = (y) => {
     const d = new Date(birthTs);
-    const wholeYears = Math.floor(y);
-    const fracMonths = Math.round((y - wholeYears) * 12);
-    d.setFullYear(d.getFullYear() + wholeYears);
-    d.setMonth(d.getMonth() + fracMonths);
+    const whole = Math.floor(y);
+    const frac = Math.round((y - whole) * 12);
+    d.setFullYear(d.getFullYear() + whole);
+    d.setMonth(d.getMonth() + frac);
     return d.toISOString().split('T')[0];
   };
 
@@ -264,7 +266,7 @@ function getTimezone(location) {
 // -------------------------------------------------------
 function formatHDChart(data) {
   return `
-=== NATAL CHART DATA (humandesign.ai) ===
+=== NATAL CHART DATA (humandesign.ai v2) ===
 TYPE: ${data.type}
 STRATEGY: ${data.strategy}
 AUTHORITY: ${data.authority}
@@ -287,7 +289,7 @@ GATES: ${data.gates?.join(', ') || 'none'}
 function formatTransitCycles(data) {
   const fmt = (c) => c ? `start: ${c.start} | peak: ${c.peak} | end: ${c.end}` : 'unavailable';
   return `
-=== TRANSIT CYCLE DATA (age-based calculation) ===
+=== TRANSIT CYCLE DATA ===
 SATURN RETURN: ${fmt(data.saturnReturn)}
 URANUS OPPOSITION: ${fmt(data.uranusOpposition)}
 CHIRON RETURN: ${fmt(data.chironReturn)}
@@ -309,29 +311,25 @@ app.post("/api/chat", async (req, res) => {
 
   if (birthdata && birthdata.birthdate) {
     let chartText = '';
-    let hdError = null;
 
     // Try HD chart from humandesign.ai
     try {
       if (birthdata.birthtime && birthdata.location) {
         const hdChart = await fetchHumanDesign(birthdata.birthdate, birthdata.birthtime, birthdata.location);
         chartText += formatHDChart(hdChart);
-        console.log('HD chart injected successfully, type:', hdChart.type);
+        console.log('HD chart injected - type:', hdChart.type);
       }
     } catch (err) {
-      hdError = err.message;
       console.error('HD chart error:', err.message);
-      chartText += '[HD CHART ERROR: ' + err.message + ']\n';
+      chartText += '[HD CHART UNAVAILABLE: ' + err.message + ']\n';
     }
 
     // Always calculate transit cycles
     try {
       const transitCycles = calculateTransitCycles(birthdata.birthdate);
       chartText += formatTransitCycles(transitCycles);
-      console.log('Transit cycles calculated for:', birthdata.birthdate);
     } catch (err) {
       console.error('Transit cycles error:', err.message);
-      chartText += '[TRANSIT ERROR: ' + err.message + ']\n';
     }
 
     if (chartText) {
@@ -345,7 +343,6 @@ app.post("/api/chat", async (req, res) => {
     }
   }
 
-  // Streaming response
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
@@ -358,19 +355,9 @@ app.post("/api/chat", async (req, res) => {
       system: SYSTEM_PROMPT,
       messages: augmentedMessages,
     });
-
-    stream.on('text', (text) => {
-      res.write('data: ' + JSON.stringify({ text }) + '\n\n');
-    });
-    stream.on('message', () => {
-      res.write('data: [DONE]\n\n');
-      res.end();
-    });
-    stream.on('error', (err) => {
-      console.error('Stream error:', err);
-      res.write('data: ' + JSON.stringify({ error: err.message }) + '\n\n');
-      res.end();
-    });
+    stream.on('text', (text) => { res.write('data: ' + JSON.stringify({ text }) + '\n\n'); });
+    stream.on('message', () => { res.write('data: [DONE]\n\n'); res.end(); });
+    stream.on('error', (err) => { console.error('Stream error:', err); res.write('data: ' + JSON.stringify({ error: err.message }) + '\n\n'); res.end(); });
   } catch (err) {
     console.error('Anthropic error:', err);
     res.write('data: ' + JSON.stringify({ error: err.message }) + '\n\n');
@@ -379,29 +366,22 @@ app.post("/api/chat", async (req, res) => {
 });
 
 // -------------------------------------------------------
-// DEBUG ENDPOINT -- see exactly what humandesign.ai returns
+// DEBUG ENDPOINT
 // -------------------------------------------------------
 app.post("/api/debug-hd", async (req, res) => {
   const { birthdate, birthtime, location } = req.body;
   try {
-    const parsed = parseDate(birthdate);
+    const parsed = parseDate(birthdate || '1973-09-30');
     const timezone = getTimezone(location || '');
-    const timeParts = (birthtime || '12:00').match(/^(\d{1,2}):(\d{2})/);
-    const hour = timeParts ? +timeParts[1] : 12;
-    const minute = timeParts ? +timeParts[2] : 0;
-    const payload = { ...parsed, hour, minute, second: 0, timezone, location: location || 'New York, NY' };
-
-    const response = await fetch('https://api.humandesign.ai/v3/hd-data', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': HD_AI_API_KEY,
-        'Authorization': 'Bearer ' + HD_AI_API_KEY,
-      },
-      body: JSON.stringify(payload),
-    });
+    const timeParts = (birthtime || '05:07').match(/^(\d{1,2}):(\d{2})/);
+    const hour = String(timeParts ? +timeParts[1] : 5).padStart(2,'0');
+    const minute = String(timeParts ? +timeParts[2] : 7).padStart(2,'0');
+    const isoDate = parsed.year + '-' + String(parsed.month).padStart(2,'0') + '-' + String(parsed.day).padStart(2,'0') + 'T' + hour + ':' + minute + ':00';
+    const params = new URLSearchParams({ date: isoDate, timezone, api_key: HD_AI_API_KEY });
+    const url = 'https://api.humandesign.ai/v2/hd-data?' + params.toString();
+    const response = await fetch(url, { method: 'GET', headers: { 'X-Api-Key': HD_AI_API_KEY } });
     const text = await response.text();
-    res.json({ status: response.status, payload, response: text.slice(0, 2000) });
+    res.json({ status: response.status, isoDate, timezone, url: url.replace(HD_AI_API_KEY, '[KEY]'), response: text.slice(0, 3000) });
   } catch (err) {
     res.json({ error: err.message });
   }
