@@ -7,23 +7,18 @@ app.use(cors());
 app.use(express.json());
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
-// URL of the Sacred Cycles Python service (Swiss Ephemeris + humandesign.ai proxy)
-const SACRED_CYCLES_URL = process.env.SACRED_CYCLES_URL || "http://localhost:8000";
+const HD_AI_API_KEY = process.env.HD_AI_API_KEY;
 
 // -------------------------------------------------------
 // SYSTEM PROMPT
 // -------------------------------------------------------
-const SYSTEM_PROMPT = `You are the Evolutionary Human Design reader -- the engine behind a premium paid product that helps people understand the developmental cycle they are in, the activations and gifts that have come online to support them, and how those overlays interact with their natal design.
-
-Today's date is March 28, 2026. Your readings are professional, accurate, warm, and powerful. Every person who uses this has paid for a real reading. You treat each one with that level of care and precision.
+const SYSTEM_PROMPT = `You are the Evolutionary Human Design reader -- the engine behind a premium paid product that helps people understand the developmental cycle they are in, the activations and gifts that have come online to support them, and how those overlays interact with their natal design. Today's date is March 29, 2026. Your readings are professional, accurate, warm, and powerful. Every person who uses this has paid for a real reading. You treat each one with that level of care and precision.
 
 =======================================================
 CORE PRINCIPLE
 =======================================================
-The natal design is the permanent base blueprint. It never changes. Major developmental transits create a 7-year training field where the person is being trained into a new mode of expression.
-
-The reading must ALWAYS be interpreted as: NATAL SELF + DEVELOPMENTAL OVERLAY
+The natal design is the permanent base blueprint. It never changes. Major developmental transits create a 7-year training field where the person is being trained into a new mode of expression. The reading must ALWAYS be interpreted as:
+NATAL SELF + DEVELOPMENTAL OVERLAY
 Never as: old self replaced by new self.
 
 =======================================================
@@ -38,9 +33,7 @@ DATA RULES -- CRITICAL
 =======================================================
 READING STRUCTURE
 =======================================================
-
 ## YOUR NATAL BLUEPRINT | The Permanent Foundation
-
 **Human Design Type:** [from natal data]
 **Strategy:** [from natal data -- explain HOW to use it practically]
 **Inner Authority:** [from natal data -- explain the exact decision-making mechanism]
@@ -65,9 +58,7 @@ READING STRUCTURE
 [Interpret the incarnation cross from natal data in depth]
 
 ---
-
 ## YOUR CURRENT DEVELOPMENTAL CYCLE
-
 THE FOUR DEVELOPMENTAL CYCLES:
 - The Becoming Cycle (Saturn Return): ages 26-33, apex at 29.5
 - The Reorientation Cycle (Uranus Opposition): ages 38.5-45.5, apex at 42
@@ -81,15 +72,11 @@ THE FOUR DEVELOPMENTAL CYCLES:
 **Chiron Return window:** [start] to [end], peak [peak]
 
 ---
-
 ## WHAT THIS CYCLE IS TEACHING YOU | The Core Invitation
-
 [3-4 rich paragraphs synthesizing natal chart + real transit cycle data. Warm, precise, powerful.]
 
 ---
-
 ## LIVING IT NOW | Practical Guidance
-
 ### Decision-Making in This Cycle
 ### What to Trust and Build On
 ### What to Stay Curious About
@@ -100,52 +87,125 @@ TONE: Professional, warm, precise. Never guess. Never hardcode. Use ONLY the dat
 =======================================================`;
 
 // -------------------------------------------------------
-// Fetch natal Human Design chart from Sacred Cycles API
+// Fetch natal Human Design chart directly from humandesign.ai
 // -------------------------------------------------------
 async function fetchHumanDesign(birthdate, birthtime, location) {
   const timezone = getTimezone(location);
-  const url = `${SACRED_CYCLES_URL}/human-design`;
-  console.log('Fetching HD chart:', birthdate, birthtime, timezone);
-  const response = await fetch(url, {
+  // Parse date parts
+  const [year, month, day] = birthdate.split('-').map(Number);
+  // Parse time parts
+  const timeParts = (birthtime || '12:00').match(/^(\d{1,2}):(\d{2})/);
+  const hour = timeParts ? parseInt(timeParts[1]) : 12;
+  const minute = timeParts ? parseInt(timeParts[2]) : 0;
+
+  const payload = {
+    year, month, day,
+    hour, minute,
+    second: 0,
+    timezone,
+    location: location || 'New York, NY',
+  };
+
+  console.log('Fetching HD chart from humandesign.ai:', JSON.stringify(payload));
+
+  const response = await fetch('https://api.humandesign.ai/v3/hd-data', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ date: birthdate, time: birthtime || '12:00', timezone }),
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${HD_AI_API_KEY}`,
+    },
+    body: JSON.stringify(payload),
   });
+
   if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error('HD chart error ' + response.status + ': ' + (err.detail || response.statusText));
+    const err = await response.text().catch(() => response.statusText);
+    throw new Error(`humandesign.ai error ${response.status}: ${err}`);
   }
-  const data = await response.json();
-  console.log('HD chart type:', data.type, 'profile:', data.profile);
-  return data;
+
+  const raw = await response.json();
+  console.log('HD chart received, type:', raw?.chart?.type);
+  return transformHDResponse(raw);
 }
 
 // -------------------------------------------------------
-// Fetch real transit cycle windows from Sacred Cycles API
+// Transform humandesign.ai v3 response into our format
 // -------------------------------------------------------
-async function fetchTransitCycles(birthdate, birthtime, location) {
-  const timezone = getTimezone(location);
-  // Use a simple geocode fallback -- lat/lng for major cities
-  const { latitude, longitude } = geocodeLocation(location);
-  const url = `${SACRED_CYCLES_URL}/transit-cycles`;
-  console.log('Fetching transit cycles:', birthdate, birthtime, timezone, latitude, longitude);
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ date: birthdate, time: birthtime || '12:00', latitude, longitude, timezone }),
-  });
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error('Transit cycles error ' + response.status + ': ' + (err.detail || response.statusText));
-  }
-  const data = await response.json();
-  console.log('Transit cycles fetched: saturn peak', data.saturnReturn?.peak,
-              'chiron peak', data.chironReturn?.peak);
-  return data;
+function transformHDResponse(raw) {
+  const chart = raw?.chart || raw;
+  const variables = chart?.variables || {};
+  const centers = chart?.centers || {};
+  const channels = chart?.channels || [];
+  const gates = chart?.gates || [];
+
+  const definedCenters = Object.entries(centers)
+    .filter(([, v]) => v?.defined === true)
+    .map(([k]) => k);
+  const openCenters = Object.entries(centers)
+    .filter(([, v]) => v?.defined === false)
+    .map(([k]) => k);
+
+  const channelNames = channels.map(c => c?.name || c?.channel || JSON.stringify(c));
+  const gateNumbers = gates.map(g => g?.gate || g?.number || g);
+
+  return {
+    type: chart?.type || chart?.design_type || 'unknown',
+    strategy: chart?.strategy || variables?.strategy || '',
+    authority: chart?.authority || variables?.inner_authority || chart?.inner_authority || '',
+    profile: chart?.profile || variables?.profile || '',
+    incarnation_cross: chart?.incarnation_cross || chart?.cross || variables?.cross || '',
+    definition: chart?.definition || variables?.definition || '',
+    signature: chart?.signature || '',
+    not_self: chart?.not_self || chart?.not_self_theme || '',
+    defined_centers: definedCenters,
+    open_centers: openCenters,
+    channels: channelNames,
+    gates: gateNumbers,
+    personality: chart?.personality || {},
+    design: chart?.design || {},
+  };
 }
 
 // -------------------------------------------------------
-// Timezone lookup (unchanged)
+// Calculate transit cycle windows from birthdate
+// -------------------------------------------------------
+function calculateTransitCycles(birthdate) {
+  const birthYear = parseInt(birthdate.split('-')[0]);
+  const birthMonth = parseInt(birthdate.split('-')[1]) - 1;
+  const birthDay = parseInt(birthdate.split('-')[2]);
+  const birthTs = new Date(birthYear, birthMonth, birthDay);
+
+  const addYears = (y) => {
+    const d = new Date(birthTs);
+    d.setFullYear(d.getFullYear() + y);
+    return d.toISOString().split('T')[0];
+  };
+
+  return {
+    saturnReturn: {
+      start: addYears(26),
+      peak: addYears(29.5),
+      end: addYears(33),
+    },
+    uranusOpposition: {
+      start: addYears(38.5),
+      peak: addYears(42),
+      end: addYears(45.5),
+    },
+    chironReturn: {
+      start: addYears(46.5),
+      peak: addYears(50),
+      end: addYears(53.5),
+    },
+    secondSaturnReturn: {
+      start: addYears(55.5),
+      peak: addYears(59),
+      end: addYears(62.5),
+    },
+  };
+}
+
+// -------------------------------------------------------
+// Timezone lookup
 // -------------------------------------------------------
 function getTimezone(location) {
   const loc = (location || '').toLowerCase();
@@ -162,33 +222,11 @@ function getTimezone(location) {
 }
 
 // -------------------------------------------------------
-// Simple lat/lng lookup for transit calculations
-// -------------------------------------------------------
-function geocodeLocation(location) {
-  const loc = (location || '').toLowerCase();
-  if (loc.includes('los angeles'))    return { latitude: 34.05,  longitude: -118.24 };
-  if (loc.includes('san francisco'))  return { latitude: 37.77,  longitude: -122.42 };
-  if (loc.includes('seattle'))        return { latitude: 47.61,  longitude: -122.33 };
-  if (loc.includes('chicago'))        return { latitude: 41.88,  longitude: -87.63  };
-  if (loc.includes('dallas'))         return { latitude: 32.78,  longitude: -96.80  };
-  if (loc.includes('houston'))        return { latitude: 29.76,  longitude: -95.37  };
-  if (loc.includes('denver'))         return { latitude: 39.74,  longitude: -104.98 };
-  if (loc.includes('london'))         return { latitude: 51.51,  longitude: -0.13   };
-  if (loc.includes('paris'))          return { latitude: 48.85,  longitude: 2.35    };
-  if (loc.includes('berlin'))         return { latitude: 52.52,  longitude: 13.41   };
-  if (loc.includes('sydney'))         return { latitude: -33.87, longitude: 151.21  };
-  if (loc.includes('tokyo'))          return { latitude: 35.68,  longitude: 139.69  };
-  if (loc.includes('mumbai'))         return { latitude: 19.08,  longitude: 72.88   };
-  // Default: New York
-  return { latitude: 40.71, longitude: -74.00 };
-}
-
-// -------------------------------------------------------
 // Format HD chart for Claude
 // -------------------------------------------------------
 function formatHDChart(data) {
   return `
-=== NATAL CHART DATA (Sacred Cycles API / humandesign.ai) ===
+=== NATAL CHART DATA (humandesign.ai) ===
 TYPE: ${data.type}
 STRATEGY: ${data.strategy}
 AUTHORITY: ${data.authority}
@@ -197,17 +235,10 @@ INCARNATION CROSS: ${data.incarnation_cross}
 DEFINITION: ${data.definition}
 SIGNATURE: ${data.signature}
 NOT-SELF: ${data.not_self}
-
 DEFINED CENTERS: ${data.defined_centers?.join(', ') || 'none'}
 OPEN CENTERS: ${data.open_centers?.join(', ') || 'none'}
 CHANNELS: ${data.channels?.join(', ') || 'none'}
 GATES: ${data.gates?.join(', ') || 'none'}
-
-PERSONALITY (Conscious):
-${Object.entries(data.personality || {}).map(([k,v]) => `  ${k}: Gate ${v.gate} Line ${v.line}`).join('\n') || '  (none)'}
-
-DESIGN (Unconscious):
-${Object.entries(data.design || {}).map(([k,v]) => `  ${k}: Gate ${v.gate} Line ${v.line}`).join('\n') || '  (none)'}
 === END NATAL CHART DATA ===
 `;
 }
@@ -216,14 +247,13 @@ ${Object.entries(data.design || {}).map(([k,v]) => `  ${k}: Gate ${v.gate} Line 
 // Format transit cycles for Claude
 // -------------------------------------------------------
 function formatTransitCycles(data) {
-  const fmt = (c) => c
-    ? `start: ${c.start} | peak: ${c.peak} | end: ${c.end} | natal: ${c.natal_degree}° | transit at peak: ${c.peak_transit_degree}°`
-    : 'unavailable';
+  const fmt = (c) => c ? `start: ${c.start} | peak: ${c.peak} | end: ${c.end}` : 'unavailable';
   return `
-=== TRANSIT CYCLE DATA (Swiss Ephemeris) ===
-SATURN RETURN:       ${fmt(data.saturnReturn)}
-URANUS OPPOSITION:   ${fmt(data.uranusOpposition)}
-CHIRON RETURN:       ${fmt(data.chironReturn)}
+=== TRANSIT CYCLE DATA (age-based calculation) ===
+SATURN RETURN: ${fmt(data.saturnReturn)}
+URANUS OPPOSITION: ${fmt(data.uranusOpposition)}
+CHIRON RETURN: ${fmt(data.chironReturn)}
+SECOND SATURN RETURN: ${fmt(data.secondSaturnReturn)}
 === END TRANSIT CYCLE DATA ===
 `;
 }
@@ -233,37 +263,46 @@ CHIRON RETURN:       ${fmt(data.chironReturn)}
 // -------------------------------------------------------
 app.post("/api/chat", async (req, res) => {
   const { messages, birthdata } = req.body;
+
   if (!messages || !Array.isArray(messages)) {
     return res.status(400).json({ error: "messages array required" });
   }
 
   let augmentedMessages = [...messages];
 
-  if (birthdata && birthdata.birthdate && birthdata.birthtime && birthdata.location) {
+  if (birthdata && birthdata.birthdate) {
     try {
-      // Fetch HD chart and transit cycles in parallel
-      const [hdChart, transitCycles] = await Promise.all([
-        fetchHumanDesign(birthdata.birthdate, birthdata.birthtime, birthdata.location),
-        fetchTransitCycles(birthdata.birthdate, birthdata.birthtime, birthdata.location),
-      ]);
+      let chartText = '';
 
-      const chartText = formatHDChart(hdChart) + formatTransitCycles(transitCycles);
-
-      const lastMsg = augmentedMessages[augmentedMessages.length - 1];
-      if (lastMsg && lastMsg.role === 'user') {
-        augmentedMessages[augmentedMessages.length - 1] = {
-          ...lastMsg,
-          content: chartText + '\n\n' + lastMsg.content,
-        };
+      // Fetch HD chart from humandesign.ai
+      if (birthdata.birthtime && birthdata.location) {
+        const hdChart = await fetchHumanDesign(birthdata.birthdate, birthdata.birthtime, birthdata.location);
+        chartText += formatHDChart(hdChart);
+        console.log('HD chart injected successfully');
       }
-      console.log('Chart + transit data injected successfully');
+
+      // Always calculate transit cycles (age-based, no external dependency)
+      const transitCycles = calculateTransitCycles(birthdata.birthdate);
+      chartText += formatTransitCycles(transitCycles);
+      console.log('Transit cycles calculated successfully');
+
+      if (chartText) {
+        const lastMsg = augmentedMessages[augmentedMessages.length - 1];
+        if (lastMsg && lastMsg.role === 'user') {
+          augmentedMessages[augmentedMessages.length - 1] = {
+            ...lastMsg,
+            content: chartText + '\n\n' + lastMsg.content,
+          };
+        }
+      }
     } catch (err) {
       console.error('Data fetch error:', err.message);
+      // Still proceed -- Claude will note the missing data
       const lastMsg = augmentedMessages[augmentedMessages.length - 1];
       if (lastMsg && lastMsg.role === 'user') {
         augmentedMessages[augmentedMessages.length - 1] = {
           ...lastMsg,
-          content: '[DATA ERROR: ' + err.message + ']\n\n' + lastMsg.content,
+          content: '[HD CHART ERROR: ' + err.message + ']\n\n' + lastMsg.content,
         };
       }
     }
