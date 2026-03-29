@@ -23,50 +23,93 @@ function Stars() {
   );
 }
 
-// Parse birth data from message text
-// Looks for patterns like: "October 5, 1975 at 6:30am in Chicago, Illinois"
+// Parse birth data from message text.
+// Handles many formats:
+//   "October 5, 1975 at 6:30am in Chicago, Illinois"
+//   "September 30, 1973 5:07 AM READING, PA"
+//   "March 15 1974, 2:30pm, New York"
+//   "1974-03-15 14:30 London"
 function parseBirthData(text) {
-  // Try to find date pattern
-  const datePattern = /\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+(\d{1,2})[,\s]+(\d{4})\b/i;
-  const dateMatch = text.match(datePattern);
+  const MONTHS = {
+    jan:"01",feb:"02",mar:"03",apr:"04",may:"05",jun:"06",
+    jul:"07",aug:"08",sep:"09",oct:"10",nov:"11",dec:"12"
+  };
+  const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
-  // Try to find time pattern
-  const timePattern = /\b(\d{1,2})(?::(\d{2}))?\s*([ap]m)\b/i;
-  const timeMatch = text.match(timePattern);
+  // 1. Find the date --------------------------------------------------------
+  let month, day, year;
 
-  // Try 24h time too
-  const time24Pattern = /\b([01]?\d|2[0-3]):(\d{2})\b/;
-  const time24Match = !timeMatch && text.match(time24Pattern);
-
-  // Try to find location - look for "in [City, State/Country]"
-  const locationPattern = /\bin\s+([A-Za-z][A-Za-z\s,\.]+(?:,\s*[A-Za-z\s]+)?)/i;
-  const locationMatch = text.match(locationPattern);
-
-  if (!dateMatch || (!timeMatch && !time24Match) || !locationMatch) {
-    return null;
+  // ISO: 1974-03-15
+  const isoMatch = text.match(/\b(\d{4})-(\d{2})-(\d{2})\b/);
+  if (isoMatch) {
+    year  = isoMatch[1];
+    month = isoMatch[2];
+    day   = isoMatch[3];
+  } else {
+    // Written month: "September 30, 1973" or "30 September 1973"
+    const wordMonthRe = /\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+(\d{1,2})[,\s]+(\d{4})\b/i;
+    const wordMonthRe2 = /\b(\d{1,2})\s+(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s*[,\s]\s*(\d{4})\b/i;
+    const m1 = text.match(wordMonthRe);
+    const m2 = !m1 && text.match(wordMonthRe2);
+    if (m1) {
+      month = MONTHS[m1[1].substring(0,3).toLowerCase()];
+      day   = m1[2].padStart(2,"0");
+      year  = m1[3];
+    } else if (m2) {
+      day   = m2[1].padStart(2,"0");
+      month = MONTHS[m2[2].substring(0,3).toLowerCase()];
+      year  = m2[3];
+    }
   }
 
-  const months = { jan: "01", feb: "02", mar: "03", apr: "04", may: "05", jun: "06",
-    jul: "07", aug: "08", sep: "09", oct: "10", nov: "11", dec: "12" };
-  const monthKey = dateMatch[1].substring(0, 3).toLowerCase();
-  const month = months[monthKey];
-  const day = dateMatch[2].padStart(2, "0");
-  const year = dateMatch[3];
-  const birthdate = day + "-" + ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][parseInt(month)-1] + "-" + year;
+  if (!month || !day || !year) return null;
 
+  const birthdate = day + "-" + MONTH_NAMES[parseInt(month) - 1] + "-" + year;
+
+  // 2. Find the time --------------------------------------------------------
   let birthtime;
-  if (timeMatch) {
-    let hours = parseInt(timeMatch[1]);
-    const mins = timeMatch[2] ? timeMatch[2] : "00";
-    const ampm = timeMatch[3].toLowerCase();
-    if (ampm === "pm" && hours !== 12) hours += 12;
-    if (ampm === "am" && hours === 12) hours = 0;
-    birthtime = hours.toString().padStart(2, "0") + ":" + mins;
-  } else if (time24Match) {
-    birthtime = time24Match[1].padStart(2, "0") + ":" + time24Match[2];
+
+  // 12h: 5:07 AM, 6:30am, 9am
+  const time12 = text.match(/\b(\d{1,2})(?::(\d{2}))?\s*([ap]m)\b/i);
+  // 24h: 14:30, 05:07
+  const time24 = !time12 && text.match(/\b([01]?\d|2[0-3]):(\d{2})\b/);
+
+  if (time12) {
+    let h = parseInt(time12[1]);
+    const m = time12[2] ? time12[2] : "00";
+    const ampm = time12[3].toLowerCase();
+    if (ampm === "pm" && h !== 12) h += 12;
+    if (ampm === "am" && h === 12) h = 0;
+    birthtime = h.toString().padStart(2,"0") + ":" + m;
+  } else if (time24) {
+    birthtime = time24[1].padStart(2,"0") + ":" + time24[2];
+  } else {
+    birthtime = "12:00"; // noon default
   }
 
-  const location = locationMatch[1].trim().replace(/[.,]+$/, "");
+  // 3. Find the location ----------------------------------------------------
+  // Try "in CITY" pattern first, then fall back to last significant phrase
+  let location;
+
+  const inMatch = text.match(/\bin\s+([A-Za-z][A-Za-z\s,\.]+)/i);
+  if (inMatch) {
+    location = inMatch[1].trim().replace(/[.,]+$/, "");
+  } else {
+    // After stripping date and time tokens, whatever remains is likely the city
+    let remaining = text
+      .replace(/\d{4}-\d{2}-\d{2}/, "")
+      .replace(/\b(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2}[,\s]+\d{4}\b/i, "")
+      .replace(/\b\d{1,2}[,\s]+(january|february|march|april|may|june|july|august|september|october|november|december)[,\s]+\d{4}\b/i, "")
+      .replace(/\b(\d{1,2})(?::(\d{2}))?\s*([ap]m)\b/i, "")
+      .replace(/\b([01]?\d|2[0-3]):(\d{2})\b/, "")
+      .replace(/[,;]+/g, " ")
+      .trim();
+    // Take the last non-empty segment
+    const parts = remaining.split(/\s{2,}/).map(p => p.trim()).filter(Boolean);
+    location = parts[parts.length - 1] || "";
+  }
+
+  if (!location) return null;
 
   return { birthdate, birthtime, location };
 }
@@ -101,10 +144,10 @@ function Message({ role, content }) {
 }
 
 export default function App() {
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [birthdata, setBirthdata] = useState(null);
+  const [messages, setMessages]       = useState([]);
+  const [input, setInput]             = useState("");
+  const [loading, setLoading]         = useState(false);
+  const [birthdata, setBirthdata]     = useState(null);
   const [chartDetected, setChartDetected] = useState(false);
   const bottomRef = useRef(null);
 
@@ -122,7 +165,7 @@ export default function App() {
     setMessages(newMessages);
     setLoading(true);
 
-    // Try to parse birth data from this message
+    // Try to parse birth data from this message if not already captured
     let currentBirthdata = birthdata;
     if (!currentBirthdata) {
       const parsed = parseBirthData(text);
@@ -148,9 +191,43 @@ export default function App() {
       });
 
       if (!res.ok) throw new Error("Server error: " + res.status);
-      const data = await res.json();
-      const reply = data.content?.[0]?.text || "No response";
-      setMessages([...newMessages, { role: "assistant", content: reply }]);
+
+      // Handle both streaming (SSE) and non-streaming JSON responses
+      const contentType = res.headers.get("content-type") || "";
+
+      if (contentType.includes("text/event-stream")) {
+        // Streaming response
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let fullText = "";
+        setMessages([...newMessages, { role: "assistant", content: "" }]);
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value);
+          const lines = chunk.split("\n");
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              const data = line.slice(6).trim();
+              if (data === "[DONE]") break;
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.text) {
+                  fullText += parsed.text;
+                  setMessages([...newMessages, { role: "assistant", content: fullText }]);
+                }
+                if (parsed.error) throw new Error(parsed.error);
+              } catch (e) { /* skip malformed */ }
+            }
+          }
+        }
+      } else {
+        // Non-streaming JSON response (legacy)
+        const data = await res.json();
+        const reply = data.content?.[0]?.text || "No response";
+        setMessages([...newMessages, { role: "assistant", content: reply }]);
+      }
     } catch (err) {
       setMessages([...newMessages, { role: "assistant", content: "Something went wrong: " + err.message }]);
     } finally {
@@ -180,10 +257,8 @@ export default function App() {
 
       {/* Header */}
       <div style={{
-        position: "relative",
-        zIndex: 1,
-        textAlign: "center",
-        padding: "32px 24px 16px",
+        position: "relative", zIndex: 1,
+        textAlign: "center", padding: "32px 24px 16px",
         borderBottom: "1px solid rgba(167,139,250,0.15)",
       }}>
         <div style={{ fontSize: "11px", letterSpacing: "4px", color: "rgba(167,139,250,0.7)", textTransform: "uppercase", marginBottom: "8px" }}>
@@ -197,13 +272,11 @@ export default function App() {
         </div>
         {chartDetected && birthdata && (
           <div style={{
-            marginTop: "10px",
-            fontSize: "12px",
+            marginTop: "10px", fontSize: "12px",
             color: "rgba(134,239,172,0.85)",
             background: "rgba(134,239,172,0.08)",
             border: "1px solid rgba(134,239,172,0.2)",
-            borderRadius: "20px",
-            padding: "4px 16px",
+            borderRadius: "20px", padding: "4px 16px",
             display: "inline-block",
           }}>
             Chart retrieved: {birthdata.birthdate} {birthdata.birthtime} — {birthdata.location}
@@ -213,14 +286,9 @@ export default function App() {
 
       {/* Messages */}
       <div style={{
-        position: "relative",
-        zIndex: 1,
-        flex: 1,
-        overflowY: "auto",
-        padding: "24px 16px",
-        maxWidth: "760px",
-        width: "100%",
-        margin: "0 auto",
+        position: "relative", zIndex: 1,
+        flex: 1, overflowY: "auto", padding: "24px 16px",
+        maxWidth: "760px", width: "100%", margin: "0 auto",
         boxSizing: "border-box",
       }}>
         {isEmpty && (
@@ -246,8 +314,7 @@ export default function App() {
               color: "rgba(167,139,250,0.7)",
               fontSize: "14px",
             }}>
-              Reading your chart
-              <span style={{ display: "inline-block", animation: "pulse 1.5s infinite" }}> ...</span>
+              Reading your chart <span style={{ display: "inline-block", animation: "pulse 1.5s infinite" }}> ...</span>
             </div>
           </div>
         )}
@@ -256,21 +323,17 @@ export default function App() {
 
       {/* Input */}
       <div style={{
-        position: "relative",
-        zIndex: 1,
+        position: "relative", zIndex: 1,
         borderTop: "1px solid rgba(167,139,250,0.2)",
         background: "rgba(10,1,24,0.8)",
         padding: "16px",
       }}>
         <div style={{
-          display: "flex",
-          gap: "10px",
-          maxWidth: "760px",
-          margin: "0 auto",
+          display: "flex", gap: "10px",
+          maxWidth: "760px", margin: "0 auto",
           background: "rgba(255,255,255,0.12)",
           border: "1.5px solid rgba(167,139,250,0.6)",
-          borderRadius: "14px",
-          padding: "4px 4px 4px 16px",
+          borderRadius: "14px", padding: "4px 4px 4px 16px",
         }}>
           <textarea
             value={input}
@@ -279,16 +342,9 @@ export default function App() {
             placeholder="Share your birth date, time, and city..."
             rows={1}
             style={{
-              flex: 1,
-              background: "transparent",
-              border: "none",
-              outline: "none",
-              color: "rgba(255,255,255,0.95)",
-              fontSize: "15px",
-              resize: "none",
-              padding: "10px 0",
-              fontFamily: "inherit",
-              lineHeight: "1.5",
+              flex: 1, background: "transparent", border: "none", outline: "none",
+              color: "rgba(255,255,255,0.95)", fontSize: "15px",
+              resize: "none", padding: "10px 0", fontFamily: "inherit", lineHeight: "1.5",
             }}
           />
           <button
@@ -296,17 +352,10 @@ export default function App() {
             disabled={loading || !input.trim()}
             style={{
               background: loading || !input.trim() ? "rgba(139,92,246,0.3)" : "rgba(139,92,246,0.85)",
-              border: "none",
-              borderRadius: "10px",
-              width: "44px",
-              height: "44px",
+              border: "none", borderRadius: "10px", width: "44px", height: "44px",
               cursor: loading || !input.trim() ? "not-allowed" : "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              transition: "background 0.2s",
-              alignSelf: "center",
-              flexShrink: 0,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              transition: "background 0.2s", alignSelf: "center", flexShrink: 0,
             }}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
@@ -329,4 +378,4 @@ export default function App() {
       `}</style>
     </div>
   );
-    }
+}
