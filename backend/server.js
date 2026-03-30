@@ -456,15 +456,18 @@ app.post("/api/raw-v3", async (req, res) => {
   const url = "https://api.humandesign.ai/v3/hd-data?date="+isoDate+"&timezone="+timezone+"&api_key="+HD_AI_API_KEY;
   const response = await fetch(url, { headers: { "X-Api-Key": HD_AI_API_KEY } });
   const raw = await response.json();
-  // Return just the top-level keys and structure, not the full blob
-  const topKeys = Object.keys(raw);
-  const propKeys = raw.Properties ? Object.keys(raw.Properties) : [];
-  const personalityType = Array.isArray(raw.Personality) ? "array["+raw.Personality.length+"]" : (typeof raw.Personality);
-  const designType = Array.isArray(raw.Design) ? "array["+raw.Design.length+"]" : (typeof raw.Design);
-  const firstPersonality = Array.isArray(raw.Personality) ? raw.Personality[0] : (raw.Personality && typeof raw.Personality === "object" ? { keys: Object.keys(raw.Personality).slice(0,5), first: Object.values(raw.Personality)[0] } : null);
-  const crossRaw = raw.IncarnationCross || raw.Properties?.IncarnationCross;
-  const varsRaw = raw.Variables || raw.Properties?.Variables;
-  res.json({ topKeys, propKeys, personalityType, designType, firstPersonality, crossRaw, varsRaw });
+  const safe = v => { try { return JSON.parse(JSON.stringify(v)); } catch(e) { return String(v); } };
+  res.json({
+    topKeys: Object.keys(raw),
+    personalityType: Array.isArray(raw.Personality) ? "array["+raw.Personality.length+"]" : (typeof raw.Personality),
+    personalityKeys: raw.Personality && !Array.isArray(raw.Personality) ? Object.keys(raw.Personality).slice(0,5) : null,
+    firstPersonalityEntry: Array.isArray(raw.Personality) ? safe(raw.Personality[0]) : (raw.Personality ? safe(Object.values(raw.Personality)[0]) : null),
+    planetsType: Array.isArray(raw.Planets) ? "array["+raw.Planets.length+"]" : (typeof raw.Planets),
+    firstPlanetEntry: Array.isArray(raw.Planets) ? safe(raw.Planets[0]) : (raw.Planets ? safe(Object.values(raw.Planets)[0]) : null),
+    crossRaw: safe(raw.IncarnationCross || raw.Properties?.IncarnationCross),
+    varsRaw: safe(raw.Variables),
+    propVarsRaw: safe(raw.Properties?.Variable || raw.Properties?.Variables),
+  });
 });
 
 app.get("/health", (_req, res) => res.json({ ok: true }));
