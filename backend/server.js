@@ -204,7 +204,7 @@ async function fetchRealTransitCycles(birthdate, birthtime, location) {
 // FETCH TRANSIT ACTIVATIONS from Python backend
 // Finds channels lit up by today's transits against natal chart
 // ============================================================
-async function fetchTransitActivations(hdChart, cycles) {
+async function fetchTransitActivations(hdChart, cycles, overlayCross = null) {
   const today = new Date();
   let activeCycle = cycles.chironReturn;
   const allKeys = ['saturnReturn', 'uranusOpposition', 'chironReturn'];
@@ -229,6 +229,7 @@ async function fetchTransitActivations(hdChart, cycles) {
       cycle_start:           activeCycle.start,
       cycle_end:             activeCycle.end,
       reading_date:          new Date().toISOString().split('T')[0],
+      overlay_cross:         overlayCross,
     }),
   });
   if (!res.ok) {
@@ -381,17 +382,39 @@ app.post("/api/chat", async (req, res) => {
         cycles = await fetchRealTransitCycles(birthdata.birthdate, birthdata.birthtime, birthdata.location);
         chartText += formatTransitCycles(cycles);
         console.log('Real transit cycles injected - chiron peak:', cycles.chironReturn?.peak);
-      // Fetch transit activations (today's planetary gates vs natal chart)
-      try {
-        if (hdChart) {
-          const activationText = await fetchTransitActivations(hdChart, cycles);
-          chartText += activationText;
-          console.log('Transit activations injected');
-        }
-      } catch (activErr) {
-        console.error('Activation error:', activErr.message);
-        chartText += '\nTRANSIT ACTIVATIONS: Unavailable\n';
-      }
+            // Fetch evolutionary arc FIRST so we have the overlay chart's incarnation cross
+            let arc = null;
+            let overlayCross = null;
+            try {
+              if (hdChart && cycles && birthdata.birthtime && birthdata.location) {
+                const timezone = getTimezone(birthdata.location);
+                arc = await fetchEvolutionaryArc(
+                  birthdata.birthtime, timezone, hdChart, cycles,
+                  null // hdaiSaturnReturns
+                );
+                overlayCross = arc?.chironReturn?.chart?.incarnation_cross
+                  || arc?.uranusOpposition?.chart?.incarnation_cross
+                  || null;
+                const arcText = formatEvolutionaryArcForPrompt(arc, hdChart);
+                chartText += '\n' + arcText;
+                const arcCoverage = Object.values(arc).filter(e => e?.chart).length;
+                console.log('Evolutionary arc injected -', arcCoverage, 'of 4 overlay charts fetched');
+              }
+            } catch (arcErr) {
+              console.error('Arc fetch error:', arcErr.message);
+              chartText += '\nEVOLUTIONARY ARC: Unavailable\n';
+            }
+            // Fetch transit activations with overlay cross from the arc chart
+            try {
+              if (hdChart) {
+                const activationText = await fetchTransitActivations(hdChart, cycles, overlayCross);
+                chartText += activationText;
+                console.log('Transit activations injected');
+              }
+            } catch (activErr) {
+              console.error('Activation error:', activErr.message);
+              chartText += '\nTRANSIT ACTIVATIONS: Unavailable\n';
+            }
       } else {
         throw new Error('Missing birthtime or location for real transit calculation');
       }
@@ -402,28 +425,7 @@ app.post("/api/chat", async (req, res) => {
       console.log('Fallback transit cycles injected');
     }
 
-            // FETCH EVOLUTIONARY ARC — all four cycle peak overlay charts
-        try {
-          if (hdChart && cycles && birthdata.birthtime && birthdata.location) {
-            const timezone = getTimezone(birthdata.location);
-            const arc = await fetchEvolutionaryArc(
-              birthdata.birthtime,
-              timezone,
-              hdChart,
-              cycles,
-              null // hdaiSaturnReturns — reserved for future integration
-            );
-            const arcText = formatEvolutionaryArcForPrompt(arc, hdChart);
-            chartText += '\n' + arcText;
-            const arcCoverage = Object.values(arc).filter(e => e?.chart).length;
-            console.log('Evolutionary arc injected -', arcCoverage, 'of 4 overlay charts fetched');
-          }
-        } catch (arcErr) {
-          console.error('Arc fetch error:', arcErr.message);
-          chartText += '\nEVOLUTIONARY ARC: Unavailable\n';
-        }
-
-        if (chartText) {
+                    if (chartText) {
       const lastMsg = augmentedMessages[augmentedMessages.length - 1];
       if (lastMsg?.role === 'user') {
         augmentedMessages[augmentedMessages.length - 1] = {
