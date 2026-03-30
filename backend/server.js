@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import Anthropic from "@anthropic-ai/sdk";
+import { transformV3Response, formatV3HDChart } from "./hd-v3-parser.js";
 
 const app = express();
 app.use(cors());
@@ -88,7 +89,35 @@ THE INVITATION FORWARD
 
 [Closing paragraph — the soul-level invitation of this moment for this specific person]
 
-Tone: sacred, grounded, wise. Not clinical. Not generic. Speak to this specific person's design.`;
+Tone: sacred, grounded, wise. Not clinical. Not generic. Speak to this specific person's design.
+
+V3 CHART DATA ENHANCEMENTS — use all of these in your reading:
+
+RETROGRADE PLANETS: If RETROGRADE PLANETS AT BIRTH is present in the natal data, reference each retrograde planet explicitly.
+A retrograde planet at birth means its gate energy is deeply internalized — it works from inside out rather than expressing outward.
+Saturn retrograde at birth makes the Saturn Return a reclamation of inner authority rather than outer achievement.
+Chiron retrograde at birth makes the Chiron Return a profound inward healing journey, often felt before it is seen.
+
+GENE KEYS: If GENE KEYS data is present, weave the Shadow/Gift/Siddhi arc into your reading.
+The Shadow is the unconscious pattern this person is moving through. The Gift is the potential available now.
+The Siddhi is the transcendent possibility of this gate when fully embodied.
+For the cycle reading, emphasize which Gene Key shadows are being transformed and which gifts are emerging.
+
+CIRCUIT DATA: If CIRCUIT BREAKDOWN is present, state which circuits are dominant in this person's chart.
+Individual circuit: here to mutate and be uniquely themselves — not to belong, but to model new possibilities.
+Collective circuit: here to share patterns and knowledge that benefit the larger group — what they carry is for the whole.
+Tribal circuit: here to support and be supported — their energy is most alive within committed bonds and community.
+
+VARIABLES / PHS: If VARIABLES data is present, include a short practical section on environment and digestion.
+The Environment field tells this person what physical environment supports their nervous system and clarity.
+The Digestion field tells them how their body processes food and information most efficiently.
+Keep this section grounded and practical — these are body-level instructions, not metaphors.
+
+When VARIABLES data is present, add a section titled:
+BODY INTELLIGENCE AND ENVIRONMENT
+Write 2-3 sentences connecting their Environment type and Digestion type to how they can best support themselves during this cycle.
+
+---`;
 
 // ============================================================
 // PARSE DATE
@@ -295,7 +324,7 @@ ${describePhase(cycles.secondSaturnReturn || cycles.second_saturn_return, 'Secon
 }
 
 // ============================================================
-// FETCH HD CHART from humandesign.ai v2
+// FETCH HD CHART from humandesign.ai v3
 // ============================================================
 async function fetchHumanDesign(birthdate, birthtime, location) {
   const timezone = getTimezone(location);
@@ -307,63 +336,19 @@ async function fetchHumanDesign(birthdate, birthtime, location) {
   const minute = String(timeParts ? +timeParts[2] : 0).padStart(2, '0');
   const isoDate = year + '-' + String(month).padStart(2,'0') + '-' + String(day).padStart(2,'0') + 'T' + hour + ':' + minute + ':00';
   const params = new URLSearchParams({ date: isoDate, timezone, api_key: HD_AI_API_KEY });
-  const url = 'https://api.humandesign.ai/v2/hd-data?' + params.toString();
+  const url = 'https://api.humandesign.ai/v3/hd-data?' + params.toString();
   console.log('Fetching HD chart, date:', isoDate, 'tz:', timezone);
   const response = await fetch(url, { method: 'GET', headers: { 'X-Api-Key': HD_AI_API_KEY } });
   const responseText = await response.text();
   if (!response.ok) throw new Error('humandesign.ai error ' + response.status + ': ' + responseText.slice(0,200));
-  return transformHDResponse(JSON.parse(responseText));
+  return transformV3Response(JSON.parse(responseText));
 }
 
-function transformHDResponse(raw) {
-  const P = raw?.Properties || {};
-  const val = (key) => { const v = P[key]; if (Array.isArray(v)) return v[0] || ''; return typeof v === 'string' ? v : ''; };
-  const channels = (P?.Channels?.List || []).map(c => String(c?.Option || '')).filter(Boolean);
-  const gates    = (P?.Gates?.List    || []).map(g => g?.Option).filter(v => v !== undefined && v !== null);
-  const CENTER_MAP = {
-    64:'Head',61:'Head',63:'Head',47:'Ajna',24:'Ajna',4:'Ajna',17:'Ajna',43:'Ajna',11:'Ajna',
-    62:'Throat',23:'Throat',56:'Throat',35:'Throat',12:'Throat',45:'Throat',33:'Throat',8:'Throat',31:'Throat',20:'Throat',16:'Throat',
-    10:'G',25:'G',46:'G',15:'G',2:'G',1:'G',51:'Heart',21:'Heart',40:'Heart',
-    34:'Sacral',5:'Sacral',14:'Sacral',29:'Sacral',27:'Sacral',59:'Sacral',9:'Sacral',3:'Sacral',42:'Sacral',
-    36:'Solar',22:'Solar',37:'Solar',6:'Solar',
-    48:'Spleen',57:'Spleen',44:'Spleen',50:'Spleen',32:'Spleen',28:'Spleen',18:'Spleen',
-    53:'Root',60:'Root',52:'Root',19:'Root',39:'Root',41:'Root',58:'Root',38:'Root',54:'Root'
-  };
-  const definedSet = new Set();
-  channels.forEach(ch => ch.split('-').map(s => parseInt(s.trim())).forEach(g => { if (CENTER_MAP[g]) definedSet.add(CENTER_MAP[g]); }));
-  const ALL = ['Head','Ajna','Throat','G','Heart','Sacral','Solar','Spleen','Root'];
-  const result = {
-    type: val('Type'), strategy: val('Strategy'), authority: val('InnerAuthority'),
-    profile: val('Profile'), incarnation_cross: val('IncarnationCross'), definition: val('Definition'),
-    signature: val('Signature'), not_self: val('NotSelfTheme'),
-    defined_centers: ALL.filter(c => definedSet.has(c)),
-    open_centers:    ALL.filter(c => !definedSet.has(c)),
-    channels, gates,
-  };
-  console.log('HD transformed - type:', result.type, 'profile:', result.profile, 'channels:', channels.length);
-  return result;
-}
 
+// formatHDChart delegates to the v3 parser's formatV3HDChart
 function formatHDChart(data) {
-  return `
-=== NATAL CHART DATA (humandesign.ai) ===
-TYPE: ${data.type}
-STRATEGY: ${data.strategy}
-INNER AUTHORITY: ${data.authority}
-PROFILE: ${data.profile}
-INCARNATION CROSS: ${data.incarnation_cross}
-DEFINITION: ${data.definition}
-SIGNATURE: ${data.signature}
-NOT-SELF THEME: ${data.not_self}
-DEFINED CENTERS: ${data.defined_centers.join(', ')}
-OPEN CENTERS: ${data.open_centers.join(', ')}
-CHANNELS: ${data.channels.join(', ')}
-GATES: ${data.gates.join(', ')}
-=== END NATAL CHART DATA ===
-`;
-}
-
-// ============================================================
+  return formatV3HDChart(data);
+}// ============================================================
 // CHAT ENDPOINT
 // ============================================================
 app.post("/api/chat", async (req, res) => {
