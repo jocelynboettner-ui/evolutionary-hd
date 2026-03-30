@@ -427,7 +427,8 @@ class ActivationRequest(BaseModel):
     natal_defined_centers: List[str]
     cycle_start: str
     cycle_end: str
-    reading_date: Optional[str] = None
+    reading_date:  Optional[str] = None
+    overlay_cross: Optional[str] = None
 
 
 @app.post("/transit-activations")
@@ -447,6 +448,7 @@ async def transit_activations(req: ActivationRequest):
             cycle_start=req.cycle_start,
             cycle_end=req.cycle_end,
             reading_date=reading_date,
+            overlay_cross=req.overlay_cross,
         )
 
         return {
