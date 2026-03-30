@@ -226,15 +226,70 @@ def find_cycle_peak(planet, natal_deg, birth_dt, expected_years, search_window_y
     return find_exact_peak(planet, natal_deg, refine_start, refine_end, is_opposition, use_chiron)
 
 
+def find_cycle_peak_precise(
+    planet, natal_deg, birth_dt, expected_years,
+    search_window_years=4.0, is_opposition=False, use_chiron=False
+):
+    """
+    Find the TRUE peak of a transit cycle — the middle crossing
+    when a planet retrogrades back and forth over a natal degree.
+    Planets cross a natal degree up to 3 times:
+      1. Direct pass (approaching)
+      2. Retrograde pass (retreating) <- TRUE PEAK
+      3. Direct pass again (departing)
+    We find all crossings and return the middle one.
+    """
+    target = normalize(natal_deg + 180) if is_opposition else natal_deg
+    search_start = birth_dt + timedelta(days=365.25 * (expected_years - search_window_years))
+    search_end   = birth_dt + timedelta(days=365.25 * (expected_years + search_window_years))
+
+    # Fine scan to catch all retrograde crossings
+    crossings = []
+    current = search_start
+    step = timedelta(days=15)
+    prev_dist = None
+    while current <= search_end:
+        jd = datetime_to_jd(current)
+        if use_chiron:
+            lon = get_chiron_longitude(jd)
+        else:
+            lon = get_planet_longitude(jd, planet)
+        dist = angular_distance(lon, target)
+        if prev_dist is not None:
+            if prev_dist * dist < 0:  # sign change = crossing
+                crossing_peak = find_exact_peak(
+                    planet, natal_deg,
+                    current - step, current,
+                    is_opposition, use_chiron
+                )
+                crossings.append(crossing_peak)
+        prev_dist = dist
+        current += step
+
+    if not crossings:
+        # Fallback to original method
+        return find_cycle_peak(
+            planet, natal_deg, birth_dt,
+            expected_years, search_window_years, is_opposition, use_chiron
+        )
+    if len(crossings) == 1:
+        return crossings[0]
+    if len(crossings) >= 3:
+        # Middle crossing = true peak of retrograde dance
+        return crossings[len(crossings) // 2]
+    # Two crossings — return the later one (retrograde pass)
+    return crossings[-1]
+
+
 def calculate_transit_cycles(birth_utc, lat, lon_coord):
     birth_jd = datetime_to_jd(birth_utc)
     natal_saturn = get_planet_longitude(birth_jd, SATURN)
     natal_uranus = get_planet_longitude(birth_jd, URANUS)
     natal_chiron = get_chiron_longitude(birth_jd)
 
-    saturn_peak = find_cycle_peak(SATURN, natal_saturn, birth_utc, 29.5)
-    uranus_peak = find_cycle_peak(URANUS, natal_uranus, birth_utc, 42.0, is_opposition=True)
-    chiron_peak = find_cycle_peak(None, natal_chiron, birth_utc, 50.7, use_chiron=True)
+    saturn_peak = find_cycle_peak_precise(SATURN, natal_saturn, birth_utc, expected_years=29.5)
+    uranus_peak = find_cycle_peak_precise(URANUS, natal_uranus, birth_utc, expected_years=42.0, is_opposition=True)
+    chiron_peak = find_cycle_peak_precise(None, natal_chiron, birth_utc, expected_years=50.7, use_chiron=True)
 
     window = timedelta(days=365.25 * 3.5)
     chiron_peak_lon = get_chiron_longitude(datetime_to_jd(chiron_peak))
@@ -245,6 +300,7 @@ def calculate_transit_cycles(birth_utc, lat, lon_coord):
             "end": (saturn_peak + window).strftime("%Y-%m-%d"),
             "natal_degree": round(natal_saturn, 4),
             "peak_transit_degree": round(get_planet_longitude(datetime_to_jd(saturn_peak), SATURN), 4),
+            "peak_datetime": saturn_peak.strftime("%Y-%m-%dT%H:%M:%S"),
             "description": f"Transit Saturn returns to natal Saturn at {natal_saturn:.2f}",
         },
         "uranusOpposition": {
@@ -253,6 +309,7 @@ def calculate_transit_cycles(birth_utc, lat, lon_coord):
             "end": (uranus_peak + window).strftime("%Y-%m-%d"),
             "natal_degree": round(natal_uranus, 4),
             "peak_transit_degree": round(get_planet_longitude(datetime_to_jd(uranus_peak), URANUS), 4),
+            "peak_datetime": uranus_peak.strftime("%Y-%m-%dT%H:%M:%S"),
             "description": f"Transit Uranus opposes natal Uranus at {natal_uranus:.2f}",
         },
         "chironReturn": {
@@ -261,6 +318,7 @@ def calculate_transit_cycles(birth_utc, lat, lon_coord):
             "end": (chiron_peak + window).strftime("%Y-%m-%d"),
             "natal_degree": round(natal_chiron, 4),
             "peak_transit_degree": round(chiron_peak_lon, 4),
+            "peak_datetime": chiron_peak.strftime("%Y-%m-%dT%H:%M:%S"),
             "description": f"Transit Chiron returns to natal Chiron at {natal_chiron:.2f}" + ("" if SE_FILES_AVAILABLE else " (Moshier approx)"),
         }
     }
