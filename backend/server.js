@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import Anthropic from "@anthropic-ai/sdk";
 import { transformV3Response, formatV3HDChart } from "./hd-v3-parser.js";
+import { fetchEvolutionaryArc, formatEvolutionaryArcForPrompt } from "./hd-evolutionary-arc.js";
 
 const app = express();
 app.use(cors());
@@ -361,6 +362,7 @@ app.post("/api/chat", async (req, res) => {
     let chartText = '';
 
     let hdChart = null; // hoisted for use in transit activations
+        let cycles = null;
     // Fetch HD chart
     try {
       if (birthdata.birthtime && birthdata.location) {
@@ -376,7 +378,7 @@ app.post("/api/chat", async (req, res) => {
     // FIX 3: Try real Swiss Ephemeris backend first, fall back to age-based
     try {
       if (birthdata.birthtime && birthdata.location) {
-        const cycles = await fetchRealTransitCycles(birthdata.birthdate, birthdata.birthtime, birthdata.location);
+        cycles = await fetchRealTransitCycles(birthdata.birthdate, birthdata.birthtime, birthdata.location);
         chartText += formatTransitCycles(cycles);
         console.log('Real transit cycles injected - chiron peak:', cycles.chironReturn?.peak);
       // Fetch transit activations (today's planetary gates vs natal chart)
@@ -395,12 +397,33 @@ app.post("/api/chat", async (req, res) => {
       }
     } catch (err) {
       console.error('Real transit failed, using fallback:', err.message);
-      const cycles = calculateTransitCyclesFallback(birthdata.birthdate);
+      cycles = calculateTransitCyclesFallback(birthdata.birthdate);
       chartText += formatTransitCycles(cycles);
       console.log('Fallback transit cycles injected');
     }
 
-    if (chartText) {
+            // FETCH EVOLUTIONARY ARC — all four cycle peak overlay charts
+        try {
+          if (hdChart && cycles && birthdata.birthtime && birthdata.location) {
+            const timezone = getTimezone(birthdata.location);
+            const arc = await fetchEvolutionaryArc(
+              birthdata.birthtime,
+              timezone,
+              hdChart,
+              cycles,
+              null // hdaiSaturnReturns — reserved for future integration
+            );
+            const arcText = formatEvolutionaryArcForPrompt(arc, hdChart);
+            chartText += '\n' + arcText;
+            const arcCoverage = Object.values(arc).filter(e => e?.chart).length;
+            console.log('Evolutionary arc injected -', arcCoverage, 'of 4 overlay charts fetched');
+          }
+        } catch (arcErr) {
+          console.error('Arc fetch error:', arcErr.message);
+          chartText += '\nEVOLUTIONARY ARC: Unavailable\n';
+        }
+
+        if (chartText) {
       const lastMsg = augmentedMessages[augmentedMessages.length - 1];
       if (lastMsg?.role === 'user') {
         augmentedMessages[augmentedMessages.length - 1] = {
@@ -419,7 +442,7 @@ app.post("/api/chat", async (req, res) => {
   try {
     const stream = anthropic.messages.stream({
       model: "claude-sonnet-4-5",
-      max_tokens: 4000,
+      max_tokens: 8000,
       system: SYSTEM_PROMPT,
       messages: augmentedMessages,
     });
