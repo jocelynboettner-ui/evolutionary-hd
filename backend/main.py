@@ -102,6 +102,7 @@ class CycleWindow(BaseModel):
     natal_degree: float
     peak_transit_degree: float
     description: str
+    peak_datetime: Optional[str] = None
 
 
 class TransitResponse(BaseModel):
