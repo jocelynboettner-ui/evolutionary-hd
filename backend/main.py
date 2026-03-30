@@ -31,6 +31,21 @@ app.add_middleware(
 EPHE_PATH = os.environ.get("EPHE_PATH", "/app/ephe")
 swe.set_ephe_path(EPHE_PATH)
 
+# Detect at startup whether SE files are available
+def _test_se_files():
+    try:
+        jd = swe.julday(2000, 1, 1, 12.0)
+        # Test Chiron specifically — needs seas_18.se1
+        swe.calc_ut(jd, swe.CHIRON, swe.FLG_SWIEPH)
+        return True
+    except Exception:
+        return False
+
+SE_FILES_AVAILABLE = _test_se_files()
+
+# Choose calculation flag based on file availability
+CALC_FLAG = (swe.FLG_SWIEPH | swe.FLG_SPEED) if SE_FILES_AVAILABLE else (swe.FLG_MOSEPH | swe.FLG_SPEED)
+
 SATURN = swe.SATURN
 URANUS = swe.URANUS
 CHIRON = swe.CHIRON
@@ -90,14 +105,9 @@ def datetime_to_jd(dt):
 
 
 def get_planet_longitude(jd, planet):
-    """Calculate planet longitude, falling back to Moshier if SE files are missing."""
-    try:
-        result, flag = swe.calc_ut(jd, planet, swe.FLG_SWIEPH | swe.FLG_SPEED)
-        return result[0]
-    except Exception:
-        # Fall back to Moshier (built-in, no files needed, ~1 arcminute accuracy)
-        result, flag = swe.calc_ut(jd, planet, swe.FLG_MOSEPH | swe.FLG_SPEED)
-        return result[0]
+    """Calculate planet longitude using best available engine."""
+    result, flag = swe.calc_ut(jd, planet, CALC_FLAG)
+    return result[0]
 
 
 def normalize(deg):
@@ -300,11 +310,5 @@ async def human_design(req: HumanDesignRequest):
 
 @app.get("/health")
 def health():
-    # Report which engine is actually available
-    try:
-        test_jd = swe.julday(2000, 1, 1, 12.0)
-        swe.calc_ut(test_jd, swe.SATURN, swe.FLG_SWIEPH)
-        engine = "Swiss Ephemeris (pyswisseph)"
-    except Exception:
-        engine = "Swiss Ephemeris (pyswisseph) + Moshier fallback"
-    return {"status": "ok", "engine": engine}
+    engine = "Swiss Ephemeris (pyswisseph)" if SE_FILES_AVAILABLE else "Swiss Ephemeris (pyswisseph) + Moshier fallback"
+    return {"status": "ok", "engine": engine, "se_files": SE_FILES_AVAILABLE}
