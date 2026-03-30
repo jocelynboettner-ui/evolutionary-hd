@@ -24,38 +24,29 @@ Never as: old self replaced by new self.
 =======================================================
 DATA RULES -- CRITICAL
 =======================================================
-1. ALL natal chart details come ONLY from the NATAL CHART DATA block.
-2. ALL overlay details come ONLY from the TRANSIT CYCLE DATA block.
-3. NEVER use hardcoded profiles, crosses, channels, or centers. Every reading uses ONLY what is in the data.
-4. If chart data is missing or incomplete, say so honestly.
-5. The overlay profile, incarnation cross, channels, and centers are what they actually are for this specific person.
+1. ALL natal chart details come ONLY from the NATAL CHART DATA block below.
+2. ALL transit cycle dates come ONLY from the TRANSIT CYCLE DATA block below.
+3. NEVER say data is missing or incomplete if it is present in the blocks.
+4. NEVER ask the user to go get their chart elsewhere -- you have their chart data.
+5. Use EVERY field provided. Do not skip Type, Strategy, Authority, Profile, Cross, Channels, Gates.
 
 =======================================================
 READING STRUCTURE
 =======================================================
 ## YOUR NATAL BLUEPRINT | The Permanent Foundation
-**Human Design Type:** [from natal data]
+**Human Design Type:** [from natal data -- with full explanation]
 **Strategy:** [from natal data -- explain HOW to use it practically]
 **Inner Authority:** [from natal data -- explain the exact decision-making mechanism]
 **Profile:** [from natal data -- explain what this means for their life role]
-**Incarnation Cross:** [from natal data -- their permanent life purpose]
+**Incarnation Cross:** [from natal data -- their permanent life purpose in depth]
 **Definition:** [from natal data -- explain what this means for their energy flow]
-**Signature / Not-Self:** [from natal data]
-
-### Defined Centers -- Your Consistent Energy
-[For EACH defined center from natal data: name it, explain its consistent function]
-
-### Open Centers -- Where You Learn and Grow Wise
-[For each open/undefined center from natal data: explain what they amplify and the wisdom available]
+**Signature / Not-Self Theme:** [from natal data]
 
 ### Your Natal Channels -- Built-In Gifts
-[For each channel in natal data: name it, explain what it gives them consistently]
+[For EACH channel listed: name it, explain what circuit it belongs to, what consistent gift it gives]
 
 ### Your Natal Gates -- Active Frequencies
-[Interpret the most significant gates from the natal gates list]
-
-### Your Natal Incarnation Cross -- Permanent Life Purpose
-[Interpret the incarnation cross from natal data in depth]
+[Interpret the most significant gates from the natal gates list -- pick 6-8 most meaningful ones]
 
 ---
 ## YOUR CURRENT DEVELOPMENTAL CYCLE
@@ -65,69 +56,53 @@ THE FOUR DEVELOPMENTAL CYCLES:
 - The Flowering Cycle (Chiron Return): ages 46.5-53.5, apex at 50
 - The Legacy Cycle (Second Saturn Return): ages 55.5-62.5, apex at 59
 
-[Based on their age and the transit data, identify which cycle is active]
+Identify which cycle is currently active based on the transit data provided.
 
-**Saturn Return window:** [start] to [end], peak [peak]
-**Uranus Opposition window:** [start] to [end], peak [peak]
-**Chiron Return window:** [start] to [end], peak [peak]
+**Current active cycle and what it means for this person specifically**
 
 ---
 ## WHAT THIS CYCLE IS TEACHING YOU | The Core Invitation
-[3-4 rich paragraphs synthesizing natal chart + transit cycle data. Warm, precise, powerful.]
+[4-5 rich paragraphs synthesizing their natal blueprint + active developmental cycle. Warm, precise, powerful. Speak directly to them.]
 
 ---
 ## LIVING IT NOW | Practical Guidance
-### Decision-Making in This Cycle
-### What to Trust and Build On
+### Decision-Making in This Cycle | [their authority] in [their cycle]
+### What to Trust and Build On | [based on their channels and gates]
 ### What to Stay Curious About
 ### The Body's Intelligence
 
 =======================================================
-TONE: Professional, warm, precise. Use ONLY the data provided in the blocks below.
+TONE: Professional, warm, deeply personal. Use their actual data. Never generic.
 =======================================================`;
 
 // -------------------------------------------------------
-// Parse any date string into { year, month, day } integers
+// Parse any date string into { year, month, day }
 // -------------------------------------------------------
 function parseDate(dateStr) {
   if (!dateStr) return null;
   const s = String(dateStr).trim();
   const MONTHS = { jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12 };
 
-  // ISO: 1973-09-30
   let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
   if (m) return { year: +m[1], month: +m[2], day: +m[3] };
 
-  // DD-Mon-YYYY: 30-Sep-1973
   m = s.match(/^(\d{1,2})[-\/]([A-Za-z]{3,9})[-\/](\d{4})$/);
-  if (m) {
-    const mo = MONTHS[m[2].toLowerCase().slice(0,3)];
-    if (mo) return { year: +m[3], month: mo, day: +m[1] };
-  }
+  if (m) { const mo = MONTHS[m[2].toLowerCase().slice(0,3)]; if (mo) return { year: +m[3], month: mo, day: +m[1] }; }
 
-  // Month DD, YYYY: September 30, 1973
   m = s.match(/^([A-Za-z]{3,9})\s+(\d{1,2}),?\s+(\d{4})$/);
-  if (m) {
-    const mo = MONTHS[m[1].toLowerCase().slice(0,3)];
-    if (mo) return { year: +m[3], month: mo, day: +m[2] };
-  }
+  if (m) { const mo = MONTHS[m[1].toLowerCase().slice(0,3)]; if (mo) return { year: +m[3], month: mo, day: +m[2] }; }
 
-  // DD Month YYYY: 30 September 1973
   m = s.match(/^(\d{1,2})\s+([A-Za-z]{3,9})\s+(\d{4})$/);
-  if (m) {
-    const mo = MONTHS[m[2].toLowerCase().slice(0,3)];
-    if (mo) return { year: +m[3], month: mo, day: +m[1] };
-  }
+  if (m) { const mo = MONTHS[m[2].toLowerCase().slice(0,3)]; if (mo) return { year: +m[3], month: mo, day: +m[1] }; }
 
-  // Fallback
   const d = new Date(s);
   if (!isNaN(d)) return { year: d.getUTCFullYear(), month: d.getUTCMonth()+1, day: d.getUTCDate() };
   return null;
 }
 
 // -------------------------------------------------------
-// Fetch natal Human Design chart from humandesign.ai
-// Uses GET with query params: date (ISO 8601), timezone, api_key
+// Fetch natal Human Design chart from humandesign.ai v2
+// GET with query params: date (ISO 8601), timezone, api_key
 // -------------------------------------------------------
 async function fetchHumanDesign(birthdate, birthtime, location) {
   const timezone = getTimezone(location);
@@ -136,85 +111,86 @@ async function fetchHumanDesign(birthdate, birthtime, location) {
 
   const { year, month, day } = parsed;
   const timeParts = (birthtime || '12:00').match(/^(\d{1,2}):(\d{2})/);
-  const hour = String(timeParts ? +timeParts[1] : 12).padStart(2, '0');
+  const hour   = String(timeParts ? +timeParts[1] : 12).padStart(2, '0');
   const minute = String(timeParts ? +timeParts[2] : 0).padStart(2, '0');
-  const monthStr = String(month).padStart(2, '0');
-  const dayStr = String(day).padStart(2, '0');
+  const isoDate = year + '-' + String(month).padStart(2,'0') + '-' + String(day).padStart(2,'0') + 'T' + hour + ':' + minute + ':00';
 
-  // ISO 8601 format: 1973-09-30T05:07:00
-  const isoDate = year + '-' + monthStr + '-' + dayStr + 'T' + hour + ':' + minute + ':00';
-
-  const params = new URLSearchParams({
-    date: isoDate,
-    timezone: timezone,
-    api_key: HD_AI_API_KEY,
-  });
-
+  const params = new URLSearchParams({ date: isoDate, timezone, api_key: HD_AI_API_KEY });
   const url = 'https://api.humandesign.ai/v2/hd-data?' + params.toString();
-  console.log('Fetching HD chart from humandesign.ai v2, date:', isoDate, 'tz:', timezone);
+  console.log('Fetching HD chart, date:', isoDate, 'tz:', timezone);
 
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: { 'X-Api-Key': HD_AI_API_KEY },
-  });
-
+  const response = await fetch(url, { method: 'GET', headers: { 'X-Api-Key': HD_AI_API_KEY } });
   const responseText = await response.text();
-  console.log('humandesign.ai status:', response.status, 'body preview:', responseText.slice(0, 400));
+  console.log('humandesign.ai status:', response.status, 'body len:', responseText.length);
 
-  if (!response.ok) {
-    throw new Error('humandesign.ai error ' + response.status + ': ' + responseText.slice(0, 300));
-  }
+  if (!response.ok) throw new Error('humandesign.ai error ' + response.status + ': ' + responseText.slice(0,200));
 
   const raw = JSON.parse(responseText);
   return transformHDResponse(raw);
 }
 
 // -------------------------------------------------------
-// Transform humandesign.ai response into our format
-// v2 returns structured chart data
+// Transform humandesign.ai v2 response
+// Response shape: { Properties: { Type: ["Generator",...], Channels: { List: [{Option:"10 - 34"},...] }, Gates: { List: [{Option: 18},...] }, ... } }
 // -------------------------------------------------------
 function transformHDResponse(raw) {
-  const chart = raw?.chart || raw?.data || raw;
-
-  // Centers: try multiple shapes
-  const centers = chart?.centers || raw?.centers || {};
-  let definedCenters = [], openCenters = [];
-  if (Array.isArray(centers)) {
-    definedCenters = centers.filter(c => c?.defined).map(c => c?.name || c?.center);
-    openCenters = centers.filter(c => !c?.defined).map(c => c?.name || c?.center);
-  } else {
-    definedCenters = Object.entries(centers).filter(([,v]) => v === true || v?.defined === true || v?.active === true).map(([k]) => k);
-    openCenters = Object.entries(centers).filter(([,v]) => v === false || v?.defined === false || v?.active === false).map(([k]) => k);
-  }
-
-  // Channels
-  const channels = chart?.channels || raw?.channels || [];
-  const channelNames = Array.isArray(channels)
-    ? channels.map(c => typeof c === 'string' ? c : (c?.name || c?.channel || c?.gates?.join('-') || JSON.stringify(c)))
-    : [];
-
-  // Gates
-  const gates = chart?.gates || raw?.gates || [];
-  const gateList = Array.isArray(gates)
-    ? gates.map(g => typeof g === 'number' || typeof g === 'string' ? g : (g?.gate || g?.number || g?.id))
-    : [];
-
-  const result = {
-    type: chart?.type || raw?.type || raw?.design_type || 'unknown',
-    strategy: chart?.strategy || raw?.strategy || '',
-    authority: chart?.authority || chart?.inner_authority || raw?.authority || raw?.inner_authority || '',
-    profile: chart?.profile || raw?.profile || '',
-    incarnation_cross: chart?.incarnation_cross || chart?.cross || raw?.incarnation_cross || raw?.cross || '',
-    definition: chart?.definition || raw?.definition || '',
-    signature: chart?.signature || raw?.signature || '',
-    not_self: chart?.not_self || chart?.not_self_theme || raw?.not_self || '',
-    defined_centers: definedCenters.filter(Boolean),
-    open_centers: openCenters.filter(Boolean),
-    channels: channelNames.filter(Boolean),
-    gates: gateList.filter(Boolean),
+  // Helper: extract first value from array property (they come as ["Value", null, "", "", ""])
+  const P = raw?.Properties || {};
+  const val = (key) => {
+    const v = P[key];
+    if (Array.isArray(v)) return v[0] || '';
+    if (typeof v === 'string') return v;
+    return '';
   };
 
-  console.log('Transformed HD chart - type:', result.type, 'profile:', result.profile, 'centers:', result.defined_centers.length);
+  // Channels: P.Channels.List[].Option = "10 - 34"
+  const channelList = P?.Channels?.List || [];
+  const channels = channelList.map(c => String(c?.Option || '')).filter(Boolean);
+
+  // Gates: P.Gates.List[].Option = 18 (number)
+  const gateList = P?.Gates?.List || [];
+  const gates = gateList.map(g => g?.Option).filter(v => v !== undefined && v !== null);
+
+  // Derive defined centers from channels
+  // Each channel connects two centers -- map channel gates to centers
+  const CENTER_MAP = {
+    64:  'Head',   61: 'Head',   63: 'Head',
+    47:  'Ajna',   24: 'Ajna',   4:  'Ajna',   17: 'Ajna',  43: 'Ajna',  11: 'Ajna',
+    62:  'Throat', 23: 'Throat', 56: 'Throat', 35: 'Throat',12: 'Throat',45: 'Throat',33:'Throat',8:'Throat',31:'Throat',20:'Throat',16:'Throat',
+    10:  'G',      25: 'G',      46: 'G',      15: 'G',     2:  'G',     1:  'G',
+    51:  'Heart',  21: 'Heart',  40: 'Heart',
+    34:  'Sacral', 5:  'Sacral', 14: 'Sacral', 29: 'Sacral',27:'Sacral', 59:'Sacral',  9:'Sacral',  3:'Sacral',  42:'Sacral',
+    36:  'Solar',  22: 'Solar',  37: 'Solar',  6:  'Solar',
+    48:  'Spleen', 57: 'Spleen', 44: 'Spleen', 50: 'Spleen',32:'Spleen', 28:'Spleen',  18:'Spleen',
+    53:  'Root',   60: 'Root',   52: 'Root',   19: 'Root',  39:'Root',   41:'Root',    58:'Root',   38:'Root',   54:'Root'
+  };
+
+  const definedCenterSet = new Set();
+  channels.forEach(ch => {
+    const parts = ch.split('-').map(s => parseInt(s.trim()));
+    parts.forEach(g => { if (CENTER_MAP[g]) definedCenterSet.add(CENTER_MAP[g]); });
+  });
+
+  const ALL_CENTERS = ['Head','Ajna','Throat','G','Heart','Sacral','Solar','Spleen','Root'];
+  const definedCenters = ALL_CENTERS.filter(c => definedCenterSet.has(c));
+  const openCenters = ALL_CENTERS.filter(c => !definedCenterSet.has(c));
+
+  const result = {
+    type:             val('Type'),
+    strategy:         val('Strategy'),
+    authority:        val('InnerAuthority'),
+    profile:          val('Profile'),
+    incarnation_cross: val('IncarnationCross'),
+    definition:       val('Definition'),
+    signature:        val('Signature'),
+    not_self:         val('NotSelfTheme'),
+    defined_centers:  definedCenters,
+    open_centers:     openCenters,
+    channels,
+    gates,
+  };
+
+  console.log('HD transformed - type:', result.type, 'profile:', result.profile, 'channels:', channels.length, 'gates:', gates.length);
   return result;
 }
 
@@ -226,7 +202,6 @@ function calculateTransitCycles(birthdate) {
   if (!parsed) return {};
   const { year, month, day } = parsed;
   const birthTs = new Date(year, month - 1, day);
-
   const addYears = (y) => {
     const d = new Date(birthTs);
     const whole = Math.floor(y);
@@ -235,7 +210,6 @@ function calculateTransitCycles(birthdate) {
     d.setMonth(d.getMonth() + frac);
     return d.toISOString().split('T')[0];
   };
-
   return {
     saturnReturn:       { start: addYears(26),   peak: addYears(29.5), end: addYears(33)   },
     uranusOpposition:   { start: addYears(38.5), peak: addYears(42),   end: addYears(45.5) },
@@ -249,15 +223,15 @@ function calculateTransitCycles(birthdate) {
 // -------------------------------------------------------
 function getTimezone(location) {
   const loc = (location || '').toLowerCase();
-  if (loc.includes('los angeles') || loc.includes('san francisco') || loc.includes('seattle') || loc.includes('portland') || loc.includes('las vegas') || loc.includes('phoenix')) return 'America/Los_Angeles';
-  if (loc.includes('chicago') || loc.includes('dallas') || loc.includes('houston') || loc.includes('minneapolis')) return 'America/Chicago';
-  if (loc.includes('denver') || loc.includes('salt lake')) return 'America/Denver';
-  if (loc.includes('london') || loc.includes(' uk') || loc.includes('england')) return 'Europe/London';
-  if (loc.includes('paris') || loc.includes('france')) return 'Europe/Paris';
-  if (loc.includes('berlin') || loc.includes('germany') || loc.includes('amsterdam') || loc.includes('rome') || loc.includes('madrid')) return 'Europe/Berlin';
-  if (loc.includes('sydney') || loc.includes('melbourne') || loc.includes('brisbane')) return 'Australia/Sydney';
-  if (loc.includes('tokyo') || loc.includes('japan')) return 'Asia/Tokyo';
-  if (loc.includes('mumbai') || loc.includes('delhi') || loc.includes('india')) return 'Asia/Kolkata';
+  if (loc.includes('los angeles')||loc.includes('san francisco')||loc.includes('seattle')||loc.includes('portland')||loc.includes('las vegas')||loc.includes('phoenix')) return 'America/Los_Angeles';
+  if (loc.includes('chicago')||loc.includes('dallas')||loc.includes('houston')||loc.includes('minneapolis')) return 'America/Chicago';
+  if (loc.includes('denver')||loc.includes('salt lake')) return 'America/Denver';
+  if (loc.includes('london')||loc.includes(' uk')||loc.includes('england')) return 'Europe/London';
+  if (loc.includes('paris')||loc.includes('france')) return 'Europe/Paris';
+  if (loc.includes('berlin')||loc.includes('germany')||loc.includes('amsterdam')) return 'Europe/Berlin';
+  if (loc.includes('sydney')||loc.includes('melbourne')) return 'Australia/Sydney';
+  if (loc.includes('tokyo')||loc.includes('japan')) return 'Asia/Tokyo';
+  if (loc.includes('mumbai')||loc.includes('delhi')||loc.includes('india')) return 'Asia/Kolkata';
   return 'America/New_York';
 }
 
@@ -266,19 +240,19 @@ function getTimezone(location) {
 // -------------------------------------------------------
 function formatHDChart(data) {
   return `
-=== NATAL CHART DATA (humandesign.ai v2) ===
+=== NATAL CHART DATA (humandesign.ai) ===
 TYPE: ${data.type}
 STRATEGY: ${data.strategy}
-AUTHORITY: ${data.authority}
+INNER AUTHORITY: ${data.authority}
 PROFILE: ${data.profile}
 INCARNATION CROSS: ${data.incarnation_cross}
 DEFINITION: ${data.definition}
 SIGNATURE: ${data.signature}
-NOT-SELF: ${data.not_self}
-DEFINED CENTERS: ${data.defined_centers?.join(', ') || 'none'}
-OPEN CENTERS: ${data.open_centers?.join(', ') || 'none'}
-CHANNELS: ${data.channels?.join(', ') || 'none'}
-GATES: ${data.gates?.join(', ') || 'none'}
+NOT-SELF THEME: ${data.not_self}
+DEFINED CENTERS: ${data.defined_centers.join(', ')}
+OPEN CENTERS: ${data.open_centers.join(', ')}
+CHANNELS: ${data.channels.join(', ')}
+GATES: ${data.gates.join(', ')}
 === END NATAL CHART DATA ===
 `;
 }
@@ -303,38 +277,34 @@ SECOND SATURN RETURN: ${fmt(data.secondSaturnReturn)}
 // -------------------------------------------------------
 app.post("/api/chat", async (req, res) => {
   const { messages, birthdata } = req.body;
-  if (!messages || !Array.isArray(messages)) {
-    return res.status(400).json({ error: "messages array required" });
-  }
+  if (!messages || !Array.isArray(messages)) return res.status(400).json({ error: "messages array required" });
 
   let augmentedMessages = [...messages];
 
   if (birthdata && birthdata.birthdate) {
     let chartText = '';
 
-    // Try HD chart from humandesign.ai
     try {
       if (birthdata.birthtime && birthdata.location) {
         const hdChart = await fetchHumanDesign(birthdata.birthdate, birthdata.birthtime, birthdata.location);
         chartText += formatHDChart(hdChart);
-        console.log('HD chart injected - type:', hdChart.type);
+        console.log('HD chart injected successfully - type:', hdChart.type, 'channels:', hdChart.channels.length);
       }
     } catch (err) {
       console.error('HD chart error:', err.message);
-      chartText += '[HD CHART UNAVAILABLE: ' + err.message + ']\n';
+      chartText += '[HD CHART ERROR: ' + err.message + ']\n';
     }
 
-    // Always calculate transit cycles
     try {
-      const transitCycles = calculateTransitCycles(birthdata.birthdate);
-      chartText += formatTransitCycles(transitCycles);
+      const cycles = calculateTransitCycles(birthdata.birthdate);
+      chartText += formatTransitCycles(cycles);
     } catch (err) {
-      console.error('Transit cycles error:', err.message);
+      console.error('Transit error:', err.message);
     }
 
     if (chartText) {
       const lastMsg = augmentedMessages[augmentedMessages.length - 1];
-      if (lastMsg && lastMsg.role === 'user') {
+      if (lastMsg?.role === 'user') {
         augmentedMessages[augmentedMessages.length - 1] = {
           ...lastMsg,
           content: chartText + '\n\n' + lastMsg.content,
@@ -357,37 +327,24 @@ app.post("/api/chat", async (req, res) => {
     });
     stream.on('text', (text) => { res.write('data: ' + JSON.stringify({ text }) + '\n\n'); });
     stream.on('message', () => { res.write('data: [DONE]\n\n'); res.end(); });
-    stream.on('error', (err) => { console.error('Stream error:', err); res.write('data: ' + JSON.stringify({ error: err.message }) + '\n\n'); res.end(); });
+    stream.on('error', (err) => { res.write('data: ' + JSON.stringify({ error: err.message }) + '\n\n'); res.end(); });
   } catch (err) {
-    console.error('Anthropic error:', err);
     res.write('data: ' + JSON.stringify({ error: err.message }) + '\n\n');
     res.end();
   }
 });
 
-// -------------------------------------------------------
-// DEBUG ENDPOINT
-// -------------------------------------------------------
+// DEBUG
 app.post("/api/debug-hd", async (req, res) => {
   const { birthdate, birthtime, location } = req.body;
   try {
-    const parsed = parseDate(birthdate || '1973-09-30');
-    const timezone = getTimezone(location || '');
-    const timeParts = (birthtime || '05:07').match(/^(\d{1,2}):(\d{2})/);
-    const hour = String(timeParts ? +timeParts[1] : 5).padStart(2,'0');
-    const minute = String(timeParts ? +timeParts[2] : 7).padStart(2,'0');
-    const isoDate = parsed.year + '-' + String(parsed.month).padStart(2,'0') + '-' + String(parsed.day).padStart(2,'0') + 'T' + hour + ':' + minute + ':00';
-    const params = new URLSearchParams({ date: isoDate, timezone, api_key: HD_AI_API_KEY });
-    const url = 'https://api.humandesign.ai/v2/hd-data?' + params.toString();
-    const response = await fetch(url, { method: 'GET', headers: { 'X-Api-Key': HD_AI_API_KEY } });
-    const text = await response.text();
-    res.json({ status: response.status, isoDate, timezone, url: url.replace(HD_AI_API_KEY, '[KEY]'), response: text.slice(0, 3000) });
+    const chart = await fetchHumanDesign(birthdate || '1973-09-30', birthtime || '05:07', location || 'Reading, PA');
+    res.json({ ok: true, chart });
   } catch (err) {
     res.json({ error: err.message });
   }
 });
 
 app.get("/health", (_req, res) => res.json({ ok: true }));
-
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
