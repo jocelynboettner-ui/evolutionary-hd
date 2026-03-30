@@ -10,11 +10,18 @@ const HD_API_BASE = 'https://api.humandesign.ai';
 // ── Fetch a single overlay chart for a peak date ────────────────
 async function fetchOverlayChart(peakDate, birthtime, timezone, apiKey) {
   if (!peakDate) return null;
-  const dateOnly = String(peakDate).split('T')[0];
-  const tp = (birthtime || '12:00').match(/^(\d{1,2}):(\d{2})/);
-  const hh = String(tp ? +tp[1] : 12).padStart(2, '0');
-  const mm = String(tp ? +tp[2] : 0).padStart(2, '0');
-  const isoDate = dateOnly + 'T' + hh + ':' + mm + ':00';
+  // Use full datetime directly if available (peak_datetime from Python service)
+  // Fall back to date + birth time if only a date string (e.g. from humandesign.ai exactDate)
+  let isoDate;
+  if (String(peakDate).includes('T')) {
+    isoDate = peakDate;  // Already has time component
+  } else {
+    const tp = (birthtime || '12:00').match(/^(\d{1,2}):(\d{2})/);
+    const hh = String(tp ? +tp[1] : 12).padStart(2, '0');
+    const mm = String(tp ? +tp[2] : 0).padStart(2, '0');
+    isoDate = String(peakDate).split('T')[0] + 'T' + hh + ':' + mm + ':00';
+  }
+  console.log('Fetching overlay chart for: ' + isoDate);
   const url = HD_API_BASE + '/v3/hd-data?date=' + encodeURIComponent(isoDate)
     + '&timezone=' + encodeURIComponent(timezone)
     + '&api_key=' + apiKey;
@@ -83,11 +90,14 @@ export async function fetchEvolutionaryArc(birthtime, timezone, natalChart, pyth
     if (r2?.ExactDate || r2?.exactDate) saturn2Peak = r2.ExactDate || r2.exactDate;
   }
 
-  const peaks = {
+    const peaks = {
     saturnReturn1:    saturn1Peak,
-    uranusOpposition: pythonUranusP,
-    chironReturn:     pythonChironP,
-    saturnReturn2:    saturn2Peak,
+    uranusOpposition: pythonCycles?.uranusOpposition?.peak_datetime || pythonCycles?.uranusOpposition?.peak || null,
+    chironReturn:     pythonCycles?.chironReturn?.peak_datetime     || pythonCycles?.chironReturn?.peak     || null,
+    saturnReturn2:    saturn2Peak
+      || pythonCycles?.second_saturn_return?.peak_datetime
+      || pythonCycles?.secondSaturnReturn?.peak_datetime
+      || null,
   };
   console.log('Fetching evolutionary arc peaks:', peaks);
 
