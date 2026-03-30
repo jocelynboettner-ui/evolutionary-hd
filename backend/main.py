@@ -402,38 +402,41 @@ async def transit_activations(req: ActivationRequest):
 
 @app.get("/probe-hd-endpoints")
 async def probe_hd_endpoints():
-    """Temporary probe: call humandesign.ai cycle endpoints and return raw JSON."""
+    """Temporary probe: call humandesign.ai endpoints and return raw JSON."""
     if not HD_AI_API_KEY:
         return {"error": "HD_AI_API_KEY not set"}
-    
-    base_params = "date=1973-09-30T05:07:00&timezone=America/New_York"
-    endpoints_to_try = [
-        "/chiron-return",
-        "/saturn-return",
-        "/uranus-opposition",
-        "/v2/chiron-return",
-        "/v2/saturn-return",
-        "/v3/chiron-return",
-        "/v3/saturn-return",
-        "/cycles",
-        "/v2/cycles",
-        "/v3/cycles",
-    ]
-    
+
     results = {}
-    async with httpx.AsyncClient(timeout=15.0) as client:
-        for ep in endpoints_to_try:
-            url = f"{HD_AI_BASE_URL}{ep}?{base_params}&api_key={HD_AI_API_KEY}"
+    async with httpx.AsyncClient(timeout=20.0) as client:
+
+        # --- hd-data variants (natal chart) ---
+        hd_base = "date=1973-09-30T05:07:00&timezone=America/New_York"
+        for ep in ["/v1/hd-data", "/v2/hd-data", "/v3/hd-data"]:
+            url = f"{HD_AI_BASE_URL}{ep}?{hd_base}&api_key={HD_AI_API_KEY}"
             try:
                 resp = await client.get(url, headers={"X-Api-Key": HD_AI_API_KEY})
                 try:
                     body = resp.json()
                 except Exception:
-                    body = resp.text[:500]
+                    body = resp.text[:2000]
                 results[ep] = {"status": resp.status_code, "body": body}
             except Exception as e:
                 results[ep] = {"error": str(e)}
-    
+
+        # --- cycle endpoints ---
+        cycle_base = "date=1973-09-30T05:07:00&timezone=America/New_York"
+        for ep in ["/chiron-return", "/saturn-return", "/uranus-opposition"]:
+            url = f"{HD_AI_BASE_URL}{ep}?{cycle_base}&api_key={HD_AI_API_KEY}"
+            try:
+                resp = await client.get(url, headers={"X-Api-Key": HD_AI_API_KEY})
+                try:
+                    body = resp.json()
+                except Exception:
+                    body = resp.text[:2000]
+                results[ep] = {"status": resp.status_code, "body": body}
+            except Exception as e:
+                results[ep] = {"error": str(e)}
+
     return results
 
 
