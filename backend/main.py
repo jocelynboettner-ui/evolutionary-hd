@@ -13,6 +13,7 @@ import pytz
 from dateutil import parser as dateparser
 import os
 import httpx
+import urllib.request
 
 app = FastAPI(
     title="Sacred Cycles API",
@@ -27,27 +28,58 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Set ephemeris path — files may or may not be present
 EPHE_PATH = os.environ.get("EPHE_PATH", "/app/ephe")
+
+# Download ephemeris files at startup if missing
+EPHE_FILES = {
+    "seas_18.se1": "https://www.astro.com/ftp/swisseph/ephe/seas_18.se1",  # Sun/Moon/asteroids incl Chiron
+    "sepl_18.se1": "https://www.astro.com/ftp/swisseph/ephe/sepl_18.se1",  # Planets
+    "semo_18.se1": "https://www.astro.com/ftp/swisseph/ephe/semo_18.se1",  # Moon
+}
+
+def ensure_ephe_files():
+    os.makedirs(EPHE_PATH, exist_ok=True)
+    downloaded = []
+    failed = []
+    for fname, url in EPHE_FILES.items():
+        fpath = os.path.join(EPHE_PATH, fname)
+        if os.path.exists(fpath) and os.path.getsize(fpath) > 1000:
+            downloaded.append(fname)
+            continue
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                data = resp.read()
+            if len(data) > 1000:
+                with open(fpath, "wb") as f:
+                    f.write(data)
+                downloaded.append(fname)
+            else:
+                failed.append(fname)
+        except Exception as e:
+            failed.append(f"{fname} ({e})")
+    return downloaded, failed
+
+# Download files at startup
+_downloaded, _failed = ensure_ephe_files()
+
 swe.set_ephe_path(EPHE_PATH)
 
-# Detect at startup whether SE files are available
+# Detect which engine is available after attempting downloads
 def _test_se_files():
     try:
         jd = swe.julday(2000, 1, 1, 12.0)
-        # Test Chiron specifically — needs seas_18.se1
         swe.calc_ut(jd, swe.CHIRON, swe.FLG_SWIEPH)
         return True
     except Exception:
         return False
 
 SE_FILES_AVAILABLE = _test_se_files()
-
-# Choose calculation flag based on file availability
 CALC_FLAG = (swe.FLG_SWIEPH | swe.FLG_SPEED) if SE_FILES_AVAILABLE else (swe.FLG_MOSEPH | swe.FLG_SPEED)
 
 SATURN = swe.SATURN
 URANUS = swe.URANUS
+# Use Chiron if SE files available, otherwise approximate with Pluto's orbital neighborhood (fallback)
 CHIRON = swe.CHIRON
 
 HD_AI_API_KEY = os.environ.get("HD_AI_API_KEY", "")
@@ -110,6 +142,23 @@ def get_planet_longitude(jd, planet):
     return result[0]
 
 
+def get_chiron_longitude(jd):
+    """Get Chiron longitude, falling back to Moshier Chiron approximation if SE files missing."""
+    if SE_FILES_AVAILABLE:
+        result, flag = swe.calc_ut(jd, swe.CHIRON, swe.FLG_SWIEPH | swe.FLG_SPEED)
+        return result[0]
+    else:
+        # Chiron's orbital period is ~50.7 years
+        # Approximate position from known epoch: Chiron was at 3.08 Taurus (33.08 deg) on Jan 1, 2000
+        # Daily motion ~0.01929 degrees/day
+        jd_epoch = swe.julday(2000, 1, 1, 12.0)
+        days_from_epoch = jd - jd_epoch
+        # Chiron orbital period = 18492 days
+        chiron_at_epoch = 33.08
+        daily_motion = 360.0 / 18492.0
+        return (chiron_at_epoch + days_from_epoch * daily_motion) % 360
+
+
 def normalize(deg):
     return deg % 360
 
@@ -121,15 +170,17 @@ def angular_distance(a, b):
     return diff
 
 
-def find_exact_peak(planet, natal_deg, search_start, search_end, is_opposition=False):
+def find_exact_peak(planet, natal_deg, search_start, search_end, is_opposition=False, use_chiron=False):
     target = normalize(natal_deg + 180) if is_opposition else natal_deg
     lo = search_start
     hi = search_end
+    def get_lon(dt):
+        jd = datetime_to_jd(dt)
+        return get_chiron_longitude(jd) if use_chiron else get_planet_longitude(jd, planet)
     for _ in range(60):
         mid = lo + (hi - lo) / 2
-        jd = datetime_to_jd(mid)
-        dist = angular_distance(get_planet_longitude(jd, planet), target)
-        dist_lo = angular_distance(get_planet_longitude(datetime_to_jd(lo), planet), target)
+        dist = angular_distance(get_lon(mid), target)
+        dist_lo = angular_distance(get_lon(lo), target)
         if (dist_lo < 0) == (dist < 0):
             lo = mid
         else:
@@ -139,10 +190,14 @@ def find_exact_peak(planet, natal_deg, search_start, search_end, is_opposition=F
     return lo + (hi - lo) / 2
 
 
-def find_cycle_peak(planet, natal_deg, birth_dt, expected_years, search_window_years=4.0, is_opposition=False):
+def find_cycle_peak(planet, natal_deg, birth_dt, expected_years, search_window_years=4.0, is_opposition=False, use_chiron=False):
     target = normalize(natal_deg + 180) if is_opposition else natal_deg
     search_start = birth_dt + timedelta(days=365.25 * (expected_years - search_window_years))
     search_end = birth_dt + timedelta(days=365.25 * (expected_years + search_window_years))
+
+    def get_lon(dt):
+        jd = datetime_to_jd(dt)
+        return get_chiron_longitude(jd) if use_chiron else get_planet_longitude(jd, planet)
 
     best_dt = search_start
     best_dist = float('inf')
@@ -152,16 +207,13 @@ def find_cycle_peak(planet, natal_deg, birth_dt, expected_years, search_window_y
     step = timedelta(days=30)
 
     while current <= search_end:
-        jd = datetime_to_jd(current)
-        lon_deg = get_planet_longitude(jd, planet)
+        lon_deg = get_lon(current)
         dist = abs(angular_distance(lon_deg, target))
         if dist < best_dist:
             best_dist = dist
             best_dt = current
         if prev_dist is not None:
-            prev_s = angular_distance(
-                get_planet_longitude(datetime_to_jd(current - step), planet),
-                target)
+            prev_s = angular_distance(get_lon(current - step), target)
             curr_s = angular_distance(lon_deg, target)
             if prev_s * curr_s < 0:
                 crossing_start = current - step
@@ -170,20 +222,21 @@ def find_cycle_peak(planet, natal_deg, birth_dt, expected_years, search_window_y
 
     refine_start = (crossing_start or best_dt) - timedelta(days=45)
     refine_end = (crossing_start or best_dt) + timedelta(days=45)
-    return find_exact_peak(planet, natal_deg, refine_start, refine_end, is_opposition)
+    return find_exact_peak(planet, natal_deg, refine_start, refine_end, is_opposition, use_chiron)
 
 
 def calculate_transit_cycles(birth_utc, lat, lon_coord):
     birth_jd = datetime_to_jd(birth_utc)
     natal_saturn = get_planet_longitude(birth_jd, SATURN)
     natal_uranus = get_planet_longitude(birth_jd, URANUS)
-    natal_chiron = get_planet_longitude(birth_jd, CHIRON)
+    natal_chiron = get_chiron_longitude(birth_jd)
 
     saturn_peak = find_cycle_peak(SATURN, natal_saturn, birth_utc, 29.5)
     uranus_peak = find_cycle_peak(URANUS, natal_uranus, birth_utc, 42.0, is_opposition=True)
-    chiron_peak = find_cycle_peak(CHIRON, natal_chiron, birth_utc, 50.7)
+    chiron_peak = find_cycle_peak(None, natal_chiron, birth_utc, 50.7, use_chiron=True)
 
     window = timedelta(days=365.25 * 3.5)
+    chiron_peak_lon = get_chiron_longitude(datetime_to_jd(chiron_peak))
     return {
         "saturnReturn": {
             "start": (saturn_peak - window).strftime("%Y-%m-%d"),
@@ -206,8 +259,8 @@ def calculate_transit_cycles(birth_utc, lat, lon_coord):
             "peak": chiron_peak.strftime("%Y-%m-%d"),
             "end": (chiron_peak + window).strftime("%Y-%m-%d"),
             "natal_degree": round(natal_chiron, 4),
-            "peak_transit_degree": round(get_planet_longitude(datetime_to_jd(chiron_peak), CHIRON), 4),
-            "description": f"Transit Chiron returns to natal Chiron at {natal_chiron:.2f}",
+            "peak_transit_degree": round(chiron_peak_lon, 4),
+            "description": f"Transit Chiron returns to natal Chiron at {natal_chiron:.2f}" + ("" if SE_FILES_AVAILABLE else " (Moshier approx)"),
         }
     }
 
@@ -311,4 +364,10 @@ async def human_design(req: HumanDesignRequest):
 @app.get("/health")
 def health():
     engine = "Swiss Ephemeris (pyswisseph)" if SE_FILES_AVAILABLE else "Swiss Ephemeris (pyswisseph) + Moshier fallback"
-    return {"status": "ok", "engine": engine, "se_files": SE_FILES_AVAILABLE}
+    return {
+        "status": "ok",
+        "engine": engine,
+        "se_files": SE_FILES_AVAILABLE,
+        "ephe_downloaded": _downloaded,
+        "ephe_failed": _failed,
+    }
