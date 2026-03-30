@@ -444,32 +444,6 @@ app.post("/api/debug-hd", async (req, res) => {
 });
 
 
-app.post("/api/raw-v3", async (req, res) => {
-  const { birthdate, birthtime, location } = req.body;
-  const timezone = getTimezone(location || "Reading, PA");
-  const parsed = parseDate(birthdate || "1973-09-30");
-  const { year, month, day } = parsed;
-  const tp = (birthtime || "05:07").match(/^(\d{1,2}):(\d{2})/);
-  const hour = String(tp ? +tp[1] : 5).padStart(2,"0");
-  const minute = String(tp ? +tp[2] : 7).padStart(2,"0");
-  const isoDate = year+"-"+String(month).padStart(2,"0")+"-"+String(day).padStart(2,"0")+"T"+hour+":"+minute+":00";
-  const url = "https://api.humandesign.ai/v3/hd-data?date="+isoDate+"&timezone="+timezone+"&api_key="+HD_AI_API_KEY;
-  const response = await fetch(url, { headers: { "X-Api-Key": HD_AI_API_KEY } });
-  const raw = await response.json();
-  const safe = v => { try { return JSON.parse(JSON.stringify(v)); } catch(e) { return String(v); } };
-  res.json({
-    topKeys: Object.keys(raw),
-    personalityType: Array.isArray(raw.Personality) ? "array["+raw.Personality.length+"]" : (typeof raw.Personality),
-    personalityKeys: raw.Personality && !Array.isArray(raw.Personality) ? Object.keys(raw.Personality).slice(0,5) : null,
-    firstPersonalityEntry: Array.isArray(raw.Personality) ? safe(raw.Personality[0]) : (raw.Personality ? safe(Object.values(raw.Personality)[0]) : null),
-    planetsType: Array.isArray(raw.Planets) ? "array["+raw.Planets.length+"]" : (typeof raw.Planets),
-    firstPlanetEntry: Array.isArray(raw.Planets) ? safe(raw.Planets[0]) : (raw.Planets ? safe(Object.values(raw.Planets)[0]) : null),
-    crossRaw: safe(raw.IncarnationCross || raw.Properties?.IncarnationCross),
-    varsRaw: safe(raw.Variables),
-    propVarsRaw: safe(raw.Properties?.Variable || raw.Properties?.Variables),
-  });
-});
-
 app.get("/health", (_req, res) => res.json({ ok: true }));
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
