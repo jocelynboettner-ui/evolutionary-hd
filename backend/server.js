@@ -443,6 +443,30 @@ app.post("/api/debug-hd", async (req, res) => {
   }
 });
 
+
+app.post("/api/raw-v3", async (req, res) => {
+  const { birthdate, birthtime, location } = req.body;
+  const timezone = getTimezone(location || "Reading, PA");
+  const parsed = parseDate(birthdate || "1973-09-30");
+  const { year, month, day } = parsed;
+  const tp = (birthtime || "05:07").match(/^(\d{1,2}):(\d{2})/);
+  const hour = String(tp ? +tp[1] : 5).padStart(2,"0");
+  const minute = String(tp ? +tp[2] : 7).padStart(2,"0");
+  const isoDate = year+"-"+String(month).padStart(2,"0")+"-"+String(day).padStart(2,"0")+"T"+hour+":"+minute+":00";
+  const url = "https://api.humandesign.ai/v3/hd-data?date="+isoDate+"&timezone="+timezone+"&api_key="+HD_AI_API_KEY;
+  const response = await fetch(url, { headers: { "X-Api-Key": HD_AI_API_KEY } });
+  const raw = await response.json();
+  // Return just the top-level keys and structure, not the full blob
+  const topKeys = Object.keys(raw);
+  const propKeys = raw.Properties ? Object.keys(raw.Properties) : [];
+  const personalityType = Array.isArray(raw.Personality) ? "array["+raw.Personality.length+"]" : (typeof raw.Personality);
+  const designType = Array.isArray(raw.Design) ? "array["+raw.Design.length+"]" : (typeof raw.Design);
+  const firstPersonality = Array.isArray(raw.Personality) ? raw.Personality[0] : (raw.Properties?.Personality?.[0] || null);
+  const crossRaw = raw.IncarnationCross || raw.Properties?.IncarnationCross;
+  const varsRaw = raw.Variables || raw.Properties?.Variables;
+  res.json({ topKeys, propKeys, personalityType, designType, firstPersonality, crossRaw, varsRaw });
+});
+
 app.get("/health", (_req, res) => res.json({ ok: true }));
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
