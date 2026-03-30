@@ -6,7 +6,7 @@ POST /human-design    -- Human Design chart via humandesign.ai
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 import swisseph as swe
 from datetime import datetime, timedelta
 import pytz
@@ -14,6 +14,7 @@ from dateutil import parser as dateparser
 import os
 import httpx
 import urllib.request
+from transit_activations import get_full_transit_activation, format_transit_activations_for_prompt
 
 app = FastAPI(
     title="Sacred Cycles API",
@@ -359,6 +360,44 @@ async def human_design(req: HumanDesignRequest):
         raise HTTPException(status_code=502, detail="humandesign.ai returned non-JSON response")
 
     return parse_hd_response(data)
+
+
+
+# ── Transit Activations endpoint ──
+
+class ActivationRequest(BaseModel):
+    natal_gates: List[int]
+    natal_defined_centers: List[str]
+    cycle_start: str
+    cycle_end: str
+    reading_date: Optional[str] = None
+
+
+@app.post("/transit-activations")
+async def transit_activations(req: ActivationRequest):
+    """
+    Returns activated channels, temporarily defined centers,
+    and the dominant incarnation cross for a cycle window.
+    """
+    try:
+        reading_date = None
+        if req.reading_date:
+            reading_date = datetime.strptime(req.reading_date, "%Y-%m-%d")
+
+        data = get_full_transit_activation(
+            natal_gates=req.natal_gates,
+            natal_defined_centers=req.natal_defined_centers,
+            cycle_start=req.cycle_start,
+            cycle_end=req.cycle_end,
+            reading_date=reading_date,
+        )
+
+        return {
+            "raw": data,
+            "prompt_text": format_transit_activations_for_prompt(data),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Activation calculation failed: {e}")
 
 
 @app.get("/health")
