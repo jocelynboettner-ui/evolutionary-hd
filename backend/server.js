@@ -461,7 +461,7 @@ app.post("/api/raw-v3", async (req, res) => {
   const propKeys = raw.Properties ? Object.keys(raw.Properties) : [];
   const personalityType = Array.isArray(raw.Personality) ? "array["+raw.Personality.length+"]" : (typeof raw.Personality);
   const designType = Array.isArray(raw.Design) ? "array["+raw.Design.length+"]" : (typeof raw.Design);
-  const firstPersonality = Array.isArray(raw.Personality) ? raw.Personality[0] : (raw.Properties?.Personality?.[0] || null);
+  const firstPersonality = Array.isArray(raw.Personality) ? raw.Personality[0] : (raw.Personality && typeof raw.Personality === "object" ? { keys: Object.keys(raw.Personality).slice(0,5), first: Object.values(raw.Personality)[0] } : null);
   const crossRaw = raw.IncarnationCross || raw.Properties?.IncarnationCross;
   const varsRaw = raw.Variables || raw.Properties?.Variables;
   res.json({ topKeys, propKeys, personalityType, designType, firstPersonality, crossRaw, varsRaw });
