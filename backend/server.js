@@ -169,6 +169,47 @@ async function fetchRealTransitCycles(birthdate, birthtime, location) {
   return data;
 }
 
+
+// ============================================================
+// FETCH TRANSIT ACTIVATIONS from Python backend
+// Finds channels lit up by today's transits against natal chart
+// ============================================================
+async function fetchTransitActivations(hdChart, cycles) {
+  const today = new Date();
+  let activeCycle = cycles.chironReturn;
+  const allKeys = ['saturnReturn', 'uranusOpposition', 'chironReturn'];
+  for (const key of allKeys) {
+    const c = cycles[key];
+    if (c && c.start && c.end) {
+      if (today >= new Date(c.start) && today <= new Date(c.end)) {
+        activeCycle = c;
+        break;
+      }
+    }
+  }
+  if (!activeCycle || !activeCycle.start || !activeCycle.end) {
+    throw new Error('No active cycle found');
+  }
+  const res = await fetch(SACRED_CYCLES_URL + '/transit-activations', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      natal_gates:           hdChart.gates || [],
+      natal_defined_centers: hdChart.defined_centers || [],
+      cycle_start:           activeCycle.start,
+      cycle_end:             activeCycle.end,
+      reading_date:          new Date().toISOString().split('T')[0],
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'Transit activation failed: ' + res.status);
+  }
+  const data = await res.json();
+  console.log('Transit activations received:', data.raw?.activated_channels?.length, 'channels');
+  return data.prompt_text;
+}
+
 // ============================================================
 // FALLBACK: age-based transit cycle calculation
 // Used when Swiss Ephemeris backend is unavailable
@@ -334,10 +375,11 @@ app.post("/api/chat", async (req, res) => {
   if (birthdata && birthdata.birthdate) {
     let chartText = '';
 
+    let hdChart = null; // hoisted for use in transit activations
     // Fetch HD chart
     try {
       if (birthdata.birthtime && birthdata.location) {
-        const hdChart = await fetchHumanDesign(birthdata.birthdate, birthdata.birthtime, birthdata.location);
+        hdChart = await fetchHumanDesign(birthdata.birthdate, birthdata.birthtime, birthdata.location);
         chartText += formatHDChart(hdChart);
         console.log('HD chart injected - type:', hdChart.type);
       }
@@ -352,6 +394,17 @@ app.post("/api/chat", async (req, res) => {
         const cycles = await fetchRealTransitCycles(birthdata.birthdate, birthdata.birthtime, birthdata.location);
         chartText += formatTransitCycles(cycles);
         console.log('Real transit cycles injected - chiron peak:', cycles.chironReturn?.peak);
+      // Fetch transit activations (today's planetary gates vs natal chart)
+      try {
+        if (hdChart) {
+          const activationText = await fetchTransitActivations(hdChart, cycles);
+          chartText += activationText;
+          console.log('Transit activations injected');
+        }
+      } catch (activErr) {
+        console.error('Activation error:', activErr.message);
+        chartText += '\nTRANSIT ACTIVATIONS: Unavailable\n';
+      }
       } else {
         throw new Error('Missing birthtime or location for real transit calculation');
       }
