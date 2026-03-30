@@ -33,9 +33,9 @@ EPHE_PATH = os.environ.get("EPHE_PATH", "/app/ephe")
 
 # Download ephemeris files at startup if missing
 EPHE_FILES = {
-    "seas_18.se1": "https://www.astro.com/ftp/swisseph/ephe/seas_18.se1",  # Sun/Moon/asteroids incl Chiron
-    "sepl_18.se1": "https://www.astro.com/ftp/swisseph/ephe/sepl_18.se1",  # Planets
-    "semo_18.se1": "https://www.astro.com/ftp/swisseph/ephe/semo_18.se1",  # Moon
+    "seas_18.se1": "https://raw.githubusercontent.com/aloistr/swisseph/master/ephe/seas_18.se1",  # Sun/Moon/asteroids incl Chiron
+    "sepl_18.se1": "https://raw.githubusercontent.com/aloistr/swisseph/master/ephe/sepl_18.se1",  # Planets
+    "semo_18.se1": "https://raw.githubusercontent.com/aloistr/swisseph/master/ephe/semo_18.se1",  # Moon
 }
 
 def ensure_ephe_files():
@@ -275,11 +275,9 @@ def find_cycle_peak_precise(
         )
     if len(crossings) == 1:
         return crossings[0]
-    if len(crossings) >= 3:
-        # Middle crossing = true peak of retrograde dance
-        return crossings[len(crossings) // 2]
-    # Two crossings — return the later one (retrograde pass)
-    return crossings[-1]
+    # Always return the FIRST crossing — Neutrino's convention
+    # (the initial direct-motion pass through the opposition/return degree)
+    return crossings[0]
 
 
 def calculate_transit_cycles(birth_utc, lat, lon_coord):
