@@ -60,9 +60,14 @@ async function fetchOverlayChart(peakDate, birthtime, timezone, apiKey) {
 }
 
 // -- Three-category channel analysis --
-// Layer 1: Fully new channels (both gates arrive with the overlay)
+// Layer 1: Fully new channels (both gates arrive with the overlay, neither in natal)
 // Layer 2: Electromagnetically completed (one natal gate + one new overlay gate)
 // Layer 3: Natal channels (unchanged -- for reference, not part of overlay description)
+//
+// KEY INSIGHT: The humandesign.ai API only returns channels where BOTH gates are defined
+// in the overlay chart itself. Electromagnetic completions (one natal gate + one overlay
+// gate) do NOT appear in the API channels list -- we must scan HD_CHANNEL_PAIRS directly
+// against both natal AND overlay gate sets to detect them.
 function compareToNatal(natal, overlay) {
   if (!overlay || !natal) return null;
 
@@ -74,7 +79,10 @@ function compareToNatal(natal, overlay) {
   const natalGateSet = new Set(natal.gates || []);
   const overlayGateSet = new Set(overlay.gates || []);
 
-  // Scan HD_CHANNEL_PAIRS directly to correctly classify every channel
+  // Scan HD_CHANNEL_PAIRS against both natal and overlay gate sets.
+  // Natal gates carry forward into the cycle, so a channel is active when:
+  //   - Both gates are new (from overlay) -- fully new channel
+  //   - One gate is natal + partner arrives via overlay -- electromagnetic completion
   const seen = new Set();
   const fullyNewChannels = [];
   const electromagneticChannels = [];
@@ -85,32 +93,36 @@ function compareToNatal(natal, overlay) {
     const aInOverlay = overlayGateSet.has(a);
     const bInOverlay = overlayGateSet.has(b);
 
-    // Both gates must be present at the overlay for this channel to be active
-    if (!aInOverlay || !bInOverlay) return;
-
-    // Skip if this is purely a natal channel (both gates already natal)
+    // Skip purely natal channels (both gates already natal, nothing new)
     if (aInNatal && bInNatal) return;
+
+    // For electromagnetic completion: one gate must be natal, its partner must be in overlay
+    // For fully new channel: both gates must be in overlay (neither is natal)
+    if (aInNatal && !bInOverlay) return; // natal a, but b not arriving via overlay
+    if (bInNatal && !aInOverlay) return; // natal b, but a not arriving via overlay
+    if (!aInNatal && !aInOverlay) return; // a not natal and not in overlay -- absent
+    if (!bInNatal && !bInOverlay) return; // b not natal and not in overlay -- absent
 
     const key = channelKey(a, b);
     if (seen.has(key)) return;
     seen.add(key);
 
     if (!aInNatal && !bInNatal) {
-      // Layer 1: Both gates are new -- fully new channel
+      // Layer 1: Both gates are new (in overlay, neither natal) -- fully new channel
       fullyNewChannels.push(key);
     } else {
-      // Layer 2: One natal gate + one new overlay gate -- electromagnetic completion
+      // Layer 2: One natal gate + one overlay gate -- electromagnetic completion
       const natalGate = aInNatal ? a : b;
       const overlayGate = aInNatal ? b : a;
       electromagneticChannels.push({ ch: key, natalGate, overlayGate });
     }
   });
 
-  // Channel sets for releasing calculation
+  // Channel sets for releasing calculation (use API channels list)
   const natalChannelSet = new Set((natal.channels || []).map(c => String(c)));
   const overlayChannelSet = new Set((overlay.channels || []).map(c => String(c)));
 
-  // Category 3: Natal channels not active at this overlay
+  // Category 3: Natal channels not active at this overlay (per API)
   const releasingChannels = [...natalChannelSet].filter(ch => !overlayChannelSet.has(ch));
 
   // Center changes
@@ -286,10 +298,11 @@ export function formatEvolutionaryArcForPrompt(arc, natalChart) {
   L.push('   a latent potential that has been building the entire life, now realized.');
   L.push('   These are not permanent -- they are activated for the duration of the cycle.');
   L.push('   Describe what it feels like when that natal gate finally has its partner.');
-  L.push('   Example: "Your Gate 41 has lived in your Root center your entire life --');
-  L.push('   the pressure to begin, the anticipation of new experience. At your Chiron');
-  L.push('   Return, Gate 30 arrived: the willingness to feel everything, to desire');
-  L.push('   without apology. For the first time, that anticipation had somewhere to go."');
+  L.push('   Example: "Your Gate 12 has lived in your Throat center your entire life --');
+  L.push('   the gift of articulating caution, the voice that speaks only when ready.');
+  L.push('   At your Chiron Return, Gate 22 arrived: grace under pressure, the capacity');
+  L.push('   to move through emotional storms with beauty. For the first time, that');
+  L.push('   careful voice had an emotional current to carry it."');
   L.push('');
   L.push('3. NATAL CHANNELS NOT ACTIVE: do not describe these in the overlay reading.');
   L.push('   They belong to the natal section only. Never bleed them into threshold work.');
