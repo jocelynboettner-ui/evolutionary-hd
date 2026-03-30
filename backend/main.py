@@ -3,7 +3,6 @@ Sacred Cycles API
 POST /transit-cycles  -- Real astrology calculations via Swiss Ephemeris
 POST /human-design    -- Human Design chart via humandesign.ai
 """
-
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -28,7 +27,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-swe.set_ephe_path("/app/ephe")
+# Set ephemeris path — files may or may not be present
+EPHE_PATH = os.environ.get("EPHE_PATH", "/app/ephe")
+swe.set_ephe_path(EPHE_PATH)
 
 SATURN = swe.SATURN
 URANUS = swe.URANUS
@@ -45,6 +46,7 @@ class TransitRequest(BaseModel):
     longitude: float
     timezone: str
 
+
 class CycleWindow(BaseModel):
     start: str
     peak: str
@@ -53,15 +55,18 @@ class CycleWindow(BaseModel):
     peak_transit_degree: float
     description: str
 
+
 class TransitResponse(BaseModel):
     saturnReturn: CycleWindow
     uranusOpposition: CycleWindow
     chironReturn: CycleWindow
 
+
 class HumanDesignRequest(BaseModel):
     date: str
     time: Optional[str] = "12:00"
     timezone: str
+
 
 class HumanDesignResponse(BaseModel):
     type: str
@@ -81,21 +86,30 @@ class HumanDesignResponse(BaseModel):
 
 
 def datetime_to_jd(dt):
-    return swe.julday(dt.year, dt.month, dt.day,
-                      dt.hour + dt.minute / 60.0 + dt.second / 3600.0)
+    return swe.julday(dt.year, dt.month, dt.day, dt.hour + dt.minute / 60.0 + dt.second / 3600.0)
+
 
 def get_planet_longitude(jd, planet):
-    result, flag = swe.calc_ut(jd, planet, swe.FLG_SWIEPH | swe.FLG_SPEED)
-    return result[0]
+    """Calculate planet longitude, falling back to Moshier if SE files are missing."""
+    try:
+        result, flag = swe.calc_ut(jd, planet, swe.FLG_SWIEPH | swe.FLG_SPEED)
+        return result[0]
+    except Exception:
+        # Fall back to Moshier (built-in, no files needed, ~1 arcminute accuracy)
+        result, flag = swe.calc_ut(jd, planet, swe.FLG_MOSEPH | swe.FLG_SPEED)
+        return result[0]
+
 
 def normalize(deg):
     return deg % 360
+
 
 def angular_distance(a, b):
     diff = (a - b) % 360
     if diff > 180:
         diff -= 360
     return diff
+
 
 def find_exact_peak(planet, natal_deg, search_start, search_end, is_opposition=False):
     target = normalize(natal_deg + 180) if is_opposition else natal_deg
@@ -114,17 +128,19 @@ def find_exact_peak(planet, natal_deg, search_start, search_end, is_opposition=F
             break
     return lo + (hi - lo) / 2
 
-def find_cycle_peak(planet, natal_deg, birth_dt, expected_years,
-                    search_window_years=4.0, is_opposition=False):
+
+def find_cycle_peak(planet, natal_deg, birth_dt, expected_years, search_window_years=4.0, is_opposition=False):
     target = normalize(natal_deg + 180) if is_opposition else natal_deg
     search_start = birth_dt + timedelta(days=365.25 * (expected_years - search_window_years))
-    search_end   = birth_dt + timedelta(days=365.25 * (expected_years + search_window_years))
+    search_end = birth_dt + timedelta(days=365.25 * (expected_years + search_window_years))
+
     best_dt = search_start
     best_dist = float('inf')
     prev_dist = None
     crossing_start = None
     current = search_start
     step = timedelta(days=30)
+
     while current <= search_end:
         jd = datetime_to_jd(current)
         lon_deg = get_planet_longitude(jd, planet)
@@ -134,54 +150,61 @@ def find_cycle_peak(planet, natal_deg, birth_dt, expected_years,
             best_dt = current
         if prev_dist is not None:
             prev_s = angular_distance(
-                get_planet_longitude(datetime_to_jd(current - step), planet), target)
+                get_planet_longitude(datetime_to_jd(current - step), planet),
+                target)
             curr_s = angular_distance(lon_deg, target)
             if prev_s * curr_s < 0:
                 crossing_start = current - step
         prev_dist = dist
         current += step
+
     refine_start = (crossing_start or best_dt) - timedelta(days=45)
-    refine_end   = (crossing_start or best_dt) + timedelta(days=45)
+    refine_end = (crossing_start or best_dt) + timedelta(days=45)
     return find_exact_peak(planet, natal_deg, refine_start, refine_end, is_opposition)
+
 
 def calculate_transit_cycles(birth_utc, lat, lon_coord):
     birth_jd = datetime_to_jd(birth_utc)
     natal_saturn = get_planet_longitude(birth_jd, SATURN)
     natal_uranus = get_planet_longitude(birth_jd, URANUS)
     natal_chiron = get_planet_longitude(birth_jd, CHIRON)
+
     saturn_peak = find_cycle_peak(SATURN, natal_saturn, birth_utc, 29.5)
     uranus_peak = find_cycle_peak(URANUS, natal_uranus, birth_utc, 42.0, is_opposition=True)
     chiron_peak = find_cycle_peak(CHIRON, natal_chiron, birth_utc, 50.7)
+
     window = timedelta(days=365.25 * 3.5)
     return {
         "saturnReturn": {
-            "start":               (saturn_peak - window).strftime("%Y-%m-%d"),
-            "peak":                saturn_peak.strftime("%Y-%m-%d"),
-            "end":                 (saturn_peak + window).strftime("%Y-%m-%d"),
-            "natal_degree":        round(natal_saturn, 4),
+            "start": (saturn_peak - window).strftime("%Y-%m-%d"),
+            "peak": saturn_peak.strftime("%Y-%m-%d"),
+            "end": (saturn_peak + window).strftime("%Y-%m-%d"),
+            "natal_degree": round(natal_saturn, 4),
             "peak_transit_degree": round(get_planet_longitude(datetime_to_jd(saturn_peak), SATURN), 4),
-            "description":         f"Transit Saturn returns to natal Saturn at {natal_saturn:.2f}",
+            "description": f"Transit Saturn returns to natal Saturn at {natal_saturn:.2f}",
         },
         "uranusOpposition": {
-            "start":               (uranus_peak - window).strftime("%Y-%m-%d"),
-            "peak":                uranus_peak.strftime("%Y-%m-%d"),
-            "end":                 (uranus_peak + window).strftime("%Y-%m-%d"),
-            "natal_degree":        round(natal_uranus, 4),
+            "start": (uranus_peak - window).strftime("%Y-%m-%d"),
+            "peak": uranus_peak.strftime("%Y-%m-%d"),
+            "end": (uranus_peak + window).strftime("%Y-%m-%d"),
+            "natal_degree": round(natal_uranus, 4),
             "peak_transit_degree": round(get_planet_longitude(datetime_to_jd(uranus_peak), URANUS), 4),
-            "description":         f"Transit Uranus opposes natal Uranus at {natal_uranus:.2f}",
+            "description": f"Transit Uranus opposes natal Uranus at {natal_uranus:.2f}",
         },
         "chironReturn": {
-            "start":               (chiron_peak - window).strftime("%Y-%m-%d"),
-            "peak":                chiron_peak.strftime("%Y-%m-%d"),
-            "end":                 (chiron_peak + window).strftime("%Y-%m-%d"),
-            "natal_degree":        round(natal_chiron, 4),
+            "start": (chiron_peak - window).strftime("%Y-%m-%d"),
+            "peak": chiron_peak.strftime("%Y-%m-%d"),
+            "end": (chiron_peak + window).strftime("%Y-%m-%d"),
+            "natal_degree": round(natal_chiron, 4),
             "peak_transit_degree": round(get_planet_longitude(datetime_to_jd(chiron_peak), CHIRON), 4),
-            "description":         f"Transit Chiron returns to natal Chiron at {natal_chiron:.2f}",
+            "description": f"Transit Chiron returns to natal Chiron at {natal_chiron:.2f}",
         }
     }
 
+
 def parse_hd_response(data):
     props = data.get("Properties", {})
+
     def get_prop(key, fallbacks=[]):
         val = props.get(key, {})
         result = val.get("Id") or val.get("Option") or ""
@@ -192,29 +215,33 @@ def parse_hd_response(data):
                 if result:
                     break
         return result
+
     def parse_activations(raw):
         if not raw or not isinstance(raw, dict):
             return {}
         return {
             planet: {"gate": int(v.get("Gate", 0)), "line": int(v.get("Line", 0))}
-            for planet, v in raw.items() if isinstance(v, dict)
+            for planet, v in raw.items()
+            if isinstance(v, dict)
         }
+
     return {
-        "type":              get_prop("Type"),
-        "strategy":          get_prop("Strategy"),
-        "authority":         get_prop("InnerAuthority", ["Authority"]),
-        "profile":           get_prop("Profile"),
+        "type": get_prop("Type"),
+        "strategy": get_prop("Strategy"),
+        "authority": get_prop("InnerAuthority", ["Authority"]),
+        "profile": get_prop("Profile"),
         "incarnation_cross": get_prop("IncarnationCross", ["Cross"]),
-        "definition":        get_prop("Definition"),
-        "signature":         get_prop("Signature"),
-        "not_self":          get_prop("NotSelf", ["Not-Self"]),
-        "defined_centers":   data.get("DefinedCenters") or data.get("defined_centers") or [],
-        "open_centers":      data.get("OpenCenters") or data.get("open_centers") or [],
-        "channels":          data.get("Channels") or data.get("channels") or [],
-        "gates":             data.get("Gates") or data.get("gates") or [],
-        "personality":       parse_activations(data.get("Personality")),
-        "design":            parse_activations(data.get("Design")),
+        "definition": get_prop("Definition"),
+        "signature": get_prop("Signature"),
+        "not_self": get_prop("NotSelf", ["Not-Self"]),
+        "defined_centers": data.get("DefinedCenters") or data.get("defined_centers") or [],
+        "open_centers": data.get("OpenCenters") or data.get("open_centers") or [],
+        "channels": data.get("Channels") or data.get("channels") or [],
+        "gates": data.get("Gates") or data.get("gates") or [],
+        "personality": parse_activations(data.get("Personality")),
+        "design": parse_activations(data.get("Design")),
     }
+
 
 def parse_birth_utc(date_str, time_str, timezone_str):
     tz = pytz.timezone(timezone_str)
@@ -229,12 +256,15 @@ async def transit_cycles(req: TransitRequest):
         birth_utc = parse_birth_utc(req.date, req.time, req.timezone)
     except Exception as e:
         raise HTTPException(status_code=422, detail=f"Invalid date/time/timezone: {e}")
+
     if birth_utc > datetime.utcnow():
         raise HTTPException(status_code=422, detail="Birth date must be in the past.")
+
     try:
         result = calculate_transit_cycles(birth_utc, req.latitude, req.longitude)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ephemeris calculation failed: {e}")
+
     return result
 
 
@@ -243,6 +273,7 @@ async def human_design(req: HumanDesignRequest):
     """Fetch Human Design chart from humandesign.ai and return clean structured data."""
     if not HD_AI_API_KEY:
         raise HTTPException(status_code=500, detail="HD_AI_API_KEY env var not set")
+
     iso_date = f"{req.date}T{req.time or '12:00'}:00"
     url = (
         f"{HD_AI_BASE_URL}/v3/hd-data"
@@ -255,16 +286,25 @@ async def human_design(req: HumanDesignRequest):
             resp = await client.get(url)
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"humandesign.ai request failed: {e}")
+
     if not resp.is_success:
-        raise HTTPException(status_code=resp.status_code,
-                            detail=f"humandesign.ai error: {resp.text[:300]}")
+        raise HTTPException(status_code=resp.status_code, detail=f"humandesign.ai error: {resp.text[:300]}")
+
     try:
         data = resp.json()
     except Exception:
         raise HTTPException(status_code=502, detail="humandesign.ai returned non-JSON response")
+
     return parse_hd_response(data)
 
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "engine": "Swiss Ephemeris (pyswisseph) + humandesign.ai"}
+    # Report which engine is actually available
+    try:
+        test_jd = swe.julday(2000, 1, 1, 12.0)
+        swe.calc_ut(test_jd, swe.SATURN, swe.FLG_SWIEPH)
+        engine = "Swiss Ephemeris (pyswisseph)"
+    except Exception:
+        engine = "Swiss Ephemeris (pyswisseph) + Moshier fallback"
+    return {"status": "ok", "engine": engine}
