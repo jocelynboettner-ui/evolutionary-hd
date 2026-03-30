@@ -1,5 +1,7 @@
-// hd-v3-parser.js
-// Full parser for humandesign.ai v3/hd-data response
+// hd-v3-parser.js — FIXED for actual v3 API structure
+// v3 Personality/Design: objects keyed by lowercase planet name (sun, earth, north_node...)
+// v3 IncarnationCross: { Name, Id, Option } — Option has the full text
+// v3 Variables: { Digestion, Environment, Awareness, Perspective } at top level
 
 const GATE_CIRCUIT = {
   1:'Individual',2:'Individual',3:'Individual',7:'Individual',10:'Individual',13:'Individual',
@@ -29,26 +31,43 @@ const CENTER_MAP = {
 
 const ALL_CENTERS = ['Head','Ajna','Throat','G','Heart','Sacral','Solar','Spleen','Root'];
 
-function parsePlanetActivation(p) {
-  if (!p) return null;
-  const gate = parseInt(p.Gate) || 0;
+// Convert lowercase underscore key (north_node) to display name (North Node)
+function keyToPlanetName(key) {
+  return key.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+}
+
+function parsePlanetActivation(entry, planetKey) {
+  if (!entry) return null;
+  const gate = parseInt(entry.Gate) || 0;
   return {
-    planet: p.Planet || '',
+    planet: keyToPlanetName(planetKey),
     gate,
-    line: parseInt(p.Line) || 0,
-    sign: p.Sign || '',
-    isRetrograde: p.IsRetrograde === true || p.IsRetrograde === 'true',
-    iChingName: p.IChingName || '',
-    geneKeys: { shadow: p.GeneKeys?.Shadow || '', gift: p.GeneKeys?.Gift || '', siddhi: p.GeneKeys?.Siddhi || '' },
-    gateKeynote: p.GateKeynote || '',
-    lineDescription: p.LineDescription || '',
+    line: parseInt(entry.Line) || 0,
+    sign: entry.Sign || '',
+    isRetrograde: entry.IsRetrograde === true,
+    iChingName: entry.IChingName || '',
+    geneKeys: {
+      shadow: entry.GeneKeys?.Shadow || '',
+      gift: entry.GeneKeys?.Gift || '',
+      siddhi: entry.GeneKeys?.Siddhi || ''
+    },
+    gateKeynote: entry.GateKeynote || '',
+    lineDescription: entry.LineDescription || '',
     circuit: GATE_CIRCUIT[gate] || 'Unknown'
   };
 }
 
 export function transformV3Response(raw) {
   const P = raw?.Properties || {};
-  const val = (key) => { const v = P[key]; if (Array.isArray(v)) return v[0] || ''; return typeof v === 'string' ? v : (typeof v === 'object' && v !== null ? (v.Option || v.Id || '') : ''); };
+
+  const val = (key) => {
+    const v = P[key];
+    if (!v) return '';
+    if (typeof v === 'string') return v;
+    if (Array.isArray(v)) return v[0] || '';
+    if (typeof v === 'object') return v.Option || v.Id || v.Name || '';
+    return '';
+  };
 
   const channels = (P?.Channels?.List || []).map(c => String(c?.Option || '')).filter(Boolean);
   const gates = (P?.Gates?.List || []).map(g => g?.Option).filter(v => v !== undefined && v !== null);
@@ -56,56 +75,125 @@ export function transformV3Response(raw) {
   const definedSet = new Set();
   channels.forEach(ch => { ch.split('-').map(s => parseInt(s.trim())).forEach(g => { if (CENTER_MAP[g]) definedSet.add(CENTER_MAP[g]); }); });
 
+  // Personality and Design are OBJECTS keyed by lowercase planet name
+  // e.g. { sun: {Gate,Line,IsRetrograde,...}, earth: {...}, north_node: {...} }
   const personality = {};
-  const personalityArr = raw?.Personality || P?.Personality || [];
-  if (Array.isArray(personalityArr)) { personalityArr.forEach(p => { if (p?.Planet) personality[p.Planet] = parsePlanetActivation(p); }); }
+  const personalityRaw = raw?.Personality;
+  if (personalityRaw && typeof personalityRaw === 'object' && !Array.isArray(personalityRaw)) {
+    Object.entries(personalityRaw).forEach(([key, entry]) => {
+      if (entry && typeof entry === 'object') personality[keyToPlanetName(key)] = parsePlanetActivation(entry, key);
+    });
+  }
 
   const design = {};
-  const designArr = raw?.Design || P?.Design || [];
-  if (Array.isArray(designArr)) { designArr.forEach(p => { if (p?.Planet) design[p.Planet] = parsePlanetActivation(p); }); }
+  const designRaw = raw?.Design;
+  if (designRaw && typeof designRaw === 'object' && !Array.isArray(designRaw)) {
+    Object.entries(designRaw).forEach(([key, entry]) => {
+      if (entry && typeof entry === 'object') design[keyToPlanetName(key)] = parsePlanetActivation(entry, key);
+    });
+  }
 
+  // Collect retrograde planets from both layers
   const retrogrades = [];
-  const personalityVals = Object.values(personality);
-  const designVals = Object.values(design);
-  personalityVals.forEach(p => { if (p?.isRetrograde) retrogrades.push({ planet: p.planet, gate: p.gate, line: p.line, sign: p.sign, layer: 'conscious' }); });
-  designVals.forEach(p => { if (p?.isRetrograde) retrogrades.push({ planet: p.planet, gate: p.gate, line: p.line, sign: p.sign, layer: 'unconscious' }); });
+  Object.entries(personality).forEach(([name, p]) => {
+    if (p?.isRetrograde) retrogrades.push({ planet: name, gate: p.gate, line: p.line, sign: p.sign, layer: 'conscious' });
+  });
+  Object.entries(design).forEach(([name, p]) => {
+    if (p?.isRetrograde) retrogrades.push({ planet: name, gate: p.gate, line: p.line, sign: p.sign, layer: 'unconscious' });
+  });
 
-  const gbc = raw?.GatesByCategory || P?.GatesByCategory || {};
-  const gatesByCategory = { definedGates: gbc.DefinedGates || [], hangingOpen: gbc.HangingOpen || [], hangingClosed: gbc.HangingClosed || [], openGates: gbc.OpenGates || [] };
+  // GatesByCategory
+  const gbc = raw?.GatesByCategory || {};
+  const gatesByCategory = {
+    definedGates: gbc.DefinedGates || [],
+    hangingOpen: gbc.HangingOpen || [],
+    hangingClosed: gbc.HangingClosed || [],
+    openGates: gbc.OpenGates || []
+  };
 
-  const vars = raw?.Variables || P?.Variables || {};
-  const variables = { digestion: vars.Digestion || '', sense: vars.Sense || '', motivation: vars.Motivation || '', environment: vars.Environment || '', perspective: vars.Perspective || '' };
+  // Variables — merge raw.Variables + Properties.Variable for complete data
+  const varsTop = raw?.Variables || {};
+  const varsProp = P?.Variable || P?.Variables || {};
+  const variables = {
+    digestion: varsTop.Digestion || varsProp.Digestion || '',
+    sense: varsTop.Sense || varsProp.Sense || '',
+    motivation: varsTop.Motivation || varsProp.Motivation || '',
+    environment: varsTop.Environment || varsProp.Environment || '',
+    perspective: varsTop.Perspective || varsProp.Perspective || '',
+    awareness: varsTop.Awareness || varsProp.Awareness || ''
+  };
 
-  const crossRaw = raw?.IncarnationCross || P?.IncarnationCross || {};
-  const incarnation_cross = typeof crossRaw === 'string' ? crossRaw : (crossRaw.Name || crossRaw.Option || val('IncarnationCross'));
-  const incarnation_cross_gates = crossRaw.Gates || [];
+  // IncarnationCross — Option has the full readable text
+  const crossRaw = raw?.IncarnationCross || P?.IncarnationCross;
+  const incarnation_cross = (typeof crossRaw === 'string')
+    ? crossRaw
+    : (crossRaw?.Option || crossRaw?.Name || val('IncarnationCross') || '');
+  const incarnation_cross_gates = crossRaw?.Gates || [];
 
+  // Circuit breakdown from active gates
   const circuitBreakdown = { Individual: [], Collective: [], Tribal: [] };
-  gates.forEach(g => { const gn = parseInt(g); const circuit = GATE_CIRCUIT[gn]; if (circuit && circuitBreakdown[circuit]) circuitBreakdown[circuit].push(gn); });
+  gates.forEach(g => {
+    const gn = parseInt(g);
+    const circuit = GATE_CIRCUIT[gn];
+    if (circuit && circuitBreakdown[circuit]) circuitBreakdown[circuit].push(gn);
+  });
 
-  return { type: val('Type'), strategy: val('Strategy'), authority: val('InnerAuthority'), profile: val('Profile'), incarnation_cross, incarnation_cross_gates, definition: val('Definition'), signature: val('Signature'), not_self: val('NotSelfTheme'), defined_centers: ALL_CENTERS.filter(c => definedSet.has(c)), open_centers: ALL_CENTERS.filter(c => !definedSet.has(c)), channels, gates, personality, design, retrogrades, gatesByCategory, variables, circuitBreakdown };
+  return {
+    type: val('Type'),
+    strategy: val('Strategy'),
+    authority: val('InnerAuthority'),
+    profile: val('Profile'),
+    incarnation_cross,
+    incarnation_cross_gates,
+    definition: val('Definition'),
+    signature: val('Signature'),
+    not_self: val('NotSelfTheme'),
+    defined_centers: ALL_CENTERS.filter(c => definedSet.has(c)),
+    open_centers: ALL_CENTERS.filter(c => !definedSet.has(c)),
+    channels,
+    gates,
+    personality,
+    design,
+    retrogrades,
+    gatesByCategory,
+    variables,
+    circuitBreakdown
+  };
 }
 
 export function formatV3HDChart(data) {
+  // Retrograde section
   let retrogradeSection = '';
   if (data.retrogrades && data.retrogrades.length > 0) {
-    const rList = data.retrogrades.map(r => r.planet + ' (Gate ' + r.gate + '.' + r.line + ' in ' + r.sign + ', ' + r.layer + ') — retrograde: energy is internalized, non-linear, deeply personal').join('\n');
+    const rList = data.retrogrades.map(r =>
+      r.planet + ' — Gate ' + r.gate + '.' + r.line + ' in ' + r.sign + ' (' + r.layer + ') — retrograde: energy is internalized, non-linear, deeply personal'
+    ).join('\n');
     retrogradeSection = '\nRETROGRADE PLANETS AT BIRTH:\n' + rList + '\n';
   }
 
-  const keyPlanets = ['Sun', 'Earth', 'Moon', 'North Node', 'Saturn', 'Chiron'];
+  // Gene Keys for key planets
+  const keyPlanetNames = ['Sun', 'Earth', 'Moon', 'North Node', 'Saturn', 'Chiron'];
   const gkLines = [];
-  keyPlanets.forEach(pname => {
-    const pp = data.personality?.[pname];
-    const dp = data.design?.[pname];
+  keyPlanetNames.forEach(name => {
+    const pp = data.personality?.[name];
+    const dp = data.design?.[name];
     if (pp?.geneKeys?.shadow) gkLines.push('Conscious ' + pp.planet + ' — Gate ' + pp.gate + ' (' + pp.iChingName + '): Shadow: ' + pp.geneKeys.shadow + ' | Gift: ' + pp.geneKeys.gift + ' | Siddhi: ' + pp.geneKeys.siddhi);
     if (dp?.geneKeys?.shadow) gkLines.push('Unconscious ' + dp.planet + ' — Gate ' + dp.gate + ' (' + dp.iChingName + '): Shadow: ' + dp.geneKeys.shadow + ' | Gift: ' + dp.geneKeys.gift + ' | Siddhi: ' + dp.geneKeys.siddhi);
   });
   const geneKeysSection = gkLines.length > 0 ? '\nGENE KEYS (key planets):\n' + gkLines.join('\n') + '\n' : '';
 
+  // Variables / PHS
   const v = data.variables;
-  const variablesSection = (v && v.digestion) ? '\nVARIABLES (PHS / Environment):\nDigestion: ' + v.digestion + '\nSense: ' + v.sense + '\nMotivation: ' + v.motivation + '\nEnvironment: ' + v.environment + '\n' : '';
+  const variablesSection = (v && (v.digestion || v.environment)) ?
+    '\nVARIABLES (PHS / Environment):\n' +
+    (v.digestion ? 'Digestion: ' + v.digestion + '\n' : '') +
+    (v.sense ? 'Sense: ' + v.sense + '\n' : '') +
+    (v.motivation ? 'Motivation: ' + v.motivation + '\n' : '') +
+    (v.environment ? 'Environment: ' + v.environment + '\n' : '') +
+    (v.awareness ? 'Awareness: ' + v.awareness + '\n' : '') +
+    (v.perspective ? 'Perspective: ' + v.perspective + '\n' : '') : '';
 
+  // Circuit breakdown
   let circuitSection = '';
   const cb = data.circuitBreakdown;
   if (cb) {
