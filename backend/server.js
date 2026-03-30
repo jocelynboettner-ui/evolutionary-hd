@@ -467,6 +467,37 @@ app.post("/api/debug-hd", async (req, res) => {
 });
 
 
+app.post("/api/debug-raw", async (req, res) => {
+  const { birthdate, birthtime, location } = req.body;
+  try {
+    const timezone = getTimezone(location || 'Reading, PA');
+    const parsed = parseDate(birthdate || '1973-09-30');
+    const { year, month, day } = parsed;
+    const timeParts = (birthtime || '05:07').match(/^(\d{1,2}):(\d{2})/);
+    const hour = String(timeParts ? +timeParts[1] : 5).padStart(2, '0');
+    const minute = String(timeParts ? +timeParts[2] : 0).padStart(2, '0');
+    const isoDate = year + '-' + String(month).padStart(2,'0') + '-' + String(day).padStart(2,'0') + 'T' + hour + ':' + minute + ':00';
+    const params = new URLSearchParams({ date: isoDate, timezone, api_key: HD_AI_API_KEY });
+    const url = 'https://api.humandesign.ai/v3/hd-data?' + params.toString();
+    const response = await fetch(url, { headers: { 'X-Api-Key': HD_AI_API_KEY } });
+    const raw = await response.json();
+    // Return just the channels-related fields from the raw v3 response
+    const P = raw?.Properties || {};
+    res.json({
+      ok: true,
+      channels_raw: P?.Channels,
+      defined_centers_raw: P?.DefinedCenters,
+      type_raw: P?.Type,
+      profile_raw: P?.Profile,
+      cross_raw: raw?.IncarnationCross || P?.IncarnationCross,
+      isoDate,
+      full_raw: raw
+    });
+  } catch (err) {
+    res.json({ error: err.message });
+  }
+});
+
 app.get("/health", (_req, res) => res.json({ ok: true }));
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
