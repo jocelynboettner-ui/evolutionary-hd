@@ -398,7 +398,7 @@ app.post("/api/chat", async (req, res) => {
                 const arcText = formatEvolutionaryArcForPrompt(arc, hdChart);
                 chartText += '\n' + arcText;
                 const arcCoverage = Object.values(arc).filter(e => e?.chart).length;
-                console.log('console.log('ARC CROSSES:', { saturn1: arc?.saturnReturn1?.chart?.incarnation_cross, uranus: arc?.uranusOpposition?.chart?.incarnation_cross, chiron: arc?.chironReturn?.chart?.incarnation_cross, saturn2: arc?.saturnReturn2?.chart?.incarnation_cross }); console.log('Evolutionary arc injected -', arcCoverage, 'of 4 overlay charts fetched');
+                console.log('ARC CROSSES:', { saturn1: arc?.saturnReturn1?.chart?.incarnation_cross, uranus: arc?.uranusOpposition?.chart?.incarnation_cross, chiron: arc?.chironReturn?.chart?.incarnation_cross, saturn2: arc?.saturnReturn2?.chart?.incarnation_cross }); console.log('Evolutionary arc injected -', arcCoverage, 'of 4 overlay charts fetched');
               }
             } catch (arcErr) {
               console.error('Arc fetch error:', arcErr.message);
