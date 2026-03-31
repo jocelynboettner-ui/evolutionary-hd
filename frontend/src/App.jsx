@@ -114,8 +114,8 @@ function Message({ role, content }) {
                           wordBreak: "break-word",
               }}>
                         {content}
-                    </div>div>
-              </div>div>
+                    </div>
+              </div>
             );
 }
 
@@ -253,13 +253,13 @@ export default function App() {
               }}>
                             <div style={{ fontSize: "11px", letterSpacing: "4px", color: "rgba(167,139,250,0.7)", textTransform: "uppercase", marginBottom: "8px" }}>
                                       Evolutionary
-                            </div>div>
+                            </div>
                             <h1 style={{ margin: 0, fontSize: "26px", fontWeight: "400", color: "rgba(255,255,255,0.95)", letterSpacing: "2px" }}>
                                       Human Design
                             </h1>h1>
                             <div style={{ fontSize: "11px", letterSpacing: "3px", color: "rgba(167,139,250,0.6)", marginTop: "6px", textTransform: "uppercase" }}>
                                       Living Blueprint Reader
-                            </div>div>
+                            </div>
                         {chartDetected && birthdata && (
                             <div style={{
                                             marginTop: "10px",
@@ -272,7 +272,7 @@ export default function App() {
                                             display: "inline-block"
                             }}>
                                         Chart retrieved: {birthdata.birthdate} {birthdata.birthtime} — {birthdata.location}
-                            </div>div>
+                            </div>
                             )}
                         {/* Always show New Reading button so users can always start fresh */}
                             <div style={{ marginTop: "8px" }}>
@@ -292,9 +292,9 @@ export default function App() {
                                                       }}
                                                     >
                                                   New Reading
-                                      </button>button>
-                            </div>div>
-                    </div>div>
+                                      </button>
+                            </div>
+                    </div>
               
                   {/* Messages */}
                     <div style={{
@@ -310,15 +310,15 @@ export default function App() {
               }}>
                         {isEmpty && (
                             <div style={{ textAlign: "center", padding: "60px 20px", color: "rgba(255,255,255,0.45)" }}>
-                                        <div style={{ fontSize: "32px", marginBottom: "16px", opacity: 0.6 }}>✦</div>div>
+                                        <div style={{ fontSize: "32px", marginBottom: "16px", opacity: 0.6 }}>✦</div>
                                         <div style={{ fontSize: "16px", lineHeight: "1.8", color: "rgba(200,180,255,0.7)" }}>
                                                       Share your birth date, time, and city<br />
                                                       to receive your evolutionary reading.
-                                        </div>div>
+                                        </div>
                                         <div style={{ marginTop: "16px", fontSize: "13px", color: "rgba(167,139,250,0.5)" }}>
                                                       Example: "October 5, 1975 at 6:30am in Chicago, Illinois"
-                                        </div>div>
-                            </div>div>
+                                        </div>
+                            </div>
                             )}
                         {messages.map((m, i) => <Message key={i} role={m.role} content={m.content} />)}
                         {loading && (
@@ -331,12 +331,12 @@ export default function App() {
                                               color: "rgba(167,139,250,0.7)",
                                               fontSize: "14px",
                             }}>
-                                                      Reading your chart <span style={{ display: "inline-block", animation: "pulse 1.5s infinite" }}> ...</span>span>
-                                        </div>div>
-                            </div>div>
+                                                      Reading your chart <span style={{ display: "inline-block", animation: "pulse 1.5s infinite" }}> ...</span>
+                                        </div>
+                            </div>
                             )}
                             <div ref={bottomRef} />
-                    </div>div>
+                    </div>
               
                   {/* Input */}
                     <div style={{
@@ -397,12 +397,12 @@ export default function App() {
                                                                 <line x1="22" y1="2" x2="11" y2="13" />
                                                                 <polygon points="22 2 15 22 11 13 2 9 22 2" />
                                                   </svg>
-                                      </button>button>
-                            </div>div>
+                                      </button>
+                            </div>
                             <div style={{ textAlign: "center", marginTop: "8px", fontSize: "11px", color: "rgba(255,255,255,0.3)" }}>
                                       Press Enter to send · Shift+Enter for new line
-                            </div>div>
-                    </div>div>
+                            </div>
+                    </div>
               
                     <style>{`
                             * { box-sizing: border-box; }
@@ -410,7 +410,7 @@ export default function App() {
                                             textarea::placeholder { color: rgba(220,200,255,0.75); }
                                                     textarea::-webkit-scrollbar { display: none; }
                                                             @keyframes pulse { 0%,100% { opacity:0.4 } 50% { opacity:1 } }
-                                                                  `}</style>style>
-              </div>div>
+                                                                  `}</style>
+              </div>
             );
 }</circle>
