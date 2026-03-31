@@ -544,7 +544,7 @@ def format_transit_activations_for_prompt(data: dict) -> str:
         lines.append("")
 
     cross = data["cycle_incarnation_cross"]
-    lines.append("Dominant Incarnation Cross Active During This Cycle:")
+    lines.append("CYCLE OVERLAY CROSS (NOT the natal cross — this is the cross of the cycle peak chart only):")
     lines.append(f"  {cross['cross']}")
     lines.append(f"  {cross.get('description', '')}")
     lines.append("")
@@ -555,7 +555,7 @@ def format_transit_activations_for_prompt(data: dict) -> str:
         "Interpret the activated channels and temporarily defined centers as the "
         "specific evolutionary pressure this person is under during their current cycle. "
         "Connect each activation to their natal design and the cycle they are in. "
-        "Reference the cycle incarnation cross as the overarching theme of this 7-year window. "
+        "Reference the CYCLE OVERLAY CROSS as the energetic theme of this cycle peak — but always keep the natal Incarnation Cross (from NATAL CHART DATA and NATAL BASELINE) as the person's permanent life purpose. Never substitute the cycle overlay cross for the natal cross. The natal cross is who they are. The cycle cross is the energy field they are moving through. "
         "Write in the same sacred, grounded, prose style as the rest of the reading. "
         "No markdown. No pound signs. Plain text only."
     )
