@@ -153,8 +153,9 @@ export default function App() {
                         setMessages([userMsg]);       // clear old messages immediately
                         newMessages = [userMsg];      // only this message goes to server
               } else {
-                        // No birth data in this message — continue existing conversation
-                        currentBirthdata = birthdata;
+                        // Only use stored birthdata if it belongs to this session
+                        // Never fall back to potentially stale data from a previous person
+                        currentBirthdata = chartDetected ? birthdata : null;
                         newMessages = [...messages, userMsg];
                         setMessages(newMessages);
               }
@@ -242,6 +243,11 @@ export default function App() {
                         fontFamily: "'Georgia', serif",
               }}>
                     <Stars />
+      {chartDetected && (
+        <button className="new-reading-btn" onClick={handleNewReading}>
+          ✦ New Reading
+        </button>
+      )}
               
                   {/* Header */}
                     <div style={{
@@ -274,26 +280,13 @@ export default function App() {
                                         Chart retrieved: {birthdata.birthdate} {birthdata.birthtime} — {birthdata.location}
                             </div>
                             )}
-                        {/* Always show New Reading button so users can always start fresh */}
-                            <div style={{ marginTop: "8px" }}>
-                                      <button
-                                                      onClick={handleNewReading}
-                                                      style={{
-                                                                        fontSize: "11px",
-                                                                        letterSpacing: "2px",
-                                                                        textTransform: "uppercase",
-                                                                        color: "rgba(167,139,250,0.7)",
-                                                                        background: "transparent",
-                                                                        border: "1px solid rgba(167,139,250,0.3)",
-                                                                        borderRadius: "20px",
-                                                                        padding: "4px 16px",
-                                                                        cursor: "pointer",
-                                                                        display: "inline-block",
-                                                      }}
-                                                    >
-                                                  New Reading
-                                      </button>
-                            </div>
+                        {chartDetected && (
+                          <div style={{ marginTop: "10px" }}>
+                            <button onClick={handleNewReading} style={{ fontSize: "11px", letterSpacing: "2px", textTransform: "uppercase", color: "rgba(167,139,250,0.7)", background: "transparent", border: "1px solid rgba(167,139,250,0.3)", borderRadius: "20px", padding: "4px 16px", cursor: "pointer", display: "inline-block" }}>
+                              New Reading
+                            </button>
+                          </div>
+                        )}
                     </div>
               
                   {/* Messages */}
@@ -410,7 +403,27 @@ export default function App() {
                                             textarea::placeholder { color: rgba(220,200,255,0.75); }
                                                     textarea::-webkit-scrollbar { display: none; }
                                                             @keyframes pulse { 0%,100% { opacity:0.4 } 50% { opacity:1 } }
-                                                                  `}</style>
+                                                                  
+        .new-reading-btn {
+          position: fixed;
+          top: 16px;
+          right: 16px;
+          padding: 10px 20px;
+          background: transparent;
+          border: 1px solid #c9a84c;
+          color: #c9a84c;
+          font-family: 'Cinzel', serif;
+          font-size: 10px;
+          letter-spacing: 0.25em;
+          text-transform: uppercase;
+          cursor: pointer;
+          z-index: 100;
+          transition: all 0.3s;
+        }
+        .new-reading-btn:hover {
+          background: #c9a84c;
+          color: #0f0d0a;
+        }`}</style>
               </div>
             );
 }</circle>
