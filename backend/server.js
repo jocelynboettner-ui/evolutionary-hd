@@ -117,7 +117,56 @@ When VARIABLES data is present, add a section titled:
 BODY INTELLIGENCE AND ENVIRONMENT
 Write 2-3 sentences connecting their Environment type and Digestion type to how they can best support themselves during this cycle.
 
----`;
+---
+
+CRITICAL — TYPE AND OVERLAY FRAMING:
+When describing evolutionary arc thresholds, NEVER say a person "became" a different type.
+Type does not change. What changes is which centers are defined and which channels are active.
+
+CORRECT framing: "At your Saturn Return, your Sacral center defined and your Throat connected — giving you access to Generator-like capacity: the ability to respond with sustainable power, to build momentum through engagement, to work with an energy that regenerates through doing. You were not a Generator. But you had Generator tools in your hands for the first time. And some of what you learned to build with those tools, you never put down."
+
+WRONG framing: "You became a Generator at your Saturn Return." / "Your type shifted to Manifestor." / "You were a Projector but turned into a Manifesting Generator."
+
+The overlay chart shows OPERATING CAPACITY — the skills and abilities available at that threshold — not a type change. Use this language consistently:
+- "you had access to [type] capacity"
+- "you were operating with [type] skills"
+- "the [type] tools were in your hands"
+- "you could move like a [type]"
+- "[center] defining gave you [type] abilities"
+
+CRITICAL — CHIRON RETURN ACTIVATIONS ARE PERMANENT WISDOM:
+The channels that complete during the Chiron Return are categorically different from transit activations or Saturn/Uranus overlay completions.
+Transit activations (daily) → temporary, pass when planet moves on
+Saturn/Uranus completions → temporary at the peak moment, a preview
+Chiron Return completions → initiatory — the planetary alignment opens the door, but what passes through that door is earned and stays
+
+The Chiron Return does not give a person something new. It reveals what fifty years of living has already built in them. The channels that complete at the Chiron peak are not transiting gifts — they are earned capacities finally finding their circuit.
+
+Use this language for Chiron completions: "This channel did not arrive as a gift from the sky. It arrived as a recognition — the universe confirming what fifty years of living had already made possible in you. The planetary alignment opened the door, but you built what walked through it."
+
+METAPHOR GUIDANCE — use embodied, tool-based metaphors:
+Good metaphors for cycle overlays:
+- "Like being handed a set of tools you had never carried before"
+- "The craftsperson doesn't change — the toolkit expands"
+- "You learned to use the drill, the level, the saw. When they were returned, the skill remained."
+- "The instrument was borrowed. The music you learned to play on it was yours."
+- "You wore a different coat for seven years. When you took it off, your body had changed to fit the cold."
+
+For Chiron specifically:
+- "The wound was the apprenticeship. The Chiron Return is the graduation."
+- "You did not receive medicine. You became it."
+- "The crack in the foundation became the spring. What broke you open became the place you now offer water from."
+
+CRITICAL — INCARNATION CROSS RULE:
+In the EVOLUTIONARY ARC section, each cycle threshold contains a line in the format:
+  Cross: Right Angle Cross of [name]
+and possibly:
+  CROSS SHIFT: [natal cross] -> [cycle cross]
+You MUST use the EXACT cross string provided in that field — verbatim, character for character.
+Do NOT substitute your own knowledge of what cross this person has.
+Do NOT use the natal cross for a cycle threshold that shows a different cross.
+If the Cross field for a threshold is blank or missing, write "cross data unavailable" — never guess or infer.
+The cycle cross and the natal cross are different things. Treat each threshold's cross as its own discrete data point.`;
 
 // ============================================================
 // PARSE DATE
