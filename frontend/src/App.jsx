@@ -290,7 +290,7 @@ export default function App() {
                                                       Share your birth date, time, and city<br />
                                                       to receive your evolutionary reading.
                                         </div>
-                                        <div style={{ marginTop: "16px", fontSize: "13px", color: "rgba(167,139,250,0.5)" }}>
+                                        <div style={{ marginTop: "16px", fontSize: "16px", color: "rgba(167,139,250,0.85)" }}>
                                                       Example: "October 5, 1975 at 6:30am in Chicago, Illinois"
                                         </div>
                             </div>
