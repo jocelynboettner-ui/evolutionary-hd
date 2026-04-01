@@ -7,7 +7,6 @@ import { fetchEvolutionaryArc, formatEvolutionaryArcForPrompt } from "./hd-evolu
 const app = express();
 app.use(cors());
 app.use(express.json());
-
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const HD_AI_API_KEY = process.env.HD_AI_API_KEY;
 const SACRED_CYCLES_URL = process.env.SACRED_CYCLES_URL || "http://localhost:8000";
@@ -396,6 +395,7 @@ app.post("/api/chat", async (req, res) => {
                   || arc?.uranusOpposition?.chart?.incarnation_cross
                   || null;
                 const arcText = formatEvolutionaryArcForPrompt(arc, hdChart);
+                console.log('ARC TEXT SAMPLE:', arcText.substring(0, 800));
                 chartText += '\n' + arcText;
                 const arcCoverage = Object.values(arc).filter(e => e?.chart).length;
                 console.log('ARC CROSSES:', { saturn1: arc?.saturnReturn1?.chart?.incarnation_cross, uranus: arc?.uranusOpposition?.chart?.incarnation_cross, chiron: arc?.chironReturn?.chart?.incarnation_cross, saturn2: arc?.saturnReturn2?.chart?.incarnation_cross }); console.log('Evolutionary arc injected -', arcCoverage, 'of 4 overlay charts fetched');
