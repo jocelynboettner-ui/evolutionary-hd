@@ -7,7 +7,7 @@ function Stars() {
       const stars = Array.from({ length: 120 }, (_, i) => ({
               id: i,
               x: Math.random() * 100,
-              y: Math.random() * 100
+              y: Math.random() * 100,
               r: Math.random() * 1.5 + 0.5,
               peak: (Math.random() * 2 + 1).toFixed(1),
               dur: (Math.random() * 3 + 2).toFixed(1),
