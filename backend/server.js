@@ -405,6 +405,12 @@ function formatHDChart(data) {
 // CHAT ENDPOINT
 // ============================================================
 app.post("/api/chat", async (req, res) => {
+  // Timeout: gracefully end the stream if reading takes too long
+  res.setTimeout(120000, () => {
+    res.write('data: ' + JSON.stringify({ error: "Reading is taking longer than expected. Please try again." }) + '\n\n');
+    res.end();
+  });
+
   const { messages, birthdata } = req.body;
   if (!messages || !Array.isArray(messages)) return res.status(400).json({ error: "messages array required" });
 
