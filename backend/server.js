@@ -3,6 +3,9 @@ import cors from "cors";
 import Anthropic from "@anthropic-ai/sdk";
 import { transformV3Response, formatV3HDChart } from "./hd-v3-parser.js";
 import { fetchEvolutionaryArc, formatEvolutionaryArcForPrompt } from "./hd-evolutionary-arc.js";
+import { fileURLToPath } from 'url';
+import path from 'path';
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 app.use(cors());
@@ -549,6 +552,13 @@ app.post("/api/debug-raw", async (req, res) => {
   }
 });
 
+// Serve React frontend
+app.use(express.static(path.join(__dirname, '../frontend/dist')));
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
+});
+
 app.get("/health", (_req, res) => res.json({ ok: true }));
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => conso// Serve React frontend
+le.log(`Server running on port ${PORT}`));
