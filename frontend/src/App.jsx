@@ -179,9 +179,9 @@ export default function App() {
                         };
                         if (currentBirthdata) {
                                     body.birthdata = currentBirthdata;
-                        } else if (chartDetected && birthdata) {
+                        } else if (chartDetected && currentBirthdata) {
                                     // Safety net: always send stored birthdata for follow-up messages
-                                    body.birthdata = birthdata;
+                                    body.birthdata = currentBirthdata;
                         }
                   
                         const res = await fetch(API_URL + "/api/chat", {
