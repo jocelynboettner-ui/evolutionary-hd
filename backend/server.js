@@ -889,6 +889,9 @@ app.post("/api/chat", async (req, res) => {
         ]).catch(err => { console.error('Group 2 error:', err.message); return [null, null]; })
       : Promise.resolve([null, null]);
 
+        if (birthdata.name) {
+                chartText = `The person's name is ${birthdata.name}. Address them by name throughout the reading — warmly, naturally, the way a wise friend would.\n\n` + chartText;
+        }
     // ── Inject natal chart into message ──
     if (chartText) {
       const lastMsg = augmentedMessages[augmentedMessages.length - 1];
