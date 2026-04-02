@@ -412,7 +412,10 @@ export default function App() {
                           margin: "0 auto",
                           boxSizing: "border-box",
               }}>
-                        {isEmpty && (
+                        {chartDetected && (
+          <ReadingTableOfContents visible={true} />
+        )}
+        {isEmpty && (
                             <div style={{ textAlign: "center", padding: "60px 20px", color: "rgba(255,255,255,0.45)" }}>
                                         <div style={{ fontSize: "32px", marginBottom: "16px", opacity: 0.6 }}>✦</div>
                                         <div style={{ fontSize: "16px", lineHeight: "1.8", color: "rgba(200,180,255,0.7)" }}>
@@ -425,7 +428,6 @@ export default function App() {
                             </div>
                             )}
                         {messages.map((m, i) => <Message key={i} role={m.role} content={m.content} />)}
-        <ReadingTableOfContents visible={chartDetected && !loading && messages.length > 0 && messages[messages.length - 1]?.role === 'assistant'} />
                         {loading && (
                             <div style={{ display: "flex", justifyContent: "flex-start", padding: "0 8px", marginBottom: "16px" }}>
                                         <div style={{
