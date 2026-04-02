@@ -405,85 +405,75 @@ function formatHDChart(data) {
 // CHAT ENDPOINT
 // ============================================================
 app.post("/api/chat", async (req, res) => {
-  // Timeout: gracefully end the stream if reading takes too long
   res.setTimeout(120000, () => {
-    res.write('data: ' + JSON.stringify({ error: "Reading is taking longer than expected. Please try again." }) + '\n\n');
+    res.write('data: ' + JSON.stringify({
+      error: "Reading is taking longer than expected. Please try again."
+    }) + '\n\n');
     res.end();
   });
 
   const { messages, birthdata } = req.body;
-  if (!messages || !Array.isArray(messages)) return res.status(400).json({ error: "messages array required" });
+  if (!messages || !Array.isArray(messages)) {
+    return res.status(400).json({ error: "messages array required" });
+  }
 
   let augmentedMessages = [...messages];
 
   if (birthdata && birthdata.birthdate) {
     let chartText = '';
+    let hdChart = null;
+    let cycles = null;
 
-    let hdChart = null; // hoisted for use in transit activations
-        let cycles = null;
-    // Fetch HD chart
-    try {
-      if (birthdata.birthtime && birthdata.location) {
-        hdChart = await fetchHumanDesign(birthdata.birthdate, birthdata.birthtime, birthdata.location);
-        chartText += formatHDChart(hdChart);
-        console.log('HD chart injected - type:', hdChart.type);
-      }
-    } catch (err) {
-      console.error('HD chart error:', err.message);
-      chartText += '[HD CHART ERROR: ' + err.message + ']\n';
-    }
+    // ── GROUP 1: Fast parallel fetch (~2-3s) ──
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
 
-    // FIX 3: Try real Swiss Ephemeris backend first, fall back to age-based
     try {
-      if (birthdata.birthtime && birthdata.location) {
-        cycles = await fetchRealTransitCycles(birthdata.birthdate, birthdata.birthtime, birthdata.location);
+      [hdChart, cycles] = await Promise.all([
+        (birthdata.birthtime && birthdata.location)
+          ? fetchHumanDesign(birthdata.birthdate, birthdata.birthtime, birthdata.location)
+              .catch(err => { console.error('HD chart error:', err.message); return null; })
+          : Promise.resolve(null),
+
+        (birthdata.birthtime && birthdata.location)
+          ? fetchRealTransitCycles(birthdata.birthdate, birthdata.birthtime, birthdata.location)
+              .catch(err => { console.error('Cycles error:', err.message); return null; })
+          : Promise.resolve(null),
+      ]);
+
+      if (hdChart) chartText += formatHDChart(hdChart);
+      if (cycles)  chartText += formatTransitCycles(cycles);
+      if (!cycles) {
+        cycles = calculateTransitCyclesFallback(birthdata.birthdate);
         chartText += formatTransitCycles(cycles);
-        console.log('Real transit cycles injected - chiron peak:', cycles.chironReturn?.peak);
-            // Fetch evolutionary arc FIRST so we have the overlay chart's incarnation cross
-            let arc = null;
-            let overlayCross = null;
-            try {
-              if (hdChart && cycles && birthdata.birthtime && birthdata.location) {
-                const timezone = getTimezone(birthdata.location);
-                arc = await fetchEvolutionaryArc(
-                  birthdata.birthtime, timezone, hdChart, cycles,
-                  null // hdaiSaturnReturns
-                );
-                overlayCross = arc?.chironReturn?.chart?.incarnation_cross
-                  || arc?.uranusOpposition?.chart?.incarnation_cross
-                  || null;
-                const arcText = formatEvolutionaryArcForPrompt(arc, hdChart);
-                console.log('ARC TEXT SAMPLE:', arcText.substring(0, 800));
-                chartText += '\n' + arcText;
-                const arcCoverage = Object.values(arc).filter(e => e?.chart).length;
-                console.log('ARC CROSSES:', { saturn1: arc?.saturnReturn1?.chart?.incarnation_cross, uranus: arc?.uranusOpposition?.chart?.incarnation_cross, chiron: arc?.chironReturn?.chart?.incarnation_cross, saturn2: arc?.saturnReturn2?.chart?.incarnation_cross }); console.log('Evolutionary arc injected -', arcCoverage, 'of 4 overlay charts fetched');
-              }
-            } catch (arcErr) {
-              console.error('Arc fetch error:', arcErr.message);
-              chartText += '\nEVOLUTIONARY ARC: Unavailable\n';
-            }
-            // Fetch transit activations with overlay cross from the arc chart
-            try {
-              if (hdChart) {
-                const activationText = await fetchTransitActivations(hdChart, cycles, overlayCross);
-                chartText += activationText;
-                console.log('Transit activations injected');
-              }
-            } catch (activErr) {
-              console.error('Activation error:', activErr.message);
-              chartText += '\nTRANSIT ACTIVATIONS: Unavailable\n';
-            }
-      } else {
-        throw new Error('Missing birthtime or location for real transit calculation');
       }
     } catch (err) {
-      console.error('Real transit failed, using fallback:', err.message);
-      cycles = calculateTransitCyclesFallback(birthdata.birthdate);
-      chartText += formatTransitCycles(cycles);
-      console.log('Fallback transit cycles injected');
+      console.error('Group 1 error:', err.message);
     }
 
-                    if (chartText) {
+    // ── GROUP 2: Start slow fetches in background ──
+    const group2Promise = (hdChart && cycles)
+      ? Promise.all([
+          (() => {
+            try {
+              const timezone = getTimezone(birthdata.location);
+              return fetchEvolutionaryArc(
+                birthdata.birthtime, timezone, hdChart, cycles, null
+              ).catch(err => { console.error('Arc error:', err.message); return null; });
+            } catch (err) {
+              console.error('getTimezone error:', err.message);
+              return Promise.resolve(null);
+            }
+          })(),
+          fetchTransitActivations(hdChart, cycles, null)
+            .catch(err => { console.error('Activations error:', err.message); return null; }),
+        ]).catch(err => { console.error('Group 2 error:', err.message); return [null, null]; })
+      : Promise.resolve([null, null]);
+
+    // ── Inject natal chart into message ──
+    if (chartText) {
       const lastMsg = augmentedMessages[augmentedMessages.length - 1];
       if (lastMsg?.role === 'user') {
         augmentedMessages[augmentedMessages.length - 1] = {
@@ -492,26 +482,101 @@ app.post("/api/chat", async (req, res) => {
         };
       }
     }
-  }
 
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-  res.flushHeaders();
-
-  try {
+    // ── Stream 1: Natal blueprint ──
     const stream = anthropic.messages.stream({
       model: "claude-sonnet-4-5",
       max_tokens: 16000,
       system: SYSTEM_PROMPT,
       messages: augmentedMessages,
     });
-    stream.on('text', (text) => { res.write('data: ' + JSON.stringify({ text }) + '\n\n'); });
-    stream.on('message', () => { res.write('data: [DONE]\n\n'); res.end(); });
-    stream.on('error', (err) => { res.write('data: ' + JSON.stringify({ error: err.message }) + '\n\n'); res.end(); });
-  } catch (err) {
-    res.write('data: ' + JSON.stringify({ error: err.message }) + '\n\n');
-    res.end();
+
+    let fullText = '';
+
+    stream.on('text', (text) => {
+      fullText += text;
+      res.write('data: ' + JSON.stringify({ text }) + '\n\n');
+    });
+
+    stream.on('message', async () => {
+      try {
+        const [arc, activationText] = await group2Promise;
+
+        if (arc || activationText) {
+          let arcChartText = '';
+
+          if (arc) {
+            console.log('ARC CROSSES:', {
+              saturn1: arc?.saturnReturn1?.chart?.incarnation_cross,
+              uranus:  arc?.uranusOpposition?.chart?.incarnation_cross,
+              chiron:  arc?.chironReturn?.chart?.incarnation_cross,
+            });
+            arcChartText += '\n' + formatEvolutionaryArcForPrompt(arc, hdChart);
+          }
+
+          if (activationText) arcChartText += '\n' + activationText;
+
+          if (arcChartText) {
+            const arcMessages = [
+              ...augmentedMessages,
+              { role: 'assistant', content: fullText },
+              {
+                role: 'user',
+                content: arcChartText + '\n\nNow write YOUR EVOLUTIONARY ARC and YOUR EVOLUTIONARY ACTIVATION sections based on the data above. Same voice, same style. No markdown. No pound signs.',
+              },
+            ];
+
+            const arcStream = anthropic.messages.stream({
+              model: "claude-sonnet-4-5",
+              max_tokens: 8000,
+              system: SYSTEM_PROMPT,
+              messages: arcMessages,
+            });
+
+            arcStream.on('text', (text) => {
+              res.write('data: ' + JSON.stringify({ text }) + '\n\n');
+            });
+            arcStream.on('message', () => { res.write('data: [DONE]\n\n'); res.end(); });
+            arcStream.on('error', (err) => {
+              console.error('Arc stream error:', err.message);
+              res.write('data: [DONE]\n\n'); res.end();
+            });
+            return;
+          }
+        }
+      } catch (err) {
+        console.error('Group 2 completion error:', err.message);
+      }
+      res.write('data: [DONE]\n\n');
+      res.end();
+    });
+
+    stream.on('error', (err) => {
+      res.write('data: ' + JSON.stringify({ error: err.message }) + '\n\n');
+      res.end();
+    });
+
+  } else {
+    // ── No birth data — regular chat ──
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
+
+    try {
+      const stream = anthropic.messages.stream({
+        model: "claude-sonnet-4-5",
+        max_tokens: 16000,
+        system: SYSTEM_PROMPT,
+        messages: augmentedMessages,
+      });
+      stream.on('text', (text) => { res.write('data: ' + JSON.stringify({ text }) + '\n\n'); });
+      stream.on('message', () => { res.write('data: [DONE]\n\n'); res.end(); });
+      stream.on('error', (err) => { res.write('data: ' + JSON.stringify({ error: err.message }) + '\n\n'); res.end(); });
+    } catch (err) {
+      res.write('data: ' + JSON.stringify({ error: err.message }) + '\n\n');
+      res.end();
+    }
   }
 });
 
