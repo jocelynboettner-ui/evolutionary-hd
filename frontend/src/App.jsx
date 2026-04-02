@@ -23,6 +23,114 @@ function Stars() {
             );
 }
 
+
+// ============================================================
+// PLANETARY KEY — used by Table of Contents
+// ============================================================
+const PlanetaryKey = [
+  { planet: "Sun (Conscious)", meaning: "your visible identity, what you radiate" },
+  { planet: "Earth (Conscious)", meaning: "your grounding, what stabilizes you" },
+  { planet: "Moon (Conscious)", meaning: "your emotional anchor, your inner rhythm" },
+  { planet: "Sun (Unconscious)", meaning: "your deepest nature, felt before seen" },
+  { planet: "North Node", meaning: "your evolutionary direction, where you're going" },
+  { planet: "South Node", meaning: "your past patterns, what you came from" },
+  { planet: "Saturn", meaning: "your teacher, your discipline, your karma" },
+  { planet: "Chiron", meaning: "your wound and your medicine" },
+  { planet: "Uranus", meaning: "your disruption and your genius" },
+  { planet: "Neptune", meaning: "your dream and your dissolution" },
+  { planet: "Pluto", meaning: "your transformation and your power" },
+  { planet: "Jupiter", meaning: "your expansion and your wisdom" },
+  { planet: "Mars", meaning: "your drive and your will" },
+  { planet: "Venus", meaning: "your values and your magnetism" },
+  { planet: "Mercury", meaning: "your mind and your communication" },
+];
+
+// ============================================================
+// READING TABLE OF CONTENTS
+// Renders after a reading completes — sits between chart header
+// and reading text so people can orient before they read.
+// ============================================================
+function ReadingTableOfContents({ visible }) {
+  if (!visible) return null;
+  return (
+    <div style={{
+      background: "rgba(184,134,11,0.04)",
+      border: "1px solid rgba(184,134,11,0.15)",
+      borderRadius: "8px",
+      padding: "32px",
+      margin: "24px 0",
+      fontFamily: "'Cormorant Garamond', Georgia, serif",
+    }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "16px", marginBottom: "28px" }}>
+        <span style={{ color: "#b8860b", fontSize: "14px", opacity: 0.7 }}>✦</span>
+        <h2 style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: "14px", letterSpacing: "0.2em", textTransform: "uppercase", color: "rgba(240,234,216,0.7)", margin: 0, fontWeight: 400 }}>Your Reading Contains</h2>
+        <span style={{ color: "#b8860b", fontSize: "14px", opacity: 0.7 }}>✦</span>
+      </div>
+
+      {/* Sections */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginBottom: "24px" }}>
+        {[
+          { title: "PART ONE — WHO YOU ARE", items: ["Type & Strategy", "Inner Authority", "Profile", "Incarnation Cross", "Definition"] },
+          { title: "PART TWO — YOUR BUILT-IN GIFTS", items: ["Channels — Your Permanent Circuitry", "Gates — With Planetary Placements"] },
+          { title: "PART THREE — WHERE YOU ARE NOW", items: ["Your Current Developmental Cycle", "Living It Now", "Decision-Making In This Cycle"] },
+          { title: "PART FOUR — YOUR EVOLUTIONARY ARC", items: ["Saturn Return", "Uranus Opposition", "Chiron Return", "What Is Now Permanently Yours"] },
+          { title: "PART FIVE — WHAT IS MOST ALIVE RIGHT NOW", items: ["Today's Transit Activations", "What You Are Learning", "Who You Are Becoming"] },
+          { title: "PART SIX — THE INVITATION FORWARD", items: [] },
+        ].map(({ title, items }) => (
+          <div key={title} style={{ borderLeft: "1px solid rgba(184,134,11,0.2)", paddingLeft: "16px" }}>
+            <div style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: "10px", letterSpacing: "0.15em", textTransform: "uppercase", color: "#b8860b", marginBottom: "6px" }}>{title}</div>
+            {items.length > 0 && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 16px" }}>
+                {items.map(item => (
+                  <span key={item} style={{ fontSize: "13px", color: "rgba(240,234,216,0.55)", fontStyle: "italic" }}>{item}</span>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Divider */}
+      <div style={{ textAlign: "center", color: "rgba(184,134,11,0.3)", margin: "24px 0", letterSpacing: "0.3em" }}>—</div>
+
+      {/* Planetary Key */}
+      <div style={{ marginBottom: "8px" }}>
+        <div style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: "10px", letterSpacing: "0.15em", textTransform: "uppercase", color: "#b8860b", marginBottom: "8px" }}>PLANETARY KEY — How To Read Your Gates</div>
+        <div style={{ fontSize: "13px", color: "rgba(240,234,216,0.5)", fontStyle: "italic", marginBottom: "16px", lineHeight: "1.5" }}>
+          Each gate in your chart sits in a planetary position. The planet tells you HOW that gate expresses in your life.
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "6px 24px" }}>
+          {PlanetaryKey.map(({ planet, meaning }) => (
+            <div key={planet} style={{ display: "flex", alignItems: "baseline", gap: "8px", fontSize: "12px" }}>
+              <span style={{ color: "rgba(240,234,216,0.8)", whiteSpace: "nowrap", minWidth: "140px" }}>{planet}</span>
+              <span style={{ color: "rgba(184,134,11,0.4)", flexShrink: 0 }}>→</span>
+              <span style={{ color: "rgba(240,234,216,0.45)", fontStyle: "italic" }}>{meaning}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Divider */}
+      <div style={{ textAlign: "center", color: "rgba(184,134,11,0.3)", margin: "24px 0", letterSpacing: "0.3em" }}>—</div>
+
+      {/* Definition Key */}
+      <div>
+        <div style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: "10px", letterSpacing: "0.15em", textTransform: "uppercase", color: "#b8860b", marginBottom: "12px" }}>HOW TO READ YOUR DEFINITION</div>
+        <p style={{ fontSize: "13px", color: "rgba(240,234,216,0.55)", lineHeight: "1.7", marginBottom: "12px", margin: "0 0 12px 0" }}>
+          Think of your defined centers as <strong style={{ color: "rgba(240,234,216,0.8)", fontWeight: 600 }}>towns you know intimately</strong> — you grew up here, you know every street, you can give directions with confidence, you know exactly what to do and where to go. This is consistent, reliable energy that is always available to you.
+        </p>
+        <p style={{ fontSize: "13px", color: "rgba(240,234,216,0.55)", lineHeight: "1.7", marginBottom: "12px", margin: "0 0 12px 0" }}>
+          Your defined <strong style={{ color: "rgba(240,234,216,0.8)", fontWeight: 600 }}>channels are the superhighways</strong> between those towns — familiar routes you travel automatically, with no need to think about which way to turn. This is where your most consistent gifts live.
+        </p>
+        <p style={{ fontSize: "13px", color: "rgba(240,234,216,0.55)", lineHeight: "1.7", margin: 0 }}>
+          Your <strong style={{ color: "rgba(240,234,216,0.8)", fontWeight: 600 }}>undefined or open centers</strong> are places you are still exploring — like visiting a new city where you might take a taxi or ask a local for directions. You are learning here, not leading. These are also the places where you are most receptive, most flexible, and most wise about the experiences of others.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function parseBirthData(text) {
   const MONTHS = {
     jan:"01",feb:"02",mar:"03",apr:"04",may:"05",jun:"06",
@@ -317,6 +425,7 @@ export default function App() {
                             </div>
                             )}
                         {messages.map((m, i) => <Message key={i} role={m.role} content={m.content} />)}
+        <ReadingTableOfContents visible={chartDetected && !loading && messages.length > 0 && messages[messages.length - 1]?.role === 'assistant'} />
                         {loading && (
                             <div style={{ display: "flex", justifyContent: "flex-start", padding: "0 8px", marginBottom: "16px" }}>
                                         <div style={{
