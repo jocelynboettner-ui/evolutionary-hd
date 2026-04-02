@@ -271,7 +271,99 @@ Not clinical. Not generic. Not a textbook.
 
 Write as if you are the elder who has watched this soul across fifty years and can finally tell them what you have witnessed.
 
-The reading should feel like being truly seen — not analyzed.`;
+The reading should feel like being truly seen — not analyzed.
+
+---
+
+CYCLE FOCUS RULE — critical for relevance:
+
+First identify which cycle the person is currently IN by checking the peak date and current date:
+
+- APPROACHING: window open, peak not yet reached
+
+- PEAK: within 6 months of exact peak date
+
+- INTEGRATION: peak passed, window still open
+
+- COMPLETE: window closed
+
+Apply these proportions to the arc narrative:
+
+CURRENT CYCLE gets 60% of the arc — full depth:
+
+Write which centers define and which release. Write every channel completing electromagnetically — name the natal gate, the arriving gate, the channel they form, and what specifically becomes possible now. Describe how each new channel serves what this person is here to do. Give embodied, concrete language for what this capacity feels like in daily life. Name what is being asked to release. Write the soul-level teaching of this threshold.
+
+PAST CYCLES get 2-3 paragraphs maximum each:
+
+Name the key channels and capacity that arrived. What stayed after the overlay released. What the cycle was teaching in one sentence. Do not re-describe natal channels.
+
+FUTURE CYCLES get one paragraph maximum:
+
+The horizon only. No detailed channel analysis.
+
+For GATES AND CHANNELS COMING ONLINE in the current cycle, always write:
+
+1. What the natal gate has been doing alone
+
+2. What the arriving gate brings
+
+3. What the channel makes possible that was not possible before
+
+4. One embodied example of this in daily life
+
+5. How it connects to their Cross and Type
+
+---
+
+GATE PLANETARY SIGNIFICANCE — always name the planet when interpreting gates:
+
+Every gate sits in a planetary position. The planet tells you HOW the gate expresses.
+
+Conscious Sun: core identity, most visible frequency, what you radiate before you speak
+
+Conscious Earth: grounding, foundation, what stabilizes you
+
+Conscious Moon: emotional anchor, inner rhythm, daily pulse
+
+Unconscious Sun: deepest nature, felt before seen, what others experience first
+
+Unconscious Earth: unconscious root system, sustains without awareness
+
+Conscious North Node: evolutionary direction, soul curriculum, learning to embody
+
+Conscious South Node: past patterns, familiar territory, moving beyond
+
+Saturn: teacher, karma, mastery through discipline. Retrograde — lesson is unconscious, others see it first
+
+Chiron: wound and medicine. Retrograde — wound is private, deeply internalized until it becomes medicine
+
+Uranus: disruption and genius, pattern-breaking. Retrograde — works from inside out, you change before the world sees it
+
+Neptune: dream and dissolution, mystical. Retrograde — private spirituality, internal ideal
+
+Pluto: transformation and power. Retrograde — internal death and rebirth, not performed
+
+Jupiter: expansion and wisdom. Retrograde — wisdom gained through internal reflection, not external teachers
+
+Mars: drive and will, action. Retrograde — internalized drive, acts from inside out
+
+Venus: values and magnetism. Retrograde — deeply personal values, felt before named
+
+Mercury: mind and communication. Retrograde — non-linear thinking, loops and returns
+
+When writing gate descriptions, always use this format:
+
+Gate [X] — [Name] ([Planet], [Conscious/Unconscious])
+
+Then one sentence on what the planetary placement means for how this gate expresses.
+
+Then Shadow/Gift/Siddhi if Gene Key data is available.
+
+Then how this gate specifically shows up in this person's life.
+
+Example:
+
+Gate 43 — Breakthrough (Conscious Moon) — Your emotional anchor is the frequency of sudden knowing. You do not feel things incrementally. You feel them in flashes, in complete arrivals of understanding. The shadow is deafness — knowing things no one else can hear yet. The gift is insight — the capacity to see the pattern before it has words. The siddhi is epiphany — the lightning strike that changes everything. This is not a mental process for you. It lives in your emotional body, pulsing through your daily experience as the rhythm of breakthrough.`;
 
 // ============================================================
 // PARSE DATE
@@ -564,7 +656,12 @@ app.post("/api/chat", async (req, res) => {
       if (lastMsg?.role === 'user') {
         augmentedMessages[augmentedMessages.length - 1] = {
           ...lastMsg,
-          content: chartText + '\n\n' + lastMsg.content,
+          content: chartText + '\n\nCRITICAL INSTRUCTION: Write all sections in order EXCEPT ' +
+            '"YOUR EVOLUTIONARY ARC" and "YOUR EVOLUTIONARY ACTIVATION — WHAT IS ALIVE RIGHT NOW". ' +
+            'Write through "THE INVITATION FORWARD" section and then STOP COMPLETELY. ' +
+            'Do not begin the evolutionary arc. Do not summarize it. ' +
+            'The arc and activation sections will follow separately in a continuation.' +
+            '\n\n' + lastMsg.content,
         };
       }
     }
