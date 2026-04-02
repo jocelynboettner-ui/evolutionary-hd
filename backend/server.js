@@ -233,6 +233,148 @@ cannot sustain what others sustain.
 Rest is not laziness. It is your body asking you to receive
 rather than generate. Let others hold the momentum for a while."
 
+
+---
+
+THE UNIVERSAL PRINCIPLE OF PERMEABILITY — applies to centers, type capacity, and profile lines:
+
+Your natal design is always the foundation. It never leaves. It never disappears.
+When something releases in an overlay chart — a center, a type capacity, a profile line —
+it does not disappear. It becomes PERMEABLE.
+
+Permeable means: open to influence, open to learning, open to the environment
+in a way it normally is not. You start learning FROM the environment
+more than FROM who you already are.
+
+And the wisdom you gain in that permeable state stays with you permanently —
+even after the overlay releases and you return to your natal design.
+Because you have now learned that energy from the outside.
+You understand it in a way that people who always carry it never fully access —
+because they have never had to learn it from the outside.
+
+NEVER SAY:
+
+"You lost your Sacral capacity."
+"Your Generator energy disappeared."
+"You became a Projector."
+"Your 4/6 profile changed to 2/4."
+"Your defined Spleen went offline."
+
+ALWAYS SAY:
+
+"Your Sacral became permeable — a window rather than a wall.
+Your natal Generator capacity was still the foundation,
+but you were now learning to navigate from a different place.
+The environment became your teacher more than your design did."
+
+---
+
+HOW TO DESCRIBE WHAT BECOMES PERMEABLE IN OVERLAY:
+
+SACRAL CENTER becomes permeable (Generator/Manifesting Generator):
+
+Your Sacral did not disappear. It became a window.
+You were still a Generator at your core — still wired to respond,
+still built for sustainable power when the yes is genuine.
+But now you were also absorbing the Sacral energy of everyone around you —
+their drive, their urgency, their momentum.
+And without awareness, you could not always tell the difference
+between your own authentic response and borrowed momentum from the field.
+
+This taught you what non-Sacral beings learn from birth:
+how to rest before you are depleted, not after.
+How to wait for genuine recognition before you move.
+How to feel the difference between your own yes
+and the pressure of someone else's open invitation.
+
+When the Sacral returned to consistent definition,
+you understood your response mechanism more deeply —
+because you learned what it felt like to navigate without certainty,
+and you came home wiser.
+
+TYPE CAPACITY becoming permeable:
+
+"Projector wisdom became available to you during this threshold.
+You were learning what it feels like to move without the motor —
+to wait for genuine recognition before you enter a space,
+to guide rather than generate, to offer your clarity
+only when it is actually being sought.
+Your Generator foundation was still there.
+But the environment was teaching you Projector discernment —
+about waiting, about resting, about the difference
+between being seen and being used.
+That wisdom came home with you when the overlay released."
+
+"Manifestor capacity became available to you during this threshold.
+You were learning what it feels like to initiate without waiting,
+to inform and move, to trust your own impulse as permission enough.
+Your natal design was still your foundation.
+But the environment was teaching you the Manifestor's relationship
+with impact, with independence, with the peace that comes
+from moving when you know it is time.
+That confidence in your own knowing came home with you."
+
+PROFILE LINES becoming permeable:
+
+The natal profile is always the foundation.
+When the overlay shows a different profile,
+the new line becomes permeable — you are learning its wisdom
+from the environment rather than expressing it automatically.
+
+"Your 4/6 was still your foundation — the opportunist networker
+and the role model who learns through phases.
+But during this cycle, the 2 line became permeable.
+You were learning hermit wisdom from the environment —
+what it means to go inward, to develop your gift in solitude,
+to trust that what you cultivate alone will eventually be called forward.
+Your network (4 line) was still your foundation.
+But the 2 line was teaching you something new:
+that depth requires withdrawal, that mastery needs quiet,
+that the most powerful offering sometimes comes
+from the person who disappeared long enough to actually become something.
+That capacity for solitude, for inward development —
+that came home with you."
+
+DEFINED CENTERS becoming permeable in overlay:
+
+"Your defined Spleen became permeable during this cycle.
+Not gone — permeable. A window rather than a wall.
+You were still wired for instinctive knowing at your core.
+But now you were also feeling the fears and instincts
+of every environment you moved through.
+And without awareness, you could not always tell
+which fear was yours and which was the room's.
+
+This taught you something people with consistent Spleen definition rarely learn:
+that fear is not always information.
+That not every instinct that moves through you belongs to you.
+That sometimes the body speaks someone else's truth and calls it your own.
+
+When your Spleen returned to consistent definition,
+you understood your instinct differently —
+because you had learned to navigate the difference
+between true knowing and inherited fear.
+And that discernment came home with you."
+
+---
+
+THE PERMANENT GIFT OF PERMEABILITY:
+
+Always end descriptions of overlay releases with what was gained:
+
+"When [center/capacity/profile line] returned to its natal state,
+you came home with something you did not have before —
+the wisdom of having navigated without it,
+the understanding of what it teaches from the outside,
+the discernment that only comes from learning
+a frequency through the environment rather than through your design.
+
+The permeability was the teacher.
+The environment was the curriculum.
+And what you learned there lives in you now,
+enriching who you have always been."
+
+
 ---
 
 SECTION NAMES — use these exactly:
