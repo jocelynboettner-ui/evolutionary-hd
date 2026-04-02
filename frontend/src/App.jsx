@@ -24,80 +24,83 @@ function Stars() {
 }
 
 function parseBirthData(text) {
-      const MONTHS = {
-              jan:"01",feb:"02",mar:"03",apr:"04",may:"05",jun:"06",
-              jul:"07",aug:"08",sep:"09",oct:"10",nov:"11",dec:"12"
-      };
-      const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-    
-      let month, day, year;
-    
-      const isoMatch = text.match(/\b(\d{4})-(\d{2})-(\d{2})\b/);
-      if (isoMatch) {
-              year = isoMatch[1]; month = isoMatch[2]; day = isoMatch[3];
-      } else {
-              const wordMonthRe = /\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+(\d{1,2})[,\s]+(\d{4})\b/i;
-              const wordMonthRe2 = /\b(\d{1,2})\s+(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s*[,\s]\s*(\d{4})\b/i;
-              const numericRe = /\b(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})\b/;
-              const m1 = text.match(wordMonthRe);
-              const m2 = !m1 && text.match(wordMonthRe2);
-              const m3 = !m1 && !m2 && text.match(numericRe);
-              if (m1) {
-                        month = MONTHS[m1[1].substring(0,3).toLowerCase()];
-                        day = m1[2].padStart(2,"0");
-                        year = m1[3];
-              } else if (m2) {
-                        day = m2[1].padStart(2,"0");
-                        month = MONTHS[m2[2].substring(0,3).toLowerCase()];
-                        year = m2[3];
-              } else if (m3) {
-                        month = m3[1].padStart(2,"0");
-                        day = m3[2].padStart(2,"0");
-                        year = m3[3];
-              }
-      }
-    
-      if (!month || !day || !year) return null;
-    
-      const birthdate = day + "-" + MONTH_NAMES[parseInt(month) - 1] + "-" + year;
-    
-      let birthtime;
-      const time12 = text.match(/\b(\d{1,2})(?::(\d{2}))?\s*([ap]m)\b/i);
-      const time24 = !time12 && text.match(/\b([01]?\d|2[0-3]):(\d{2})\b/);
-      if (time12) {
-              let h = parseInt(time12[1]);
-              const m = time12[2] ? time12[2] : "00";
-              const ampm = time12[3].toLowerCase();
-              if (ampm === "pm" && h !== 12) h += 12;
-              if (ampm === "am" && h === 12) h = 0;
-              birthtime = h.toString().padStart(2,"0") + ":" + m;
-      } else if (time24) {
-              birthtime = time24[1].padStart(2,"0") + ":" + time24[2];
-      } else {
-              birthtime = "12:00";
-      }
-    
-      // Location parser — handles "in City, State" and bare "City, ST" at end of string
-  let location;
-  // First try explicit "in City, ST"
-  const inMatch = text.match(/\bin\s+([A-Za-z][A-Za-z\s]+(?:,\s*[A-Za-z]{2,})?)/i);
-  if (inMatch) {
-    location = inMatch[1].trim().replace(/[.,]+$/, "").trim();
-  }
-  // Fallback: "City, ST" or "City, State" at end of string (no "in" required)
-  if (!location) {
-    const endMatch = text.match(/([A-Za-z][A-Za-z\s]+,\s*[A-Za-z]{2,})\s*$/);
-    if (endMatch) {
-      location = endMatch[1].trim().replace(/[.,]+$/, "").trim();
-    }
-  }
-  if (!location) return null;
-    
-      if (!location) return null;
-    
-      return { birthdate, birthtime, location };
-}
+  const MONTHS = {
+    jan:"01",feb:"02",mar:"03",apr:"04",may:"05",jun:"06",
+    jul:"07",aug:"08",sep:"09",oct:"10",nov:"11",dec:"12"
+  };
+  const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  let month, day, year;
 
+  // ISO: 1975-01-20
+  const isoMatch = text.match(/\b(\d{4})-(\d{2})-(\d{2})\b/);
+  if (isoMatch) { year = isoMatch[1]; month = isoMatch[2]; day = isoMatch[3]; }
+
+  // Numeric: 1/20/1975 or 01-20-1975
+  if (!month) {
+    const nm = text.match(/\b(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})\b/);
+    if (nm) { month = nm[1].padStart(2,"0"); day = nm[2].padStart(2,"0"); year = nm[3]; }
+  }
+
+  // Word month: "January 20, 1975" / "January 20th, 1975" / "20 January 1975"
+  if (!month) {
+    const wordRe = /\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+(\d{1,2})(?:st|nd|rd|th)?[,\s]+(\d{4})\b/i;
+    const wordRe2 = /\b(\d{1,2})(?:st|nd|rd|th)?\s+(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s*[,\s]\s*(\d{4})\b/i;
+    const m1 = text.match(wordRe);
+    const m2 = !m1 && text.match(wordRe2);
+    if (m1) { month = MONTHS[m1[1].substring(0,3).toLowerCase()]; day = m1[2].padStart(2,"0"); year = m1[3]; }
+    else if (m2) { day = m2[1].padStart(2,"0"); month = MONTHS[m2[2].substring(0,3).toLowerCase()]; year = m2[3]; }
+  }
+
+  if (!month || !day || !year) return null;
+  const birthdate = day + "-" + MONTH_NAMES[parseInt(month) - 1] + "-" + year;
+
+  // Time: handles "12:11 PM", "12:11pm", "5:07 AM", "5:07am", "14:30"
+  let birthtime = "12:00";
+  const time12 = text.match(/\b(\d{1,2})(?::(\d{2}))?\s*([ap]m)\b/i);
+  const time24 = !time12 && text.match(/\b([01]?\d|2[0-3]):(\d{2})\b/);
+  if (time12) {
+    let h = parseInt(time12[1]);
+    const m = time12[2] || "00";
+    const ampm = time12[3].toLowerCase();
+    if (ampm === "pm" && h !== 12) h += 12;
+    if (ampm === "am" && h === 12) h = 0;
+    birthtime = h.toString().padStart(2,"0") + ":" + m;
+  } else if (time24) {
+    birthtime = time24[1].padStart(2,"0") + ":" + time24[2];
+  }
+
+  // Strip date/time tokens before location matching to avoid "PM City, ST" false matches
+  let locText = text
+    .replace(/\b\d{4}-\d{2}-\d{2}\b/, "")
+    .replace(/\b\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}\b/, "")
+    .replace(/\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+\d{1,2}(?:st|nd|rd|th)?[,\s]+\d{4}\b/gi, "")
+    .replace(/\b\d{1,2}(?:st|nd|rd|th)?\s+(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s*[,\s]\s*\d{4}\b/gi, "")
+    .replace(/\b\d{1,2}(?::\d{2})?\s*[ap]m\b/gi, "")
+    .replace(/\b([01]?\d|2[0-3]):\d{2}\b/, "")
+    .replace(/\bat\b/gi, "")
+    .trim();
+
+  let location = null;
+
+  // 1. Explicit "in City, State" or "in City State"
+  const inMatch = locText.match(/\bin\s+([A-Za-z][A-Za-z .]+(?:,\s*[A-Za-z]{2,})?)/i);
+  if (inMatch) location = inMatch[1].trim().replace(/[.,]+$/, "").trim();
+
+  // 2. "City, State" — comma-separated — in cleaned text
+  if (!location) {
+    const commaMatch = locText.match(/([A-Za-z][A-Za-z .]{1,}),\s*([A-Za-z]{2,})/);
+    if (commaMatch) location = commaMatch[1].trim() + ", " + commaMatch[2].trim();
+  }
+
+  // 3. "City ST" — bare city + 2-letter state code at end
+  if (!location) {
+    const endMatch = locText.match(/\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\s+([A-Z]{2})\s*$/);
+    if (endMatch) location = endMatch[1] + ", " + endMatch[2];
+  }
+
+  if (!location) return null;
+  return { birthdate, birthtime, location };
+}
 function Message({ role, content }) {
       const isUser = role === "user";
       return (
