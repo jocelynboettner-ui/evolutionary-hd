@@ -200,7 +200,14 @@ export default function App() {
                                                                                                                               fullText += parsed.text;
                                                                                                                               setMessages([...newMessages, { role: "assistant", content: fullText }]);
                                                                                                             }
-                                                                                                        if (parsed.error) throw new Error(parsed.error);
+                                                                                                        if (parsed.error) {
+                    setMessages([...newMessages, {
+                      role: "assistant",
+                      content: "Something shifted — please try again in a moment. 🌀"
+                    }]);
+                    setLoading(false);
+                    return;
+                  }
                                                                                         } catch (e) { /* skip malformed */ }
                                                                   }
                                                   }
