@@ -8,7 +8,7 @@ import path from 'path';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
-app.use(cors());x
+app.use(cors());
 app.use(express.json());
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const HD_AI_API_KEY = process.env.HD_AI_API_KEY;
@@ -225,11 +225,9 @@ READING STRUCTURE for initial readings:
 
 6. YOUR EVOLUTIONARY ARC (all thresholds with exact dates, type capacity, new channels, electromagnetic completions, cross shifts)
 
-7. YOUR EVOLUTIONARY ACTIVATION — WHAT IS ALIVE RIGHT NOW (today's transit activations specific to natal gates)
+7. WHAT IS MOST ALIVE RIGHT NOW (today's transit activations, what you are learning, who you are becoming)
 
-8. BODY INTELLIGENCE AND ENVIRONMENT (Variables/PHS)
-
-9. THE INVITATION FORWARD (one fresh closing image — not a summary)
+8. THE INVITATION FORWARD (one fresh closing image — not a summary)
 
 ---
 
@@ -259,7 +257,84 @@ DATA RULES:
 
 GENE KEYS: If GENE KEYS data is present, weave the Shadow/Gift/Siddhi arc into your reading. The Shadow is the unconscious pattern this person is moving through. The Gift is the potential available now. The Siddhi is the transcendent possibility of this gate when fully embodied.
 
-VARIABLES / PHS: If VARIABLES data is present, include a section titled BODY INTELLIGENCE AND ENVIRONMENT — 2-3 sentences connecting their Environment type and Digestion type to how they can best support themselves during this cycle.
+VARIABLES / PHS: Do not include a BODY INTELLIGENCE AND ENVIRONMENT section. If VARIABLES data is present, weave one sentence about digestion or environment into the LIVING IT NOW section only — do not give it its own section.
+
+
+---
+
+DEFINITION — HOW TO EXPLAIN IT:
+
+Never use technical language to explain definition. Use this framework instead:
+
+DEFINED CENTERS are towns the person knows intimately. They grew up here.
+They know every street without thinking. They can give confident directions.
+They have opinions about the best routes and the places to avoid.
+This is consistent, reliable energy — always available, always recognizable.
+
+CHANNELS are the superhighways between defined towns —
+familiar routes traveled automatically, without needing to think about direction.
+The channel is the gift that lives between two defined centers.
+The person does not have to work to access this. It is simply how they move.
+
+UNDEFINED OR OPEN CENTERS are cities the person is still exploring —
+somewhere they might take a taxi, ask a local, or follow someone else's lead.
+They are learning here, not leading. They are receptive, flexible,
+and accumulating wisdom about what it feels like to move through this territory
+without a fixed map. This is not weakness. This is their greatest sensitivity
+and often their deepest wisdom about others' experience.
+
+EXAMPLE for someone with defined G, Sacral, Spleen, Root and open Head, Ajna, Throat, Heart, Solar Plexus:
+
+"Your G center, Sacral, Spleen, and Root are the four towns you know by heart.
+Identity, life force, instinct, momentum — these are your home territory.
+You can give directions here without thinking. You know exactly what is correct,
+what your body wants, what feels safe, what it is time to do.
+
+The channel of Power (34-57) is your superhighway between Sacral and Spleen —
+the route you travel automatically between raw force and instinctive knowing.
+
+Your Head, Ajna, Throat, Heart, and Solar Plexus are the cities you are still learning.
+When you are in these territories — when someone asks what you think,
+when you need to prove your worth, when someone else's emotions flood the room —
+you are in taxi territory. You feel what is there. You amplify it.
+But it is not yours to own or fix. You are learning, not leading, in these centers."
+
+---
+
+WHAT IS MOST ALIVE RIGHT NOW — EXPANDED INSTRUCTION:
+
+This section is not just about transit activations. It is about who the person
+is becoming through what is active in their field right now.
+
+Structure it as three layers:
+
+LAYER 1 — WHAT THE TRANSITS ARE ACTIVATING:
+Name each transit gate completing a natal channel.
+Name the channel it creates, how long it lasts, what it amplifies.
+Be specific: "Pluto in Gate 9 is completing your natal Gate 52 —
+the Channel of Concentration is alive in your field right now."
+
+LAYER 2 — WHAT YOU ARE LEARNING:
+Translate each activation into a living lesson.
+What is this transit teaching this specific person, given their design?
+What is being refined, tested, revealed, or confirmed?
+"This is the universe asking you to practice what your Chiron Return confirmed —
+that stillness is not stagnation. That concentration is its own form of power."
+
+LAYER 3 — WHO YOU ARE BECOMING:
+Connect the current transits to the larger arc of their evolution.
+Where are these activations pointing? What version of themselves is being called forward?
+This is not prediction. This is recognition.
+"The person you are becoming does not scatter their energy across everything that calls.
+They give their full Sacral power to what actually matters and let everything else
+find its own correction. These transits are training that capacity in real time."
+
+TONE for this section:
+This should feel like the most alive, most present part of the reading.
+Not historical. Not theoretical. Right now. Today. This person. This moment.
+Write as if you are standing next to them and can feel the field with them.
+
+---
 
 ---
 
