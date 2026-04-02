@@ -8,7 +8,7 @@ import path from 'path';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
-app.use(cors());
+app.use(cors());x
 app.use(express.json());
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const HD_AI_API_KEY = process.env.HD_AI_API_KEY;
