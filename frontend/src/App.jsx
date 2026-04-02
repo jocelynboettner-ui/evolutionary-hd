@@ -77,13 +77,21 @@ function parseBirthData(text) {
               birthtime = "12:00";
       }
     
-      // Improved location parser — handles "City, State" and "City, Country"
-      let location;
-      // Try "in City, ST" or "in City, State" or "in City State"
-      const inMatch = text.match(/\bin\s+([A-Za-z][A-Za-z\s]+(?:,\s*[A-Za-z]{2,})?)/i);
-      if (inMatch) {
-              location = inMatch[1].trim().replace(/[.,]+$/, "").trim();
-      }
+      // Location parser — handles "in City, State" and bare "City, ST" at end of string
+  let location;
+  // First try explicit "in City, ST"
+  const inMatch = text.match(/\bin\s+([A-Za-z][A-Za-z\s]+(?:,\s*[A-Za-z]{2,})?)/i);
+  if (inMatch) {
+    location = inMatch[1].trim().replace(/[.,]+$/, "").trim();
+  }
+  // Fallback: "City, ST" or "City, State" at end of string (no "in" required)
+  if (!location) {
+    const endMatch = text.match(/([A-Za-z][A-Za-z\s]+,\s*[A-Za-z]{2,})\s*$/);
+    if (endMatch) {
+      location = endMatch[1].trim().replace(/[.,]+$/, "").trim();
+    }
+  }
+  if (!location) return null;
     
       if (!location) return null;
     
@@ -168,6 +176,9 @@ export default function App() {
                         };
                         if (currentBirthdata) {
                                     body.birthdata = currentBirthdata;
+                        } else if (chartDetected && birthdata) {
+                                    // Safety net: always send stored birthdata for follow-up messages
+                                    body.birthdata = birthdata;
                         }
                   
                         const res = await fetch(API_URL + "/api/chat", {
