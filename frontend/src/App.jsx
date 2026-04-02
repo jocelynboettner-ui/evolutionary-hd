@@ -50,7 +50,7 @@ const PlanetaryKey = [
 // Renders after a reading completes — sits between chart header
 // and reading text so people can orient before they read.
 // ============================================================
-function ReadingTableOfContents({ visible }) {
+function ReadingTableOfContents({ visible, birthdata }) {
   if (!visible) return null;
   return (
     <div style={{
@@ -64,7 +64,7 @@ function ReadingTableOfContents({ visible }) {
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "16px", marginBottom: "28px" }}>
         <span style={{ color: "#b8860b", fontSize: "14px", opacity: 0.7 }}>✦</span>
-        <h2 style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: "14px", letterSpacing: "0.2em", textTransform: "uppercase", color: "rgba(240,234,216,0.7)", margin: 0, fontWeight: 400 }}>Your Reading Contains</h2>
+        <h2 style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: "14px", letterSpacing: "0.2em", textTransform: "uppercase", color: "rgba(240,234,216,0.7)", margin: 0, fontWeight: 400 }}>{birthdata?.name ? `${birthdata.name}'s Reading Contains` : 'Your Reading Contains'}</h2>
         <span style={{ color: "#b8860b", fontSize: "14px", opacity: 0.7 }}>✦</span>
       </div>
 
@@ -207,7 +207,11 @@ function parseBirthData(text) {
   }
 
   if (!location) return null;
-  return { birthdate, birthtime, location };
+        // Extract name if present
+        const nameMatch = text.match(/(?:my name is|i'm|i am|called)\s+([A-Z][a-z]+)/i)
+          || text.match(/^([A-Z][a-z]+)\s*[—\-,]/m);
+        const name = nameMatch ? nameMatch[1] : null;
+  return { birthdate, birthtime, location, name };
 }
 function Message({ role, content }) {
       const isUser = role === "user";
@@ -413,7 +417,7 @@ export default function App() {
                           boxSizing: "border-box",
               }}>
                         {chartDetected && (
-          <ReadingTableOfContents visible={true} />
+          <ReadingTableOfContents visible={true}  birthdata={birthdata}/>
         )}
         {isEmpty && (
                             <div style={{ textAlign: "center", padding: "60px 20px", color: "rgba(255,255,255,0.45)" }}>
@@ -423,7 +427,7 @@ export default function App() {
                                                       to receive your evolutionary reading.
                                         </div>
                                         <div style={{ marginTop: "16px", fontSize: "16px", color: "rgba(167,139,250,0.85)" }}>
-                                                      Example: "October 5, 1975 at 6:30am in Chicago, Illinois"
+                                                      Example: "My name is Sarah. October 5, 1975 at 6:30am in Chicago, Illinois"
                                         </div>
                             </div>
                             )}
@@ -467,7 +471,7 @@ export default function App() {
                                                       value={input}
                                                       onChange={(e) => setInput(e.target.value)}
                                                       onKeyDown={handleKey}
-                                                      placeholder="Share your birth date, time, and city..."
+                                                      placeholder="Your name + birth date, time, and city..."
                                                       rows={1}
                                                       style={{
                                                                         flex: 1,
