@@ -72,7 +72,7 @@ function ReadingTableOfContents({ visible, birthdata }) {
       <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginBottom: "24px" }}>
         {[
           { title: "PART ONE — WHO YOU ARE", items: ["Type & Strategy", "Inner Authority", "Profile", "Incarnation Cross", "Definition"] },
-          { title: "PART TWO — YOUR BUILT-IN GIFTS", items: ["Channels — Your Permanent Circuitry", "Gates — With Planetary Placements"] },
+                  { title: "PART TWO — YOUR SUPERPOWERS AND SUPERHIGHWAYS", items: ["Your Channels", "Your Active Gates with Planetary Placements"] },
           { title: "PART THREE — WHERE YOU ARE NOW", items: ["Your Current Developmental Cycle", "Living It Now", "Decision-Making In This Cycle"] },
           { title: "PART FOUR — YOUR EVOLUTIONARY ARC", items: ["Saturn Return", "Uranus Opposition", "Chiron Return", "What Is Now Permanently Yours"] },
           { title: "PART FIVE — WHAT IS MOST ALIVE RIGHT NOW", items: ["Today's Transit Activations", "What You Are Learning", "Who You Are Becoming"] },
