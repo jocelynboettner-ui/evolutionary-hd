@@ -73,8 +73,8 @@ function ReadingTableOfContents({ visible, birthdata }) {
         {[
           { title: "PART ONE — WHO YOU ARE", items: ["Type & Strategy", "Inner Authority", "Profile", "Incarnation Cross", "Definition"] },
                   { title: "PART TWO — YOUR SUPERPOWERS AND SUPERHIGHWAYS", items: ["Your Channels", "Your Active Gates with Planetary Placements"] },
-          { title: "PART THREE — WHERE YOU ARE NOW", items: ["Your Current Developmental Cycle", "Living It Now", "Decision-Making In This Cycle"] },
-          { title: "PART FOUR — YOUR EVOLUTIONARY ARC", items: ["Saturn Return", "Uranus Opposition", "Chiron Return", "What Is Now Permanently Yours"] },
+                  { title: "PART THREE — YOUR CURRENT CHAPTER", items: ["Your Current Chapter", "Living It Now", "Decision-Making In This Cycle"] },
+                  { title: "PART FOUR — YOUR STORY OF BECOMING", items: ["Saturn Return", "Uranus Opposition", "Chiron Return", "Your Role in the New Era"] },
           { title: "PART FIVE — WHAT IS MOST ALIVE RIGHT NOW", items: ["Today's Transit Activations", "What You Are Learning", "Who You Are Becoming"] },
           { title: "PART SIX — THE INVITATION FORWARD", items: [] },
         ].map(({ title, items }) => (
