@@ -741,6 +741,7 @@ Chiron completions = earned wisdom, permanent recognitions, confirmed medicine
 
 ---
 
+CRITICAL — THE ARC IS INCOMPLETE WITHOUT MOVEMENT 6: The Evolutionary Arc MUST include YOUR ROLE IN THE NEW ERA as its final movement. This section is MANDATORY. Do not close the arc without completing the New Era revelation. Do not write closing language after the Second Saturn Return without first writing Movement 6. This is the destination the entire story has been building toward. The final line of the reading must be the closing statement of the New Era section — the single sentence that names why this person's design exists at this exact moment in history.
 PART THREE — YOUR CURRENT CHAPTER
 
 PART FOUR — YOUR STORY OF BECOMING
@@ -823,6 +824,8 @@ Name what centers define and undefine at this threshold
 Name the profile shift
 
 Frame it as the final chapter of the story: Everything that came before — the service, the penetration, the contagion, the rulership — was preparation for this. Your legacy is not what you leave behind. It is what you become when you arrive fully.
+
+MANDATORY — WRITE MOVEMENT 6 NOW: You have just completed the Second Saturn Return. Do NOT write any closing language. Do NOT end the arc. The story is not finished. Proceed immediately to Movement 6 — YOUR ROLE IN THE NEW ERA. Cross-reference every threshold cross you have named against the Lock/Key/Pioneer lists. Name the client's role explicitly. Name their Era Superpowers. Close with the single sentence that is true for their specific design. The arc is not complete until this is written.
 
 Movement 6 — THE REVELATION: Your Role in the New Era
 This is the final movement. The story has been building here the entire time. Now name it directly.
@@ -1339,7 +1342,7 @@ app.post("/api/chat", async (req, res) => {
               { role: 'assistant', content: fullText },
               {
                 role: 'user',
-                content: arcChartText + '\n\nNow write YOUR EVOLUTIONARY ARC and YOUR EVOLUTIONARY ACTIVATION sections based on the data above. Same voice, same style. No markdown. No pound signs.',
+                                arcChartText + '\n\nNow write YOUR STORY OF BECOMING and YOUR ROLE IN THE NEW ERA and WHAT IS MOST ALIVE RIGHT NOW sections based on the data above. Same voice, same style. No markdown. No pound signs. CRITICAL: YOUR ROLE IN THE NEW ERA is MANDATORY — cross-reference every threshold cross against the Lock/Key/Pioneer lists, name the role explicitly, name the Era Superpowers, and close with the single sentence that names why this person\'s design exists at this exact moment in history. Do not end the arc without this section.',
               },
             ];
 
