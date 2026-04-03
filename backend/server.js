@@ -1011,7 +1011,7 @@ and can finally tell them what you have witnessed.
 
 Every sentence should make the person think:
 
-Yes. That's exactly it. I never had words for it before, but that's exactly it.`;`
+Yes. That's exactly it. I never had words for it before, but that's exactly it.`;
   const response = await fetch(url, { method: 'GET', headers: { 'X-Api-Key': HD_AI_API_KEY } });
   const responseText = await response.text();
   if (!response.ok) throw new Error('humandesign.ai error ' + response.status + ': ' + responseText.slice(0,200));
