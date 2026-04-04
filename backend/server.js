@@ -1081,15 +1081,33 @@ Every sentence should make the person think:
 
 Yes. That's exactly it. I never had words for it before, but that's exactly it.`;
 async function fetchHumanDesign(birthdate, birthtime, location) {
-  const timezone = getTimezone(location);
-  const parsed = parseDate(birthdate);
-  const { year, month, day } = parsed;
-  const timeParts = (birthtime || '05:07').match(/^(\d{1,2}):(\d{2})/);
-  const hour = String(timeParts ? +timeParts[1] : 5).padStart(2, '0');
-  const minute = String(timeParts ? +timeParts[2] : 0).padStart(2, '0');
+  // Parse birthdate — accepts "YYYY-MM-DD" or "MM/DD/YYYY"
+  let year, month, day;
+  const iso = String(birthdate).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const mdy = String(birthdate).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (iso) { year = iso[1]; month = iso[2]; day = iso[3]; }
+  else if (mdy) { year = mdy[3]; month = String(+mdy[1]).padStart(2,'0'); day = String(+mdy[2]).padStart(2,'0'); }
+  else { [year, month, day] = String(birthdate).split('-'); }
+
+  // Parse birthtime — accepts "HH:MM" or "H:MM"
+  const tp = String(birthtime || '12:00').match(/^(\d{1,2}):(\d{2})/);
+  const hour = tp ? String(+tp[1]).padStart(2,'0') : '12';
+  const minute = tp ? tp[2] : '00';
+
   const isoDate = year + '-' + String(month).padStart(2,'0') + '-' + String(day).padStart(2,'0') + 'T' + hour + ':' + minute + ':00';
-  const params = new URLSearchParams({ date: isoDate, timezone });
-  const url = 'https://api.humandesign.ai/v3/hd-data?' + params.toString();
+
+  // Timezone lookup — maps location strings to IANA timezone
+  const loc = String(location || '').toLowerCase();
+  let timezone = 'America/New_York'; // default
+  if (loc.includes('los angeles') || loc.includes('la,') || loc.includes('san francisco') || loc.includes('seattle') || loc.includes('portland') || loc.includes('pacific')) timezone = 'America/Los_Angeles';
+  else if (loc.includes('denver') || loc.includes('phoenix') || loc.includes('mountain')) timezone = 'America/Denver';
+  else if (loc.includes('chicago') || loc.includes('dallas') || loc.includes('houston') || loc.includes('minneapolis') || loc.includes('central')) timezone = 'America/Chicago';
+  else if (loc.includes('london') || loc.includes('uk') || loc.includes('england')) timezone = 'Europe/London';
+  else if (loc.includes('paris') || loc.includes('berlin') || loc.includes('amsterdam') || loc.includes('rome') || loc.includes('madrid')) timezone = 'Europe/Paris';
+  else if (loc.includes('sydney') || loc.includes('melbourne') || loc.includes('brisbane')) timezone = 'Australia/Sydney';
+  else if (loc.includes('toronto') || loc.includes('montreal') || loc.includes('new york') || loc.includes('boston') || loc.includes('miami') || loc.includes('atlanta') || loc.includes('philadelphia') || loc.includes('reading') || loc.includes('eastern')) timezone = 'America/New_York';
+
+  const url = 'https://api.humandesign.ai/v3/hd-data?date=' + encodeURIComponent(isoDate) + '&timezone=' + encodeURIComponent(timezone);
   const response = await fetch(url, { method: 'GET', headers: { 'X-Api-Key': HD_AI_API_KEY } });
   const responseText = await response.text();
   if (!response.ok) throw new Error('humandesign.ai error ' + response.status + ': ' + responseText.slice(0,200));
@@ -1136,18 +1154,12 @@ app.post("/api/chat", async (req, res) => {
               .catch(err => { console.error('HD chart error:', err.message); return null; })
           : Promise.resolve(null),
 
-        (birthdata.birthtime && birthdata.location)
-          ? fetchRealTransitCycles(birthdata.birthdate, birthdata.birthtime, birthdata.location)
-              .catch(err => { console.error('Cycles error:', err.message); return null; })
-          : Promise.resolve(null),
+        Promise.resolve(null),
       ]);
 
       if (hdChart) chartText += formatHDChart(hdChart);
-      if (cycles)  chartText += formatTransitCycles(cycles);
-      if (!cycles) {
-        cycles = calculateTransitCyclesFallback(birthdata.birthdate);
-        chartText += formatTransitCycles(cycles);
-      }
+      // transit cycles not available in this version
+      // cycles not available — natal chart only
     } catch (err) {
       console.error('Group 1 error:', err.message);
     }
@@ -1157,7 +1169,14 @@ app.post("/api/chat", async (req, res) => {
       ? Promise.all([
           (() => {
             try {
-              const timezone = getTimezone(birthdata.location);
+              const _loc = String(birthdata.location || '').toLowerCase();
+              let timezone = 'America/New_York';
+              if (_loc.includes('los angeles') || _loc.includes('san francisco') || _loc.includes('seattle') || _loc.includes('pacific')) timezone = 'America/Los_Angeles';
+              else if (_loc.includes('denver') || _loc.includes('phoenix') || _loc.includes('mountain')) timezone = 'America/Denver';
+              else if (_loc.includes('chicago') || _loc.includes('dallas') || _loc.includes('houston') || _loc.includes('central')) timezone = 'America/Chicago';
+              else if (_loc.includes('london') || _loc.includes('uk') || _loc.includes('england')) timezone = 'Europe/London';
+              else if (_loc.includes('paris') || _loc.includes('berlin') || _loc.includes('amsterdam') || _loc.includes('rome') || _loc.includes('madrid')) timezone = 'Europe/Paris';
+              else if (_loc.includes('sydney') || _loc.includes('melbourne') || _loc.includes('brisbane')) timezone = 'Australia/Sydney';
               return fetchEvolutionaryArc(
                 birthdata.birthtime, timezone, hdChart, cycles, null
               ).catch(err => { console.error('Arc error:', err.message); return null; });
@@ -1166,7 +1185,7 @@ app.post("/api/chat", async (req, res) => {
               return Promise.resolve(null);
             }
           })(),
-          fetchTransitActivations(hdChart, cycles, null)
+          Promise.resolve(null)
             .catch(err => { console.error('Activations error:', err.message); return null; }),
         ]).catch(err => { console.error('Group 2 error:', err.message); return [null, null]; })
       : Promise.resolve([null, null]);
@@ -1423,8 +1442,8 @@ app.post("/api/debug-hd", async (req, res) => {
   const { birthdate, birthtime, location } = req.body;
   try {
     const chart = await fetchHumanDesign(birthdate || '1973-09-30', birthtime || '05:07', location || 'Reading, PA');
-    const cycles = calculateTransitCyclesFallback(birthdate || '1973-09-30');
-    res.json({ ok: true, chart, cycles, cycleText: formatTransitCycles(cycles) });
+    const cycles = null;
+    res.json({ ok: true, chart, cycles });
   } catch (err) {
     res.json({ error: err.message });
   }
@@ -1434,8 +1453,13 @@ app.post("/api/debug-hd", async (req, res) => {
 app.post("/api/debug-raw", async (req, res) => {
   const { birthdate, birthtime, location } = req.body;
   try {
-    const timezone = getTimezone(location || 'Reading, PA');
-    const parsed = parseDate(birthdate || '1973-09-30');
+    const _loc2 = String(location || '').toLowerCase();
+    let timezone = 'America/New_York';
+    if (_loc2.includes('los angeles') || _loc2.includes('pacific')) timezone = 'America/Los_Angeles';
+    else if (_loc2.includes('chicago') || _loc2.includes('central')) timezone = 'America/Chicago';
+    else if (_loc2.includes('london') || _loc2.includes('uk')) timezone = 'Europe/London';
+    const dtParts = String(birthdate || '1973-09-30').split('-');
+    const [year, month, day] = dtParts;
     const { year, month, day } = parsed;
     const timeParts = (birthtime || '05:07').match(/^(\d{1,2}):(\d{2})/);
     const hour = String(timeParts ? +timeParts[1] : 5).padStart(2, '0');
