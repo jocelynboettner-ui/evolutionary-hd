@@ -198,7 +198,7 @@ app.post("/api/chat", async (req, res) => {
       if (lastMsg?.role === 'user') {
         augmentedMessages[augmentedMessages.length - 1] = {
           ...lastMsg,
-          content: `=== CRITICAL CHART FACTS (use EXACTLY these values, no exceptions) ===\nTYPE: ${hdChart?.type || 'unknown'}\nAUTHORITY: ${hdChart?.authority || 'unknown'}\nPROFILE: ${hdChart?.profile || 'unknown'}\nINCARNATION CROSS: ${hdChart?.incarnationCross || 'unknown'}\nDEFINED CENTERS COUNT: ${(hdChart?.definedCenters || []).length}\n=== END CRITICAL CHART FACTS ===\n\n` + chartText + '\n\n' + lastMsg.content,
+          content: `=== CRITICAL CHART FACTS (use EXACTLY these values, no exceptions) ===\nTYPE: ${hdChart?.type || 'unknown'}\nAUTHORITY: ${hdChart?.authority || 'unknown'}\nPROFILE: ${hdChart?.profile || 'unknown'}\nINCARNATION CROSS: ${hdChart?.incarnation_cross || 'unknown'}\nDEFINED CENTERS COUNT: ${(hdChart?.defined_centers || []).length}\n=== END CRITICAL CHART FACTS ===\n\n` + chartText + '\n\n' + lastMsg.content,
         };
       }
     }
