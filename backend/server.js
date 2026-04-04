@@ -1207,7 +1207,7 @@ app.post("/api/chat", async (req, res) => {
 
           if (arcChartText) {
             // Helper — non-streaming, constrained, one section at a time
-            async function generateArcSection(sectionPrompt, maxTokens, priorMessages) {
+            const generateArcSection = async (sectionPrompt, maxTokens, priorMessages) => {
               const msg = await anthropic.messages.create({
                 model: "claude-sonnet-4-5",
                 max_tokens: maxTokens,
@@ -1218,7 +1218,7 @@ app.post("/api/chat", async (req, res) => {
                 ],
               });
               return msg.content[0].text;
-            }
+            };
 
             const arcContext = [
               ...augmentedMessages,
