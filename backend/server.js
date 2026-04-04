@@ -1206,31 +1206,163 @@ app.post("/api/chat", async (req, res) => {
           if (activationText) arcChartText += '\n' + activationText;
 
           if (arcChartText) {
-            const arcMessages = [
+            // Helper — non-streaming, constrained, one section at a time
+            async function generateArcSection(sectionPrompt, maxTokens, priorMessages) {
+              const msg = await anthropic.messages.create({
+                model: "claude-sonnet-4-5",
+                max_tokens: maxTokens,
+                system: SYSTEM_PROMPT,
+                messages: [
+                  ...priorMessages,
+                  { role: 'user', content: sectionPrompt },
+                ],
+              });
+              return msg.content[0].text;
+            }
+
+            const arcContext = [
               ...augmentedMessages,
               { role: 'assistant', content: fullText },
               {
                 role: 'user',
-                                content: arcChartText + '\n\nNow write YOUR STORY OF BECOMING and YOUR ROLE IN THE NEW ERA and WHAT IS MOST ALIVE RIGHT NOW sections based on the data above. Same voice, same style. No markdown. No pound signs. CRITICAL: YOUR ROLE IN THE NEW ERA is MANDATORY — cross-reference every threshold cross against the Lock/Key/Pioneer lists, name the role explicitly, name the Era Superpowers, and close with the single sentence that names why this person\'s design exists at this exact moment in history. Do not end the arc without this section.',
+                content: arcChartText + '\n\nThe arc will be written one section at a time. Each call gives you one section only. Match the example in the system prompt exactly — paragraph count, one transformation per threshold, no gate or channel listing.',
+              },
+              {
+                role: 'assistant',
+                content: 'Understood. One section at a time. Matching the example exactly.',
               },
             ];
 
-            const arcStream = anthropic.messages.stream({
-              model: "claude-sonnet-4-5",
-              max_tokens: 8000,
-              system: SYSTEM_PROMPT,
-              messages: arcMessages,
-            });
+            try {
+              const saturnText = await generateArcSection(
+                `Write ONLY the SATURN RETURN section of YOUR STORY OF BECOMING.
 
-            arcStream.on('text', (text) => {
-              res.write('data: ' + JSON.stringify({ text }) + '\n\n');
-            });
-            arcStream.on('message', () => { res.write('data: [DONE]\n\n'); res.end(); });
-            arcStream.on('error', (err) => {
-              console.error('Arc stream error:', err.message);
-              res.write('data: [DONE]\n\n'); res.end();
-            });
-            return;
+HARD LIMITS:
+- 3 paragraphs maximum
+- 150 words maximum
+- Stop completely after paragraph 3
+
+RULES:
+- One transformation only — what this threshold broke open, what it gave, what they kept
+- Past tense throughout
+- Cross-reference the Saturn Return cross gates against the Lock/Key/Pioneer lists — weave into story naturally, do not announce
+- DO NOT list gates, channels, centers, or what defined/released
+- DO NOT write about any other threshold
+
+Begin with the threshold dateline (age and approximate year).
+End with one sentence that seeds the Uranus chapter.`,
+                280,
+                arcContext
+              );
+
+              res.write('data: ' + JSON.stringify({ text: 'YOUR STORY OF BECOMING\n\n' }) + '\n\n');
+              res.write('data: ' + JSON.stringify({ text: saturnText + '\n\n' }) + '\n\n');
+
+              const uranusText = await generateArcSection(
+                `Write ONLY the URANUS OPPOSITION section of YOUR STORY OF BECOMING.
+
+HARD LIMITS:
+- 2 paragraphs maximum
+- 100 words maximum
+- Stop completely after paragraph 2
+
+RULES:
+- One transformation only — what Uranus detonated, what it revealed
+- Past tense throughout
+- If the cross name carries transmission language (Contagion, Penetration, Upheaval), name the carrier quality in one sentence woven naturally
+- DO NOT list gates, channels, centers, or what defined/released
+- DO NOT write about any other threshold
+
+Begin with the threshold dateline.
+End with one sentence that seeds the Chiron chapter.`,
+                175,
+                [...arcContext, { role: 'assistant', content: saturnText }]
+              );
+
+              res.write('data: ' + JSON.stringify({ text: uranusText + '\n\n' }) + '\n\n');
+
+              const chironText = await generateArcSection(
+                `Write ONLY the CHIRON RETURN section of YOUR STORY OF BECOMING.
+
+HARD LIMITS:
+- 3 paragraphs maximum
+- 150 words maximum
+- Stop completely after paragraph 3
+
+RULES:
+- One transformation only — what the wound revealed as medicine
+- If this threshold is active or recent: present tense. If complete: past tense
+- Name ONE significant channel activation only (the most important one) — woven into the story, not listed
+- If Channel 42-53 is present: name it as THE BRIDGE CHANNEL in one sentence
+- DO NOT list multiple channels, gates, or center activations
+- DO NOT write about any other threshold
+
+Begin with the threshold dateline.
+End with one sentence that seeds the Second Saturn chapter.`,
+                280,
+                [...arcContext, { role: 'assistant', content: saturnText + '\n\n' + uranusText }]
+              );
+
+              res.write('data: ' + JSON.stringify({ text: chironText + '\n\n' }) + '\n\n');
+
+              const saturn2Text = await generateArcSection(
+                `Write ONLY the SECOND SATURN RETURN section of YOUR STORY OF BECOMING.
+
+HARD LIMITS:
+- 3 paragraphs maximum
+- 150 words maximum
+- Stop completely after paragraph 3
+
+RULES:
+- Write as destiny already encoded — present-future tense ("this will be teaching you...", "already written into your design")
+- One transformation only — what this threshold is encoding
+- If the cross is the Right Angle Cross of the Sleeping Phoenix: name it as THE ERA CROSS in one sentence — "Your legacy cross IS the incarnation cross of the new era itself"
+- DO NOT list gates, channels, or center activations
+- DO NOT write the New Era section here
+
+Begin with the threshold dateline.
+End with one sentence that pivots into the New Era reveal.`,
+                280,
+                [...arcContext, { role: 'assistant', content: saturnText + '\n\n' + uranusText + '\n\n' + chironText }]
+              );
+
+              res.write('data: ' + JSON.stringify({ text: saturn2Text + '\n\n' }) + '\n\n');
+
+              const newEraText = await generateArcSection(
+                `Write ONLY the YOUR ROLE IN THE NEW ERA section.
+
+HARD LIMITS:
+- 5 paragraphs maximum
+- 300 words maximum
+- Stop completely after the closing sentence
+
+STRUCTURE:
+Paragraph 1: 3 sentences orienting to the 2027 shift — no more
+Paragraph 2: Name their role(s) — Lock Keeper, Guardian, Pioneer, or combination — connected to moments already told in the arc
+Paragraph 3: Cross-reference natal AND transit-activated era gates — distinguish "you came in carrying this" vs "this was switched on at [threshold]"
+Paragraph 4: Name Era Superpowers if present (Channel 34-57, 57-20, 34-20, or any channel with Individual-era Key gates)
+Paragraph 5: One closing paragraph personalized to their specific gate combination and cross arc
+
+RULES:
+- Weave gate references into narrative — do not list as inventory
+- Name the Left Angle Cross of Penetration explicitly if it appears at any threshold: "all four gates are Era of Individual Keys — you carried the new era frequency before the world had a name for it"
+- Name the Right Angle Cross of the Sleeping Phoenix explicitly if present: "This IS the incarnation cross of the new era itself"
+- Close with ONE final sentence that names why this person's design exists at this exact moment in history
+
+This is the final section. The closing sentence is the last line of the entire arc.`,
+                450,
+                [...arcContext, { role: 'assistant', content: saturnText + '\n\n' + uranusText + '\n\n' + chironText + '\n\n' + saturn2Text }]
+              );
+
+              res.write('data: ' + JSON.stringify({ text: 'YOUR ROLE IN THE NEW ERA\n\n' + newEraText + '\n\n' }) + '\n\n');
+
+            } catch (err) {
+              console.error('Arc section error:', err.message);
+              res.write('data: ' + JSON.stringify({ text: '\n\n[Arc generation encountered an error. Please try again.]\n\n' }) + '\n\n');
+            }
+
+            res.write('data: [DONE]\n\n');
+            res.end();
           }
         }
       } catch (err) {
