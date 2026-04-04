@@ -1072,6 +1072,16 @@ and can finally tell them what you have witnessed.
 Every sentence should make the person think:
 
 Yes. That's exactly it. I never had words for it before, but that's exactly it.`;
+async function fetchHumanDesign(birthdate, birthtime, location) {
+  const timezone = getTimezone(location);
+  const parsed = parseDate(birthdate);
+  const { year, month, day } = parsed;
+  const timeParts = (birthtime || '05:07').match(/^(\d{1,2}):(\d{2})/);
+  const hour = String(timeParts ? +timeParts[1] : 5).padStart(2, '0');
+  const minute = String(timeParts ? +timeParts[2] : 0).padStart(2, '0');
+  const isoDate = year + '-' + String(month).padStart(2,'0') + '-' + String(day).padStart(2,'0') + 'T' + hour + ':' + minute + ':00';
+  const params = new URLSearchParams({ date: isoDate, timezone });
+  const url = 'https://api.humandesign.ai/v3/hd-data?' + params.toString();
   const response = await fetch(url, { method: 'GET', headers: { 'X-Api-Key': HD_AI_API_KEY } });
   const responseText = await response.text();
   if (!response.ok) throw new Error('humandesign.ai error ' + response.status + ': ' + responseText.slice(0,200));
