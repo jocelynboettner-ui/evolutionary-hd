@@ -518,7 +518,7 @@ export default function App() {
                     <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&display=swap');
                             * { box-sizing: border-box; }
-                                    body { margin: 0; }
+                                    body { margin: 0; background: #000; }
                                             textarea::placeholder { color: rgba(220,200,255,0.75); }
                                                     textarea::-webkit-scrollbar { display: none; }
                                                             @keyframes pulse { 0%,100% { opacity:0.4 } 50% { opacity:1 } }
