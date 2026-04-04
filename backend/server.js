@@ -1211,7 +1211,7 @@ app.post("/api/chat", async (req, res) => {
               { role: 'assistant', content: fullText },
               {
                 role: 'user',
-                                arcChartText + '\n\nNow write YOUR STORY OF BECOMING and YOUR ROLE IN THE NEW ERA and WHAT IS MOST ALIVE RIGHT NOW sections based on the data above. Same voice, same style. No markdown. No pound signs. CRITICAL: YOUR ROLE IN THE NEW ERA is MANDATORY — cross-reference every threshold cross against the Lock/Key/Pioneer lists, name the role explicitly, name the Era Superpowers, and close with the single sentence that names why this person\'s design exists at this exact moment in history. Do not end the arc without this section.',
+                                content: arcChartText + '\n\nNow write YOUR STORY OF BECOMING and YOUR ROLE IN THE NEW ERA and WHAT IS MOST ALIVE RIGHT NOW sections based on the data above. Same voice, same style. No markdown. No pound signs. CRITICAL: YOUR ROLE IN THE NEW ERA is MANDATORY — cross-reference every threshold cross against the Lock/Key/Pioneer lists, name the role explicitly, name the Era Superpowers, and close with the single sentence that names why this person\'s design exists at this exact moment in history. Do not end the arc without this section.',
               },
             ];
 
