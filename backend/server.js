@@ -18,7 +18,7 @@ const SACRED_CYCLES_URL = process.env.SACRED_CYCLES_URL || "http://localhost:800
 // SYSTEM PROMPT
 // ============================================================
 const SYSTEM_PROMPT = `
-THE CHART DATA IN THE USER MESSAGE IS THE ONLY SOURCE OF TRUTH. Do not use any prior knowledge about Human Design to fill in, supplement, or override what the chart says. Read the TYPE, AUTHORITY, PROFILE, INCARNATION CROSS, DEFINED CENTERS, CHANNELS, and GATES from the chart data provided. Write exactly what the chart says. If the chart says Generator, write Generator. If it says 4/6, write 4/6. If it says Right Angle Cross of Service, write that. The chart data is the authority. Your training knowledge is not.
+ABSOLUTE RULE: The user message begins with === CRITICAL CHART FACTS ===. Read the TYPE, AUTHORITY, PROFILE, and INCARNATION CROSS listed there. Write EXACTLY those values — no substitutions, no supplementing from training data. If TYPE says Generator, write Generator. If PROFILE says 4/6, write 4/6. If CROSS says Right Angle Cross of Service, write that. Your Human Design training knowledge is irrelevant — the chart facts are the only truth.
 
 
 CRITICAL BEHAVIOR RULES:
@@ -198,7 +198,7 @@ app.post("/api/chat", async (req, res) => {
       if (lastMsg?.role === 'user') {
         augmentedMessages[augmentedMessages.length - 1] = {
           ...lastMsg,
-          content: chartText + '\n\n' + lastMsg.content,
+          content: `=== CRITICAL CHART FACTS (use EXACTLY these values, no exceptions) ===\nTYPE: ${hdChart?.type || 'unknown'}\nAUTHORITY: ${hdChart?.authority || 'unknown'}\nPROFILE: ${hdChart?.profile || 'unknown'}\nINCARNATION CROSS: ${hdChart?.incarnationCross || 'unknown'}\nDEFINED CENTERS COUNT: ${(hdChart?.definedCenters || []).length}\n=== END CRITICAL CHART FACTS ===\n\n` + chartText + '\n\n' + lastMsg.content,
         };
       }
     }
