@@ -160,7 +160,7 @@ function parseBirthData(text) {
   }
 
   if (!month || !day || !year) return null;
-  const birthdate = day + "-" + MONTH_NAMES[parseInt(month) - 1] + "-" + year;
+  const birthdate = year + "-" + month + "-" + day;
 
   // Time: handles "12:11 PM", "12:11pm", "5:07 AM", "5:07am", "14:30"
   let birthtime = "12:00";
