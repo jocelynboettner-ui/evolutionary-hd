@@ -18,6 +18,9 @@ const SACRED_CYCLES_URL = process.env.SACRED_CYCLES_URL || "http://localhost:800
 // SYSTEM PROMPT
 // ============================================================
 const SYSTEM_PROMPT = `
+THE CHART DATA IN THE USER MESSAGE IS THE ONLY SOURCE OF TRUTH. Do not use any prior knowledge about Human Design to fill in, supplement, or override what the chart says. Read the TYPE, AUTHORITY, PROFILE, INCARNATION CROSS, DEFINED CENTERS, CHANNELS, and GATES from the chart data provided. Write exactly what the chart says. If the chart says Generator, write Generator. If it says 4/6, write 4/6. If it says Right Angle Cross of Service, write that. The chart data is the authority. Your training knowledge is not.
+
+
 CRITICAL BEHAVIOR RULES:
 - Never narrate what you are about to do. Just do it.
 - Never say "I'll now generate" or "Let me begin" or any process narration.
@@ -195,12 +198,7 @@ app.post("/api/chat", async (req, res) => {
       if (lastMsg?.role === 'user') {
         augmentedMessages[augmentedMessages.length - 1] = {
           ...lastMsg,
-          content: chartText + '\n\nCRITICAL INSTRUCTION: Write all sections in order EXCEPT ' +
-            '"YOUR EVOLUTIONARY ARC" and "YOUR EVOLUTIONARY ACTIVATION — WHAT IS ALIVE RIGHT NOW". ' +
-            'Write through "THE INVITATION FORWARD" section and then STOP COMPLETELY. ' +
-            'Do not begin the evolutionary arc. Do not summarize it. ' +
-            'The arc and activation sections will follow separately in a continuation.' +
-            '\n\n' + lastMsg.content,
+          content: chartText + '\n\n' + lastMsg.content,
         };
       }
     }
