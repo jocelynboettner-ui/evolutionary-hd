@@ -1107,7 +1107,8 @@ async function fetchHumanDesign(birthdate, birthtime, location) {
   else if (loc.includes('sydney') || loc.includes('melbourne') || loc.includes('brisbane')) timezone = 'Australia/Sydney';
   else if (loc.includes('toronto') || loc.includes('montreal') || loc.includes('new york') || loc.includes('boston') || loc.includes('miami') || loc.includes('atlanta') || loc.includes('philadelphia') || loc.includes('reading') || loc.includes('eastern')) timezone = 'America/New_York';
 
-  const url = 'https://api.humandesign.ai/v3/hd-data?date=' + encodeURIComponent(isoDate) + '&timezone=' + encodeURIComponent(timezone);
+  const params = new URLSearchParams({ date: isoDate, timezone });
+  const url = 'https://api.humandesign.ai/v3/hd-data?' + params.toString() + '&api_key=' + encodeURIComponent(HD_AI_API_KEY);
   const response = await fetch(url, { method: 'GET', headers: { 'X-Api-Key': HD_AI_API_KEY } });
   const responseText = await response.text();
   if (!response.ok) throw new Error('humandesign.ai error ' + response.status + ': ' + responseText.slice(0,200));
@@ -1458,7 +1459,12 @@ app.post("/api/debug-raw", async (req, res) => {
     if (_loc2.includes('los angeles') || _loc2.includes('pacific')) timezone = 'America/Los_Angeles';
     else if (_loc2.includes('chicago') || _loc2.includes('central')) timezone = 'America/Chicago';
     else if (_loc2.includes('london') || _loc2.includes('uk')) timezone = 'Europe/London';
-    const { year, month, day } = parsed;
+    const iso2 = String(birthdate).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    const mdy2 = String(birthdate).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    let year, month, day;
+    if (iso2) { year = iso2[1]; month = iso2[2]; day = iso2[3]; }
+    else if (mdy2) { year = mdy2[3]; month = String(+mdy2[1]).padStart(2,'0'); day = String(+mdy2[2]).padStart(2,'0'); }
+    else { [year, month, day] = String(birthdate).split('-'); }
     const timeParts = (birthtime || '05:07').match(/^(\d{1,2}):(\d{2})/);
     const hour = String(timeParts ? +timeParts[1] : 5).padStart(2, '0');
     const minute = String(timeParts ? +timeParts[2] : 0).padStart(2, '0');
