@@ -138,16 +138,26 @@ export function transformV3Response(raw) {
     if (circuit && circuitBreakdown[circuit]) circuitBreakdown[circuit].push(gn);
   });
 
+  const norm = {
+    type: { generator: 'Generator', manifesting_generator: 'Manifesting Generator', projector: 'Projector', manifestor: 'Manifestor', reflector: 'Reflector' },
+    strategy: { to_respond: 'To Respond', wait_for_invitation: 'Wait for Invitation', to_inform: 'To Inform', lunar_cycle: 'Lunar Cycle' },
+    authority: { sacral: 'Sacral Authority', emotional: 'Emotional Authority', splenic: 'Splenic Authority', ego: 'Ego Authority', self: 'Self-Projected Authority', mental: 'Mental Projector Authority', lunar: 'Lunar Authority', none: 'No Inner Authority' },
+    profile: { '1_3': '1/3', '1_4': '1/4', '2_4': '2/4', '2_5': '2/5', '3_5': '3/5', '3_6': '3/6', '4_6': '4/6', '4_1': '4/1', '5_1': '5/1', '5_2': '5/2', '6_2': '6/2', '6_3': '6/3' },
+    definition: { single_definition: 'Single Definition', split_definition: 'Split Definition', triple_split: 'Triple Split', quadruple_split: 'Quadruple Split', no_definition: 'No Definition (Reflector)' },
+    signature: { satisfaction: 'Satisfaction', success: 'Success', peace: 'Peace', surprise: 'Surprise' },
+    not_self: { frustration: 'Frustration', bitterness: 'Bitterness', anger: 'Anger', disappointment: 'Disappointment' },
+  };
+  const n = (map, raw) => map[raw] || map[raw?.toLowerCase()] || raw || '';
   return {
-    type: val('Type'),
-    strategy: val('Strategy'),
-    authority: val('InnerAuthority'),
-    profile: val('Profile'),
+    type: n(norm.type, val('Type')),
+    strategy: n(norm.strategy, val('Strategy')),
+    authority: n(norm.authority, val('InnerAuthority')),
+    profile: n(norm.profile, val('Profile')),
     incarnation_cross,
     incarnation_cross_gates,
-    definition: val('Definition'),
-    signature: val('Signature'),
-    not_self: val('NotSelfTheme'),
+    definition: n(norm.definition, val('Definition')),
+    signature: n(norm.signature, val('Signature')),
+    not_self: n(norm.not_self, val('NotSelfTheme')),
     defined_centers: ALL_CENTERS.filter(c => definedSet.has(c)),
     open_centers: ALL_CENTERS.filter(c => !definedSet.has(c)),
     channels,
