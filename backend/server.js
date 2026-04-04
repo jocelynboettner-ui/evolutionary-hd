@@ -1157,6 +1157,7 @@ app.post("/api/chat", async (req, res) => {
 
         Promise.resolve(null),
       ]);
+      console.log('HD Chart result:', hdChart ? 'POPULATED type=' + hdChart.type : 'NULL', 'birthdata:', JSON.stringify({bd: birthdata?.birthdate, bt: birthdata?.birthtime, loc: birthdata?.location}));
 
       if (hdChart) chartText += formatHDChart(hdChart);
       // transit cycles not available in this version
