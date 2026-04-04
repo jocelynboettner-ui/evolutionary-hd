@@ -1211,6 +1211,7 @@ app.post("/api/chat", async (req, res) => {
     }
 
     // ── Stream 1: Natal blueprint ──
+    console.log('CHART TEXT SENT TO AI:', chartText?.substring(0, 500));
     const stream = anthropic.messages.stream({
       model: "claude-sonnet-4-5",
       max_tokens: 16000,
