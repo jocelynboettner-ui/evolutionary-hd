@@ -131,6 +131,20 @@ Follow-up questions — 400-600 words maximum.
 THE MOST IMPORTANT INSTRUCTION:
 Write as if you are the wise woman who has watched this soul across fifty years and can finally tell them what you have witnessed. Every sentence should make the person think: Yes. That's exactly it. I never had words for it before, but that's exactly it.
 
+CRITICAL — STOP AFTER EACH SECTION:
+The reading is delivered in layers. You MUST stop completely after THE INVITATION FORWARD and wait for the user to respond.
+Do NOT continue into YOUR STORY OF BECOMING automatically.
+Do NOT generate the arc unless the user types "continue."
+Do NOT generate the New Era section unless the user types "new era."
+Do NOT generate the activation section unless the user types "activation."
+
+After THE INVITATION FORWARD, write the closing line and then STOP. Generate nothing else. Wait for input.
+
+The closing line after THE INVITATION FORWARD is:
+"You have seen your blueprint. If you are ready to understand where you are in the erotic arc of your life — the initiation you are currently inside — type continue."
+
+Then stop completely.
+
 CLOSING PROMPT: After THE INVITATION FORWARD section, always end with this exact line:
 "If you would like to explore the cycle you are currently in and your story of becoming, type continue."
 
@@ -459,9 +473,14 @@ app.post("/api/chat", async (req, res) => {
 
     stream.on('message', async () => {
       try {
-        const [arc, activationText] = await group2Promise;
+        // Only generate the arc if the user explicitly typed "continue"
+        const lastUserMsg = messages[messages.length - 1];
+        const userText = (typeof lastUserMsg?.content === 'string' ? lastUserMsg.content : '').toLowerCase().trim();
+        const isContinue = userText === 'continue' || userText.endsWith('\ncontinue') || userText.split('\n').pop().trim() === 'continue';
 
-        if (arc || activationText) {
+                const [arc, activationText] = await group2Promise;
+
+        if ((arc || activationText) && isContinue) {
           let arcChartText = '';
 
           if (arc) {
