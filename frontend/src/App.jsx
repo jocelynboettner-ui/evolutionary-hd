@@ -253,6 +253,62 @@ export default function App() {
       useEffect(() => {
               bottomRef.current?.scrollIntoView({ behavior: "smooth" });
       }, [messages, loading]);
+
+        // ── STRIPE: Check for returning paid session ──
+        useEffect(() => {
+                  const params = new URLSearchParams(window.location.search);
+                  const sessionId = params.get('session_id');
+                  if (sessionId) {
+                              window.history.replaceState({}, '', '/');
+                              fetch(`${API_URL}/api/verify-session/${sessionId}`)
+                                .then(r => r.json())
+                                .then(({ paid, birthdate, birthtime, location, name }) => {
+                                                if (paid) {
+                                                                  const syntheticText = `${name ? name + ' ' : ''}${birthdate} ${birthtime} ${location}`.trim();
+                                                                  setInput(syntheticText);
+                                                                  const parsed = { birthdate, birthtime, location, name };
+                                                                  setBirthdata(parsed);
+                                                                  setChartDetected(true);
+                                                                  const userMsg = { role: 'user', content: syntheticText };
+                                                                  const newMessages = [userMsg];
+                                                                  setMessages(newMessages);
+                                                                  setLoading(true);
+                                                                  fetch(`${API_URL}/api/chat`, {
+                                                                                      method: 'POST',
+                                                                                      headers: { 'Content-Type': 'application/json' },
+                                                                                      body: JSON.stringify({ messages: newMessages, birthdata: parsed }),
+                                                                  }).then(async res => {
+                                                                                      if (!res.ok) { setLoading(false); return; }
+                                                                                      const reader = res.body.getReader();
+                                                                                      const decoder = new TextDecoder();
+                                                                                      let fullText = '';
+                                                                                      setMessages([...newMessages, { role: 'assistant', content: '' }]);
+                                                                                      while (true) {
+                                                                                                            const { done, value } = await reader.read();
+                                                                                                            if (done) break;
+                                                                                                            const chunk = decoder.decode(value);
+                                                                                                            const lines = chunk.split('\n');
+                                                                                                            for (const line of lines) {
+                                                                                                                                    if (line.startsWith('data: ')) {
+                                                                                                                                                              const data = line.slice(6).trim();
+                                                                                                                                                              if (data === '[DONE]') break;
+                                                                                                                                                              try {
+                                                                                                                                                                                          const parsed2 = JSON.parse(data);
+                                                                                                                                                                                          if (parsed2.text) {
+                                                                                                                                                                                                                        fullText += parsed2.text;
+                                                                                                                                                                                                                        setMessages([...newMessages, { role: 'assistant', content: fullText }]);
+                                                                                                                                                                                                                      }
+                                                                                                                                                                    } catch (e) {}
+                                                                                                                                          }
+                                                                                                                  }
+                                                                                            }
+                                                                                      setLoading(false);
+                                                                  }).catch(() => setLoading(false));
+                                                }
+                                })
+                                .catch(err => console.error('Session verify error:', err));
+                  }
+        }, []);
     
       async function sendMessage() {
               const text = input.trim();
@@ -269,6 +325,29 @@ export default function App() {
           
               if (parsed) {
                         // New birth data detected — always treat as a completely new person.
+
+                        // ── STRIPE: If new birth data and not yet paid, redirect to checkout ──
+                        if (parsed && !chartDetected) {
+                                    setLoading(true);
+                                    try {
+                                                  const res = await fetch(`${API_URL}/api/create-checkout-session`, {
+                                                                  method: 'POST',
+                                                                  headers: { 'Content-Type': 'application/json' },
+                                                                  body: JSON.stringify({
+                                                                                    birthdate: parsed.birthdate,
+                                                                                    birthtime: parsed.birthtime,
+                                                                                    location: parsed.location,
+                                                                                    name: parsed.name || '',
+                                                                  }),
+                                                  });
+                                                  const { url } = await res.json();
+                                                  window.location.href = url;
+                                    } catch (err) {
+                                                  console.error('Checkout error:', err);
+                                                  setLoading(false);
+                                    }
+                                    return;
+                        }
                         // Reset ALL state so nothing from the previous session bleeds through.
                         currentBirthdata = parsed;
                         setBirthdata(parsed);
