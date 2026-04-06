@@ -5,6 +5,8 @@ import { transformV3Response, formatV3HDChart } from "./hd-v3-parser.js";
 import { fetchEvolutionaryArc, formatEvolutionaryArcForPrompt } from "./hd-evolutionary-arc.js";
 import { fileURLToPath } from 'url';
 import path from 'path';
+import Stripe from 'stripe';
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
@@ -740,6 +742,68 @@ app.post("/api/debug-raw", async (req, res) => {
     res.json({ error: err.message });
   }
 });
+
+// ── STRIPE CHECKOUT ──────────────────────────────────────────
+
+app.post('/api/create-checkout-session', async (req, res) => {
+    try {
+          const { birthdate, birthtime, location, name } = req.body;
+
+          const session = await stripe.checkout.sessions.create({
+                  payment_method_types: ['card'],
+                  line_items: [{
+                            price_data: {
+                                        currency: 'usd',
+                                        product_data: {
+                                                      name: 'The Evolutionary Human Design Reader',
+                                                      description: 'Your design. Your wound. Your major life transits. All of it rendered into a reading so precise it will feel like someone finally turned the lights on in a room you\'ve been navigating in the dark.',
+                                        },
+                                        unit_amount: 2700,
+                            },
+                            quantity: 1,
+                  }],
+                  mode: 'payment',
+                  success_url: `${process.env.FRONTEND_URL}?session_id={CHECKOUT_SESSION_ID}`,
+                  cancel_url: `${process.env.FRONTEND_URL}`,
+                  metadata: {
+                            birthdate: birthdate || '',
+                            birthtime: birthtime || '',
+                            location: location || '',
+                            name: name || ''
+                  }
+          });
+
+          res.json({ url: session.url });
+    } catch (err) {
+          console.error('Stripe error:', err.message);
+          res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/verify-session/:sessionId', async (req, res) => {
+    try {
+          const session = await stripe.checkout.sessions.retrieve(
+                  req.params.sessionId
+                );
+          if (session.payment_status === 'paid') {
+                  res.json({
+                            paid: true,
+                            birthdate: session.metadata.birthdate,
+                            birthtime: session.metadata.birthtime,
+                            location: session.metadata.location,
+                            name: session.metadata.name
+                  });
+          } else {
+                  res.json({ paid: false });
+          }
+    } catch (err) {
+          console.error('Stripe verify error:', err.message);
+          res.status(500).json({ error: err.message });
+    }
+});
+
+// ── END STRIPE ───────────────────────────────────────────────
+
 
 // Serve React frontend
 app.use(express.static(path.join(__dirname, '../frontend/dist')));
