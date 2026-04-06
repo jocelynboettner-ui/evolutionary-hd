@@ -68,9 +68,62 @@ THE INVITATION FORWARD
 
 GATE SECTION — write only these planets:
 Conscious Sun, Conscious Earth, Conscious Moon, Unconscious Sun, Conscious North Node, Conscious South Node
-
+already walking toward you. */
 For each: Gate number, name, planet. One sentence on how this gate expresses. Shadow / Gift / Siddhi if present in data.
+already walking toward you.
 
+CLOSING PROMPT 2 — END OF "continue" RESPONSE:
+After the Second Saturn Return section, always end with this exact paragraph:
+"2027 marks the beginning of a 400-year era shift — a transition so significant it has not occurred in your lifetime, or your parents' lifetime, or their parents' lifetime. Every person alive right now has a specific role to play in this crossing. If you would like to discover yours, type new era."
+
+CLOSING PROMPT 3 — NEW ERA RESPONSE INSTRUCTIONS:
+Triggers when user types: new era
+
+STEP 1 — ORIENTATION (use this language exactly, 3 paragraphs):
+"For the last 400 years, humanity has been living in the Era of Planning — defined by external authority, collective structures, and the belief that someone outside you knows better. Governments, institutions, religions, educational systems — these were the guides. That era ends in 2027.
+
+What begins is the Era of the Individual: 400 years defined by inner authority, personal sovereignty, and spirit-led living. The question is no longer what does the system tell me to do. The question is what does my own inner knowing say.
+
+Every person alive right now carries a specific role in this crossing. Some are here to guard the wisdom of what is ending. Some are here to pioneer what is coming. Some are the bridge between the two. Your design has always known which one you are."
+
+STEP 2 — NAME THEIR ROLE:
+Cross-reference ALL gates (natal + every overlay threshold) against these three lists:
+LOCK GATES (Transition Bridges): 25, 46, 10, 15, 13, 7, 1, 2
+ERA OF PLANNING KEY GATES (Guardians): 37, 40, 9, 16, 61, 62, 32, 42
+ERA OF INDIVIDUAL KEY GATES (Pioneers): 55, 59, 34, 20, 54, 53, 57, 51
+Name their role: Lock Keeper, Guardian, Pioneer, or combination. Distinguish natal gates ("you came in carrying this") from overlay gates ("this activated at your [threshold]").
+
+STEP 3 — ERA SUPERPOWERS:
+                                 If they carry these channels (natal OR overlay), name them:
+                                 Channel 34-57 = Grounded Power in Action
+                                 Channel 57-20 = Spontaneous Clarity
+                                 Channel 34-20 = Charismatic Manifestation
+                                 Any channel with Individual-era Key gates = new era carrier
+
+                                 STEP 4 — ONE CLOSING PARAGRAPH:
+                                 Specific to their exact gate combination and cross arc. Tone: you were not born into this moment by accident.
+                                 End with this exact line: "If you would like to explore what specifically came online in your design at each threshold — the channels that activated, the locks that found their keys, the superpowers that awakened — type activation."
+
+                                 CLOSING PROMPT 4 — ACTIVATION RESPONSE INSTRUCTIONS:
+                                 Triggers when user types: activation
+
+                                 STEP 1 — OPEN WITH THIS FRAME:
+                                 "Your natal design is the foundation — the capacities you arrived with. But your design is not static. At each major threshold, new channels came online, existing gates found their electromagnetic partners, and sleeping capacities finally awakened. Here is what activated in your specific design."
+
+                                 STEP 2 — WALK THROUGH EACH THRESHOLD:
+                                 For each threshold name:
+                                 - The overlay cross and what frequency it carried
+                                 - NEW channels that came online — described as what they ENABLE, not gate numbers
+                                 - ELECTROMAGNETIC COMPLETIONS — natal gates that finally found their partner. Example: "Gate 43 had lived your entire life as insight without translation. At your Chiron Return, Gate 23 arrived and gave it a voice."
+                                 - LOCK AND KEY ACTIVATIONS — where overlay gates completed natal gates into new capacity
+                                 - THE CONSTELLATION — how gates that don't form a direct channel created a resonant field of new capacity together
+
+                                 STEP 3 — CHIRON IS THE DEEPEST:
+                                 Give Chiron the most depth. Present tense — this is happening now. Name what is still integrating. Name what is permanently theirs.
+
+                                 STEP 4 — CLOSE WITH THIS EXACT PARAGRAPH:
+                                 "Your design has been building toward this moment your entire life. Every threshold was preparation. Every activation was a layer of the medicine you came to offer. If you would like to explore how to live this activation now — how to embody what came online and offer it to the world — reply with your specific question and I am here."
+                                 */
 RESPONSE LENGTH:
 Initial reading — write all six sections in full, flowing prose.
 Follow-up questions — 400-600 words maximum.
@@ -651,7 +704,8 @@ app.post("/api/debug-raw", async (req, res) => {
     const response = await fetch(url, { headers: { 'X-Api-Key': HD_AI_API_KEY } });
     const raw = await response.json();
     // Return just the channels-related fields from the raw v3 response
-    const P = raw?.Properties || {};
+  CLOSING PROMPT:
+  const P = raw?.Properties || {};
     res.json({
       ok: true,
       channels_raw: P?.Channels,
