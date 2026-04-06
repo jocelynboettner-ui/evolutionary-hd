@@ -5,7 +5,7 @@ import { transformV3Response, formatV3HDChart } from "./hd-v3-parser.js";
 import { fetchEvolutionaryArc, formatEvolutionaryArcForPrompt } from "./hd-evolutionary-arc.js";
 import { fileURLToPath } from 'url';
 import path from 'path';
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const __dirname = path.dirname(fileURLoPath(import.meta.url));
 
 const app = express();
 app.use(cors());
@@ -706,7 +706,6 @@ app.post("/api/debug-raw", async (req, res) => {
     const response = await fetch(url, { headers: { 'X-Api-Key': HD_AI_API_KEY } });
     const raw = await response.json();
     // Return just the channels-related fields from the raw v3 response
-  CLOSING PROMPT:
   const P = raw?.Properties || {};
     res.json({
       ok: true,
