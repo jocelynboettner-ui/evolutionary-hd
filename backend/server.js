@@ -216,8 +216,9 @@ async function fetchTransitCycles(birthdate, birthtime, timezone) {
   if (!response.ok) throw new Error('sacred-cycles-api error ' + response.status);
   const cycles = await response.json();
   const saturnPeak = new Date(cycles.saturnReturn.peak_datetime);
-  const saturn2Peak = new Date(saturnPeak);
-  saturn2Peak.setFullYear(saturn2Peak.getFullYear() + 30);
+  // Saturn's precise synodic period: 29.46 years
+  const saturnCycleMs = 29.46 * 365.25 * 24 * 60 * 60 * 1000;
+  const saturn2Peak = new Date(new Date(cycles.saturnReturn.peak_datetime).getTime() + saturnCycleMs);
   const saturn2Window = 365.25 * 3.5 * 24 * 60 * 60 * 1000;
   cycles.secondSaturnReturn = {
     start: new Date(saturn2Peak.getTime() - saturn2Window).toISOString().slice(0,10),
