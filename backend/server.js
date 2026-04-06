@@ -148,6 +148,7 @@ Second Saturn Return / Legacy Catalyst: ages 56-63 (peak 58-60) */`;
 async function fetchHumanDesign(birthdate, birthtime, location) {
   // Parse birthdate — accepts "YYYY-MM-DD" or "MM/DD/YYYY"
   let year, month, day;
+  const iso = String(birthdate).match(/^(\d{4})-(\d{2})-(\d{2})$/);
   const mdy = String(birthdate).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
   if (iso) { year = iso[1]; month = iso[2]; day = iso[3]; }
   else if (mdy) { year = mdy[3]; month = String(+mdy[1]).padStart(2,'0'); day = String(+mdy[2]).padStart(2,'0'); }
