@@ -5,7 +5,7 @@ import { transformV3Response, formatV3HDChart } from "./hd-v3-parser.js";
 import { fetchEvolutionaryArc, formatEvolutionaryArcForPrompt } from "./hd-evolutionary-arc.js";
 import { fileURLToPath } from 'url';
 import path from 'path';
-const __dirname = path.dirname(fileURLoPath(import.meta.url));
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 app.use(cors());
