@@ -269,17 +269,19 @@ async function fetchTransitCycles(birthdate, birthtime, timezone) {
   if (!response.ok) throw new Error('sacred-cycles-api error ' + response.status);
   const cycles = await response.json();
   const saturnPeak = new Date(cycles.saturnReturn.peak_datetime);
-  // Saturn's precise synodic period: 29.46 years
-  const saturnCycleMs = 29.46 * 365.25 * 24 * 60 * 60 * 1000;
-  const saturn2Peak = new Date(new Date(cycles.saturnReturn.peak_datetime).getTime() + saturnCycleMs);
-  const saturn2Window = 365.25 * 3.5 * 24 * 60 * 60 * 1000;
-  cycles.secondSaturnReturn = {
-    start: new Date(saturn2Peak.getTime() - saturn2Window).toISOString().slice(0,10),
-    peak: saturn2Peak.toISOString().slice(0,10),
-    end: new Date(saturn2Peak.getTime() + saturn2Window).toISOString().slice(0,10),
-    peak_datetime: saturn2Peak.toISOString().slice(0,19),
-    description: 'Second Saturn Return (derived)',
-  };
+  // Saturn's precise tropical period: 29.4571 Julian years
+    // This gives August 2032 for a July 2003 Saturn Return
+    const SATURN_PERIOD_DAYS = 29.4571 * 365.25;
+    const saturnPeakMs = new Date(cycles.saturnReturn.peak_datetime || cycles.saturnReturn.peak).getTime();
+    const saturn2PeakMs = saturnPeakMs + (SATURN_PERIOD_DAYS * 24 * 60 * 60 * 1000);
+    const saturn2Peak = new Date(saturn2PeakMs);
+    const windowMs = 3.5 * 365.25 * 24 * 60 * 60 * 1000;
+    cycles.secondSaturnReturn = {
+          start: new Date(saturn2PeakMs - windowMs).toISOString().split('T')[0],
+          peak: saturn2Peak.toISOString().split('T')[0],
+          end: new Date(saturn2PeakMs + windowMs).toISOString().split('T')[0],
+          peak_datetime: saturn2Peak.toISOString(),
+    };
   return cycles;
 }
 
