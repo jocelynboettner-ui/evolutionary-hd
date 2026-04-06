@@ -85,6 +85,9 @@ CLOSING PROMPT: After THE INVITATION FORWARD section, always end with this exact
 
 When the user asks about their cycles, thresholds, or story of becoming, follow this structure exactly.
 
+OVERLAY CROSS DATA: The user message will contain a section called THRESHOLD OVERLAY CHARTS. This gives you the exact Human Design chart calculated at the peak of each planetary threshold — the incarnation cross, channels, and defined centers active at that precise moment. This is the core differentiator of this reading. Use the overlay cross for each threshold as the central theme of that section. Reference the channels that came online at each threshold as the specific capacity that arrived. Do not list gate numbers — translate them into what they enable in plain language.
+
+
 STEP 1 — OPEN WITH THE THREE CYCLES FRAMEWORK: Name which cycle they are currently in before anything else. Use this language as the entry point:
 
 The Great Disruption (approximately ages 38-45, Uranus Opposition): The life you built starts to feel too small. Restlessness arrives. This is the invitation to question everything and reclaim the parts of yourself you left behind. This is not a crisis. This is a calling.
@@ -188,6 +191,80 @@ async function fetchHumanDesign(birthdate, birthtime, location) {
 function formatHDChart(data) {
   return formatV3HDChart(data);
 }// ============================================================
+// TRANSIT CYCLE + OVERLAY FUNCTIONS
+// ============================================================
+
+async function fetchTransitCycles(birthdate, birthtime, timezone) {
+  const tzToLatLon = {
+    'America/New_York':    { lat: 40.71, lon: -74.01 },
+    'America/Chicago':     { lat: 41.85, lon: -87.65 },
+    'America/Denver':      { lat: 39.74, lon: -104.98 },
+    'America/Los_Angeles': { lat: 34.05, lon: -118.24 },
+    'Europe/London':       { lat: 51.51, lon: -0.13 },
+    'Europe/Paris':        { lat: 48.85, lon: 2.35 },
+    'Australia/Sydney':    { lat: -33.87, lon: 151.21 },
+  };
+  const coords = tzToLatLon[timezone] || { lat: 40.71, lon: -74.01 };
+  let isoDate = birthdate;
+  const mdy = String(birthdate).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (mdy) isoDate = `${mdy[3]}-${String(+mdy[1]).padStart(2,'0')}-${String(+mdy[2]).padStart(2,'0')}`;
+  const response = await fetch('https://sacred-cycles-api.onrender.com/transit-cycles', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ date: isoDate, time: birthtime || '12:00', latitude: coords.lat, longitude: coords.lon, timezone }),
+  });
+  if (!response.ok) throw new Error('sacred-cycles-api error ' + response.status);
+  const cycles = await response.json();
+  const saturnPeak = new Date(cycles.saturnReturn.peak_datetime);
+  const saturn2Peak = new Date(saturnPeak);
+  saturn2Peak.setFullYear(saturn2Peak.getFullYear() + 30);
+  const saturn2Window = 365.25 * 3.5 * 24 * 60 * 60 * 1000;
+  cycles.secondSaturnReturn = {
+    start: new Date(saturn2Peak.getTime() - saturn2Window).toISOString().slice(0,10),
+    peak: saturn2Peak.toISOString().slice(0,10),
+    end: new Date(saturn2Peak.getTime() + saturn2Window).toISOString().slice(0,10),
+    peak_datetime: saturn2Peak.toISOString().slice(0,19),
+    description: 'Second Saturn Return (derived)',
+  };
+  return cycles;
+}
+
+async function fetchOverlayChart(peakDatetime, timezone) {
+  const [datePart, timePart] = peakDatetime.split('T');
+  const timeShort = (timePart || '12:00').slice(0, 5);
+  const params = new URLSearchParams({ date: `${datePart}T${timeShort}:00`, timezone });
+  const url = 'https://api.humandesign.ai/v3/hd-data?' + params.toString() + '&api_key=' + encodeURIComponent(HD_AI_API_KEY);
+  const response = await fetch(url, { method: 'GET', headers: { 'X-Api-Key': HD_AI_API_KEY } });
+  if (!response.ok) throw new Error('humandesign.ai overlay error ' + response.status);
+  return transformV3Response(await response.json());
+}
+
+function formatOverlayData(cycles, overlays) {
+  const labels = {
+    saturnReturn:       'FIRST SATURN RETURN',
+    uranusOpposition:   'URANUS OPPOSITION (Great Disruption)',
+    chironReturn:       'CHIRON RETURN (Deep Healing)',
+    secondSaturnReturn: 'SECOND SATURN RETURN (Legacy Catalyst)',
+  };
+  let text = '\n=== THRESHOLD OVERLAY CHARTS ===\n';
+  text += 'These are the Human Design charts calculated at the exact peak of each planetary threshold.\n';
+  text += 'Use these overlay crosses, channels, and centers in the YOUR STORY OF BECOMING response.\n\n';
+  for (const [key, label] of Object.entries(labels)) {
+    const cycle = cycles[key];
+    const chart = overlays[key];
+    if (!cycle || !chart) continue;
+    text += `--- ${label} ---\n`;
+    text += `Peak date: ${cycle.peak || cycle.peak_datetime?.slice(0,10)}\n`;
+    text += `Overlay Cross: ${chart.incarnation_cross || 'unknown'}\n`;
+    text += `Channels online at this threshold: ${(chart.channels || []).join(', ') || 'none'}\n`;
+    text += `Defined centers at this threshold: ${(chart.defined_centers || []).join(', ') || 'none'}\n`;
+    text += '\n';
+  }
+  text += '=== END THRESHOLD OVERLAY CHARTS ===\n';
+  return text;
+}
+
+// ============================================================
 // CHAT ENDPOINT
 // ============================================================
 app.post("/api/chat", async (req, res) => {
@@ -210,11 +287,20 @@ app.post("/api/chat", async (req, res) => {
     let hdChart = null;
     let cycles = null;
 
-    // ── GROUP 1: Fast parallel fetch (~2-3s) ──
+    // ── GROUP 1: Parallel fetch — natal chart + transit cycles ──
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     res.flushHeaders();
+
+    const _tzLoc = String(birthdata.location || '').toLowerCase();
+    let _timezone = 'America/New_York';
+    if (_tzLoc.includes('los angeles') || _tzLoc.includes('san francisco') || _tzLoc.includes('seattle') || _tzLoc.includes('pacific')) _timezone = 'America/Los_Angeles';
+    else if (_tzLoc.includes('denver') || _tzLoc.includes('phoenix') || _tzLoc.includes('mountain')) _timezone = 'America/Denver';
+    else if (_tzLoc.includes('chicago') || _tzLoc.includes('dallas') || _tzLoc.includes('houston') || _tzLoc.includes('central')) _timezone = 'America/Chicago';
+    else if (_tzLoc.includes('london') || _tzLoc.includes('uk') || _tzLoc.includes('england')) _timezone = 'Europe/London';
+    else if (_tzLoc.includes('paris') || _tzLoc.includes('berlin') || _tzLoc.includes('amsterdam') || _tzLoc.includes('rome') || _tzLoc.includes('madrid')) _timezone = 'Europe/Paris';
+    else if (_tzLoc.includes('sydney') || _tzLoc.includes('melbourne') || _tzLoc.includes('brisbane')) _timezone = 'Australia/Sydney';
 
     try {
       [hdChart, cycles] = await Promise.all([
@@ -222,19 +308,43 @@ app.post("/api/chat", async (req, res) => {
           ? fetchHumanDesign(birthdata.birthdate, birthdata.birthtime, birthdata.location)
               .catch(err => { console.error('HD chart error:', err.message); return null; })
           : Promise.resolve(null),
-
-        Promise.resolve(null),
+        (birthdata.birthdate)
+          ? fetchTransitCycles(birthdata.birthdate, birthdata.birthtime, _timezone)
+              .catch(err => { console.error('Transit cycles error:', err.message); return null; })
+          : Promise.resolve(null),
       ]);
-      console.log('HD Chart result:', hdChart ? 'POPULATED type=' + hdChart.type : 'NULL', 'birthdata:', JSON.stringify({bd: birthdata?.birthdate, bt: birthdata?.birthtime, loc: birthdata?.location}));
+
+      console.log('HD Chart result:', hdChart ? 'POPULATED type=' + hdChart.type : 'NULL',
+        'birthdata:', JSON.stringify({bd: birthdata?.birthdate, bt: birthdata?.birthtime, loc: birthdata?.location}));
+      console.log('Transit cycles result:', cycles ? 'POPULATED peaks=' + JSON.stringify({
+        saturn: cycles.saturnReturn?.peak,
+        uranus: cycles.uranusOpposition?.peak,
+        chiron: cycles.chironReturn?.peak,
+        saturn2: cycles.secondSaturnReturn?.peak,
+      }) : 'NULL');
 
       if (hdChart) chartText += formatHDChart(hdChart);
-      // transit cycles not available in this version
-      // cycles not available — natal chart only
+
+      if (cycles && hdChart) {
+        const overlayKeys = ['saturnReturn', 'uranusOpposition', 'chironReturn', 'secondSaturnReturn'];
+        const overlayCharts = await Promise.all(
+          overlayKeys.map(key =>
+            cycles[key]?.peak_datetime
+              ? fetchOverlayChart(cycles[key].peak_datetime, _timezone)
+                  .catch(err => { console.error(`Overlay ${key} error:`, err.message); return null; })
+              : Promise.resolve(null)
+          )
+        );
+        const overlays = Object.fromEntries(overlayKeys.map((k, i) => [k, overlayCharts[i]]));
+        console.log('Overlays fetched:', overlayKeys.map((k,i) => k + '=' + (overlayCharts[i] ? overlayCharts[i].incarnation_cross : 'null')).join(', '));
+        const overlayText = formatOverlayData(cycles, overlays);
+        if (overlayText) chartText += overlayText;
+      }
     } catch (err) {
       console.error('Group 1 error:', err.message);
     }
 
-    // ── GROUP 2: Start slow fetches in background ──
+        // ── GROUP 2: Start slow fetches in background ──
     const group2Promise = (hdChart && cycles)
       ? Promise.all([
           (() => {
