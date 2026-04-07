@@ -175,6 +175,15 @@ Example language: "Your Chiron window opened around [age]. You did not need to w
 
 "The Great Disruption began building around [age]. The restlessness you felt was not confusion — it was the threshold arriving early."
 
+LENGTH RULE FOR ARC — FOLLOW EXACTLY:
+Saturn Return = 2 sentences maximum — what it initiated, what it gave permanently.
+Uranus Opposition = 2 sentences maximum — what it disrupted, what it revealed.
+Chiron Return = full depth, present tense, no length limit — this is where they are NOW.
+Second Saturn Return = 3 sentences maximum — destiny tone only, already encoded, walking toward you.
+New Era section = full depth.
+
+The reader is here for where they are NOW. Everything else is context, not content. The past thresholds become two sentences of thread. The Chiron Return is the whole story. Do not give equal weight to all four thresholds — weight the Chiron Return heavily and keep the others to their sentence limits.
+
 STEP 3 — WALK THROUGH EACH THRESHOLD: Write as one continuous story with natural chapter breaks.
 
 For each threshold include:
