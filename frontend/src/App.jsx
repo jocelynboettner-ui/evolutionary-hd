@@ -319,8 +319,8 @@ export default function App() {
                   }
         }, []);
     
-      async function sendMessage() {
-              const text = input.trim();
+      async function sendMessage(overrideText) {
+              const text = (overrideText ?? input).trim();
               if (!text || loading) return;
               setInput("");
           
@@ -571,10 +571,7 @@ export default function App() {
             {FOLLOWUP_PROMPTS.map((prompt, i) => (
               <button
                 key={i}
-                onClick={() => {
-                  setInput(prompt);
-                  sendMessage();
-                }}
+                onClick={() => sendMessage(prompt)}
                 style={{
                   background: 'transparent',
                   border: '1px solid rgba(255,255,255,0.2)',
