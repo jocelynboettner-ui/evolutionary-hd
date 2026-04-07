@@ -488,6 +488,8 @@ app.post("/api/chat", async (req, res) => {
         const lastUserMsg = messages[messages.length - 1];
         const userText = (typeof lastUserMsg?.content === 'string' ? lastUserMsg.content : '').toLowerCase().trim();
         const isContinue = userText === 'continue' || userText.endsWith('\ncontinue') || userText.split('\n').pop().trim() === 'continue';
+        const isNewEra = userText === 'new era' || userText.includes('new era');
+        const isActivation = userText === 'activation' || userText.includes('activation');
 
                 const [arc, activationText] = await group2Promise;
 
@@ -598,37 +600,15 @@ RULES:
 - DO NOT write about any other threshold
 
 Begin with the threshold dateline.
-End with one sentence that seeds the Second Saturn chapter.`,
+End with one sentence that seeds the next chapter — the era transition.`,
                 280,
                 [...arcContext, { role: 'assistant', content: saturnText + '\n\n' + uranusText }]
               );
 
               res.write('data: ' + JSON.stringify({ text: chironText + '\n\n' }) + '\n\n');
 
-              const saturn2Text = await generateArcSection(
-                `Write ONLY the SECOND SATURN RETURN section of YOUR STORY OF BECOMING.
 
-HARD LIMITS:
-- 3 paragraphs maximum
-- 150 words maximum
-- Stop completely after paragraph 3
-
-RULES:
-- Write as destiny already encoded — present-future tense ("this will be teaching you...", "already written into your design")
-- One transformation only — what this threshold is encoding
-- If the cross is the Right Angle Cross of the Sleeping Phoenix: name it as THE ERA CROSS in one sentence — "Your legacy cross IS the incarnation cross of the new era itself"
-- DO NOT list gates, channels, or center activations
-- DO NOT write the New Era section here
-
-Begin with the threshold dateline.
-End with one sentence that pivots into the New Era reveal.`,
-                280,
-                [...arcContext, { role: 'assistant', content: saturnText + '\n\n' + uranusText + '\n\n' + chironText }]
-              );
-
-              res.write('data: ' + JSON.stringify({ text: saturn2Text + '\n\n' }) + '\n\n');
-
-              const newEraText = await generateArcSection(
+              if (isNewEra) { const newEraText = await generateArcSection(
                 `Write ONLY the YOUR ROLE IN THE NEW ERA section.
 
 HARD LIMITS:
@@ -651,10 +631,10 @@ RULES:
 
 This is the final section. The closing sentence is the last line of the entire arc.`,
                 450,
-                [...arcContext, { role: 'assistant', content: saturnText + '\n\n' + uranusText + '\n\n' + chironText + '\n\n' + saturn2Text }]
+                [...arcContext, { role: 'assistant', content: saturnText + '\n\n' + uranusText + '\n\n' + chironText }]
               );
 
-              res.write('data: ' + JSON.stringify({ text: 'YOUR ROLE IN THE NEW ERA\n\n' + newEraText + '\n\n' }) + '\n\n');
+              res.write('data: ' + JSON.stringify({ text: 'YOUR ROLE IN THE NEW ERA\n\n' + newEraText + '\n\n' }) + '\n\n'); }
 
             } catch (err) {
               console.error('Arc section error:', err.message);
