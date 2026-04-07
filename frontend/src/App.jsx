@@ -79,11 +79,11 @@ function ReadingTableOfContents({ visible, birthdata }) {
           { title: "PART SIX — THE INVITATION FORWARD", items: [] },
         ].map(({ title, items }) => (
           <div key={title} style={{ borderLeft: "1px solid rgba(184,134,11,0.2)", paddingLeft: "16px" }}>
-            <div style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: "10px", letterSpacing: "0.15em", textTransform: "uppercase", color: "#b8860b", marginBottom: "6px" }}>{title}</div>
+            <div style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: "12px", letterSpacing: "0.15em", textTransform: "uppercase", color: "#b8860b", marginBottom: "8px" }}>{title}</div>
             {items.length > 0 && (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 16px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                 {items.map(item => (
-                  <span key={item} style={{ fontSize: "13px", color: "rgba(240,234,216,0.55)", fontStyle: "italic" }}>{item}</span>
+                  <span key={item} style={{ fontSize: "15px", color: "rgba(240,234,216,0.8)", fontStyle: "italic" }}>{item}</span>
                 ))}
               </div>
             )}
