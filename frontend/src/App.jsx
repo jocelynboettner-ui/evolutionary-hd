@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 
-const API_URL = import.meta.env.VITE_API_URL || "https://evolutionary-hd.onrender.com";
+const API_URL = "";
 
 // Stars background
 function Stars() {
