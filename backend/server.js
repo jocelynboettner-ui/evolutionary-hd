@@ -179,7 +179,7 @@ LENGTH RULE FOR ARC — FOLLOW EXACTLY:
 Saturn Return = 2 sentences maximum — what it initiated, what it gave permanently.
 Uranus Opposition = 2 sentences maximum — what it disrupted, what it revealed.
 Chiron Return = full depth, present tense, no length limit — this is where they are NOW.
-Second Saturn Return = 3 sentences maximum — destiny tone only, already encoded, walking toward you.
+Second Saturn Return = DO NOT INCLUDE. Remove entirely from the arc. It belongs in the follow-up prompts only. Do not generate it.
 New Era section = full depth.
 
 The reader is here for where they are NOW. Everything else is context, not content. The past thresholds become two sentences of thread. The Chiron Return is the whole story. Do not give equal weight to all four thresholds — weight the Chiron Return heavily and keep the others to their sentence limits.
