@@ -44,7 +44,7 @@ def ensure_ephe_files():
     failed = []
     for fname, url in EPHE_FILES.items():
         fpath = os.path.join(EPHE_PATH, fname)
-        if os.path.exists(fpath) and os.path.getsize(fpath) > 1000:
+        if os.path.exists(fpath) and os.path.getsize(fpath) > 500000:  # must be >500KB — rejects corrupt HTML error pages
             downloaded.append(fname)
             continue
         try:
