@@ -574,14 +574,14 @@ export default function App() {
                 onClick={() => sendMessage(prompt)}
                 style={{
                   background: 'transparent',
-                  border: '1px solid rgba(255,255,255,0.2)',
-                  color: 'inherit',
+                  border: '1px solid rgba(255,255,255,0.5)',
+                  color: 'rgba(255, 255, 255, 0.95)',
                   padding: '0.75rem 1.25rem',
                   textAlign: 'left',
                   cursor: 'pointer',
-                  fontSize: '0.85rem',
+                  fontSize: '0.95rem',
                   lineHeight: '1.5',
-                  opacity: 0.8,
+                  opacity: 1,
                   transition: 'opacity 0.2s, border-color 0.2s',
                   fontFamily: 'inherit'
                 }}
