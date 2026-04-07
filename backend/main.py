@@ -232,23 +232,28 @@ def find_cycle_peak_precise(
     search_window_years=4.0, is_opposition=False, use_chiron=False
 ):
     """
-    Find the TRUE peak of a transit cycle — the middle crossing
-    when a planet retrogrades back and forth over a natal degree.
-    Planets cross a natal degree up to 3 times:
-      1. Direct pass (approaching)
-      2. Retrograde pass (retreating) <- TRUE PEAK
+    Find the first crossing of a transit cycle — the initial direct-motion
+    pass when a planet first crosses a natal degree.
+    Chiron retrogrades for ~5 months/yr and can cross a natal degree up to 3x:
+      1. Direct pass (approaching)  <- THIS IS THE ONE WE WANT
+      2. Retrograde pass (retreating)
       3. Direct pass again (departing)
-    We find all crossings and return the middle one.
+    We use a 5-day step for Chiron (vs 15-day for Saturn/Uranus) to avoid
+    skipping the first crossing when the retrograde loop is tight, then return
+    the earliest crossing within ±2 years of the expected age peak.
     """
     target = normalize(natal_deg + 180) if is_opposition else natal_deg
     search_start = birth_dt + timedelta(days=365.25 * (expected_years - search_window_years))
     search_end   = birth_dt + timedelta(days=365.25 * (expected_years + search_window_years))
 
-    # Fine scan to catch all retrograde crossings
+    # FIX 1: Use 5-day step for Chiron — its retrograde loop can put two
+    # sign-changes within a single 15-day window, causing the first crossing
+    # to be skipped entirely and landing on the 3rd (Dec) instead of 1st (May).
     crossings = []
     current = search_start
-    step = timedelta(days=15)
+    step = timedelta(days=5) if use_chiron else timedelta(days=15)
     prev_dist = None
+
     while current <= search_end:
         jd = datetime_to_jd(current)
         if use_chiron:
@@ -273,10 +278,20 @@ def find_cycle_peak_precise(
             planet, natal_deg, birth_dt,
             expected_years, search_window_years, is_opposition, use_chiron
         )
-    if len(crossings) == 1:
-        return crossings[0]
-    # Always return the FIRST crossing — Neutrino's convention
-    # (the initial direct-motion pass through the opposition/return degree)
+
+    # FIX 2: For Chiron, filter to crossings within ±2 years of the expected
+    # age peak — eliminates any stray crossings from adjacent Chiron cycles
+    # that sneak into the wide ±4yr search window.
+    if use_chiron and len(crossings) > 1:
+        expected_peak = birth_dt + timedelta(days=365.25 * expected_years)
+        two_years = timedelta(days=365.25 * 2.0)
+        filtered = [c for c in crossings
+                    if abs((c - expected_peak).total_seconds()) <= two_years.total_seconds()]
+        if filtered:
+            crossings = filtered
+
+    # FIX 3: Return the FIRST crossing — the initial direct-motion pass,
+    # which is the astrologically correct Chiron Return peak.
     return crossings[0]
 
 
