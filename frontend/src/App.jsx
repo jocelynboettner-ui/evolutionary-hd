@@ -231,8 +231,8 @@ function Message({ role, content }) {
                           borderRadius: isUser ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
                           padding: "14px 18px",
                           color: "rgba(255,255,255,0.92)",
-                          fontSize: "15px",
-                          lineHeight: "1.65",
+                          fontSize: "1.1rem",
+                          lineHeight: "1.9",
                           whiteSpace: "pre-wrap",
                           wordBreak: "break-word",
               }}>
