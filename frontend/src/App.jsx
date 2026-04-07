@@ -242,6 +242,15 @@ function Message({ role, content }) {
             );
 }
 
+// ── SUGGESTED FOLLOW-UP PROMPTS (appear after reading completes) ──────────────
+const FOLLOWUP_PROMPTS = [
+  "What are the locks and keys I carry in my Chiron overlay — and what do they mean for my role in the great transition?",
+  "What are my greatest gifts to embody right now — the capacities that are fully online and ready to be lived?",
+  "Tell me more about what I am learning in the cycle I am currently navigating.",
+  "What is the wound that is becoming my medicine — and how do I know when it has fully turned?",
+  "What does my design say about how I am meant to serve in this next chapter?"
+];
+
 export default function App() {
       const [messages, setMessages] = useState([]);
       const [input, setInput] = useState("");
@@ -525,7 +534,76 @@ export default function App() {
                                         </div>
                             </div>
                             )}
-                            <div ref={bottomRef} />
+                            {/* Follow-up prompts — appear after reading completes */}
+      {chartDetected && !loading && messages.length > 0 && messages[messages.length - 1].role === 'assistant' && (
+        <div style={{
+          borderTop: '1px solid rgba(255,255,255,0.1)',
+          paddingTop: '2rem',
+          marginTop: '2rem'
+        }}>
+          {/* Print instruction */}
+          <p style={{
+            fontSize: '0.75rem',
+            opacity: 0.5,
+            marginBottom: '1.5rem',
+            textAlign: 'center',
+            letterSpacing: '0.05em'
+          }}>
+            To save your reading — Cmd+P (Mac) or Ctrl+P (Windows) → Save as PDF
+          </p>
+          {/* Section header */}
+          <p style={{
+            fontSize: '0.8rem',
+            opacity: 0.6,
+            marginBottom: '1rem',
+            textAlign: 'center',
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase'
+          }}>
+            ✦ &nbsp; Continue your reading &nbsp; ✦
+          </p>
+          {/* Prompt buttons */}
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.75rem'
+          }}>
+            {FOLLOWUP_PROMPTS.map((prompt, i) => (
+              <button
+                key={i}
+                onClick={() => {
+                  setInput(prompt);
+                  sendMessage();
+                }}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  color: 'inherit',
+                  padding: '0.75rem 1.25rem',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  fontSize: '0.85rem',
+                  lineHeight: '1.5',
+                  opacity: 0.8,
+                  transition: 'opacity 0.2s, border-color 0.2s',
+                  fontFamily: 'inherit'
+                }}
+                onMouseEnter={e => {
+                  e.target.style.opacity = '1';
+                  e.target.style.borderColor = 'rgba(255,255,255,0.5)';
+                }}
+                onMouseLeave={e => {
+                  e.target.style.opacity = '0.8';
+                  e.target.style.borderColor = 'rgba(255,255,255,0.2)';
+                }}
+              >
+                ✦ &nbsp; {prompt}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      <div ref={bottomRef} />
                     </div>
               
                   {/* Input */}
