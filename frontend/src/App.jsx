@@ -335,28 +335,6 @@ export default function App() {
               if (parsed) {
                         // New birth data detected — always treat as a completely new person.
 
-                        // ── STRIPE: If new birth data and not yet paid, redirect to checkout ──
-                        if (parsed && !chartDetected) {
-                                    setLoading(true);
-                                    try {
-                                                  const res = await fetch(`${API_URL}/api/create-checkout-session`, {
-                                                                  method: 'POST',
-                                                                  headers: { 'Content-Type': 'application/json' },
-                                                                  body: JSON.stringify({
-                                                                                    birthdate: parsed.birthdate,
-                                                                                    birthtime: parsed.birthtime,
-                                                                                    location: parsed.location,
-                                                                                    name: parsed.name || '',
-                                                                  }),
-                                                  });
-                                                  const { url } = await res.json();
-                                                  window.location.href = url;
-                                    } catch (err) {
-                                                  console.error('Checkout error:', err);
-                                                  setLoading(false);
-                                    }
-                                    return;
-                        }
                         // Reset ALL state so nothing from the previous session bleeds through.
                         currentBirthdata = parsed;
                         setBirthdata(parsed);
