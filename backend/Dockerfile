@@ -34,9 +34,9 @@ RUN curl --fail -L --retry 3 --retry-delay 2 -s \
     curl --fail -L --retry 3 -s \
       https://raw.githubusercontent.com/aloistr/swisseph/master/ephe/semo_18.se1 -o /app/ephe/semo_18.se1
 
-# Verify files are real binaries >500KB (real .se1 files are 2-10MB each)
-# Written as single-line python3 -c to avoid Docker parsing Python as Dockerfile instructions
-RUN python3 -c "import os; files=['seas_18.se1','sepl_18.se1','semo_18.se1']; [print(f+': '+str(os.path.getsize('/app/ephe/'+f))+' bytes') for f in files]; [__import__('sys').exit(1) for f in files if os.path.getsize('/app/ephe/'+f) < 500000] or print('All ephemeris files OK')"
+# Verify files are real .se1 binaries (>100KB — HTML error pages are <10KB)
+# seas_18.se1 ~223KB, sepl_18.se1 ~484KB, semo_18.se1 ~1.3MB
+RUN python3 -c "import os,sys; files=['seas_18.se1','sepl_18.se1','semo_18.se1']; [print(f+': '+str(os.path.getsize('/app/ephe/'+f))+' bytes') for f in files]; sys.exit(1) if any(os.path.getsize('/app/ephe/'+f) < 100000 for f in files) else print('All ephemeris files OK')"
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
