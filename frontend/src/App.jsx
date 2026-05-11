@@ -269,7 +269,7 @@ export default function App() {
                                                                                                                                                           if (parsed2.text) {
                                                                                                                                                                                     fullText += parsed2.text;
                                                                                                                                                                                     setMessages([...newMessages, { role: 'assistant', content: fullText }]);
-                                                                                                                                                                                    await new Promise(r => setTimeout(r, 400));
+                                                                                                                                                                                    await new Promise(r => setTimeout(r, 800));
                                                                                                                                                             }
                                                                                                                                     } catch (e) {}
                                                                                                               }
@@ -339,7 +339,7 @@ export default function App() {
                                                                                         if (parsed.text) {
                                                                                                             fullText += parsed.text;
                                                                                                             setMessages([...newMessages, { role: "assistant", content: fullText }]);
-                                                                                                            await new Promise(r => setTimeout(r, 400));
+                                                                                                            await new Promise(r => setTimeout(r, 800));
                                                                                           }
                                                                                         if (parsed.error) {
                                                                                                             setMessages([...newMessages, {
