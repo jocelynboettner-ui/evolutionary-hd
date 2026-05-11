@@ -16,9 +16,9 @@ function Stars() {
             {stars.map((s) => (
                     <circle key={s.id} cx={s.x + "%"} cy={s.y + "%"} r={s.r} fill="white" opacity="0.7">
                               <animate attributeName="opacity" values={"0;" + s.peak + ";0"} dur={s.dur + "s"} repeatCount="indefinite" />
-                    </circle>circle>
+                    </circle>
                   ))}
-          </svg>svg>
+          </svg>
         );
 }
 
@@ -577,7 +577,7 @@ export default function App() {
                                               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
                                                             <line x1="22" y1="2" x2="11" y2="13" />
                                                             <polygon points="22 2 15 22 11 13 2 9 22 2" />
-                                              </svg>svg>
+                                              </svg>
                                   </button>button>
                         </div>div>
                         <div style={{ textAlign: "center", marginTop: "8px", fontSize: "11px", color: "rgba(255,255,255,0.3)" }}>
