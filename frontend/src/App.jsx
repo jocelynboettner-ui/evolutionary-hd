@@ -5,7 +5,7 @@ const API_URL = "https://evolutionary-hd-api.onrender.com";
 function Stars() {
     const stars = Array.from({ length: 120 }, (_, i) => ({
           id: i,
-          x: Math.random() * 100,
+          x: Math.random() * 100
           y: Math.random() * 100,
           r: Math.random() * 1.5 + 0.5,
           peak: (Math.random() * 2 + 1).toFixed(1),
@@ -52,12 +52,12 @@ function ReadingTableOfContents({ visible, birthdata }) {
                   fontFamily: "'Cormorant Garamond', Georgia, serif",
           }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "16px", marginBottom: "28px" }}>
-                        <span style={{ color: "#b8860b", fontSize: "14px", opacity: 0.7 }}>✦</span>span>
+                        <span style={{ color: "#b8860b", fontSize: "14px", opacity: 0.7 }}>✦</span>
                         <h2 style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: "14px", letterSpacing: "0.2em", textTransform: "uppercase", color: "rgba(240,234,216,0.7)", margin: 0, fontWeight: 400 }}>
                           {birthdata?.name ? `${birthdata.name}'s Reading Contains` : 'Your Reading Contains'}
-                        </h2>h2>
-                        <span style={{ color: "#b8860b", fontSize: "14px", opacity: 0.7 }}>✦</span>span>
-                </div>div>
+                        </h2>
+                        <span style={{ color: "#b8860b", fontSize: "14px", opacity: 0.7 }}>✦</span>
+                </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginBottom: "24px" }}>
                   {[
             { title: "PART ONE — WHO YOU ARE", items: ["Type & Strategy", "Inner Authority", "Profile", "Incarnation Cross", "Definition"] },
@@ -68,47 +68,47 @@ function ReadingTableOfContents({ visible, birthdata }) {
             { title: "PART SIX — THE INVITATION FORWARD", items: [] },
                     ].map(({ title, items }) => (
                                 <div key={title} style={{ borderLeft: "1px solid rgba(184,134,11,0.2)", paddingLeft: "16px" }}>
-                                            <div style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: "12px", letterSpacing: "0.15em", textTransform: "uppercase", color: "#b8860b", marginBottom: "8px" }}>{title}</div>div>
+                                            <div style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: "12px", letterSpacing: "0.15em", textTransform: "uppercase", color: "#b8860b", marginBottom: "8px" }}>{title}</div>
                                   {items.length > 0 && (
                                                 <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                                                   {items.map(item => (
-                                                                    <span key={item} style={{ fontSize: "15px", color: "rgba(240,234,216,0.8)", fontStyle: "italic" }}>{item}</span>span>
+                                                                    <span key={item} style={{ fontSize: "15px", color: "rgba(240,234,216,0.8)", fontStyle: "italic" }}>{item}</span>
                                                                   ))}
-                                                </div>div>
+                                                </div>
                                             )}
-                                </div>div>
+                                </div>
                               ))}
-                </div>div>
-                <div style={{ textAlign: "center", color: "rgba(184,134,11,0.3)", margin: "24px 0", letterSpacing: "0.3em" }}>—</div>div>
+                </div>
+                <div style={{ textAlign: "center", color: "rgba(184,134,11,0.3)", margin: "24px 0", letterSpacing: "0.3em" }}>—</div>
                 <div style={{ marginBottom: "8px" }}>
-                        <div style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: "10px", letterSpacing: "0.15em", textTransform: "uppercase", color: "#b8860b", marginBottom: "8px" }}>PLANETARY KEY — How To Read Your Gates</div>div>
+                        <div style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: "10px", letterSpacing: "0.15em", textTransform: "uppercase", color: "#b8860b", marginBottom: "8px" }}>PLANETARY KEY — How To Read Your Gates</div>
                         <div style={{ fontSize: "13px", color: "rgba(240,234,216,0.5)", fontStyle: "italic", marginBottom: "16px", lineHeight: "1.5" }}>
                                   Each gate in your chart sits in a planetary position. The planet tells you HOW that gate expresses in your life.
-                        </div>div>
+                        </div>
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "6px 24px" }}>
                           {PlanetaryKey.map(({ planet, meaning }) => (
                         <div key={planet} style={{ display: "flex", alignItems: "baseline", gap: "8px", fontSize: "12px" }}>
-                                      <span style={{ color: "rgba(240,234,216,0.8)", whiteSpace: "nowrap", minWidth: "140px" }}>{planet}</span>span>
-                                      <span style={{ color: "rgba(184,134,11,0.4)", flexShrink: 0 }}>→</span>span>
-                                      <span style={{ color: "rgba(240,234,216,0.45)", fontStyle: "italic" }}>{meaning}</span>span>
-                        </div>div>
+                                      <span style={{ color: "rgba(240,234,216,0.8)", whiteSpace: "nowrap", minWidth: "140px" }}>{planet}</span>
+                                      <span style={{ color: "rgba(184,134,11,0.4)", flexShrink: 0 }}>→</span>
+                                      <span style={{ color: "rgba(240,234,216,0.45)", fontStyle: "italic" }}>{meaning}</span>
+                        </div>
                       ))}
-                        </div>div>
-                </div>div>
-                <div style={{ textAlign: "center", color: "rgba(184,134,11,0.3)", margin: "24px 0", letterSpacing: "0.3em" }}>—</div>div>
+                        </div>
+                </div>
+                <div style={{ textAlign: "center", color: "rgba(184,134,11,0.3)", margin: "24px 0", letterSpacing: "0.3em" }}>—</div>
                 <div>
-                        <div style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: "10px", letterSpacing: "0.15em", textTransform: "uppercase", color: "#b8860b", marginBottom: "12px" }}>HOW TO READ YOUR DEFINITION</div>div>
+                        <div style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: "10px", letterSpacing: "0.15em", textTransform: "uppercase", color: "#b8860b", marginBottom: "12px" }}>HOW TO READ YOUR DEFINITION</div>
                         <p style={{ fontSize: "13px", color: "rgba(240,234,216,0.55)", lineHeight: "1.7", margin: "0 0 12px 0" }}>
                                   Think of your defined centers as <strong style={{ color: "rgba(240,234,216,0.8)", fontWeight: 600 }}>towns you know intimately</strong>strong> — you grew up here, you know every street, you can give directions with confidence, you know exactly what to do and where to go. This is consistent, reliable energy that is always available to you.
-                        </p>p>
+                        </p>
                         <p style={{ fontSize: "13px", color: "rgba(240,234,216,0.55)", lineHeight: "1.7", margin: "0 0 12px 0" }}>
                                   Your defined <strong style={{ color: "rgba(240,234,216,0.8)", fontWeight: 600 }}>channels are the superhighways</strong>strong> between those towns — familiar routes you travel automatically, with no need to think about which way to turn. This is where your most consistent gifts live.
-                        </p>p>
+                        </p>
                         <p style={{ fontSize: "13px", color: "rgba(240,234,216,0.55)", lineHeight: "1.7", margin: 0 }}>
                                   Your <strong style={{ color: "rgba(240,234,216,0.8)", fontWeight: 600 }}>undefined or open centers</strong>strong> are places you are still exploring — like visiting a new city where you might take a taxi or ask a local for directions. You are learning here, not leading. These are also the places where you are most receptive, most flexible, and most wise about the experiences of others.
-                        </p>p>
-                </div>div>
-          </div>div>
+                        </p>
+                </div>
+          </div>
         );
 }
 
@@ -198,8 +198,8 @@ function Message({ role, content }) {
                     wordBreak: "break-word",
           }}>
                   {content}
-                </div>div>
-          </div>div>
+                </div>
+          </div>
         );
 }
 
@@ -395,7 +395,7 @@ export default function App() {
             {chartDetected && (
                     <button className="new-reading-btn" onClick={handleNewReading}>
                               ✦ New Reading
-                    </button>button>
+                    </button>
                 )}
                 <div style={{
                     position: "relative", zIndex: 1,
@@ -404,19 +404,19 @@ export default function App() {
                     borderBottom: "1px solid rgba(201,168,76,0.2)",
                     marginBottom: "8px",
           }}>
-                        <div style={{ color: "#c9a84c", fontSize: "18px", marginBottom: "12px", opacity: 0.7 }}>✦</div>div>
+                        <div style={{ color: "#c9a84c", fontSize: "18px", marginBottom: "12px", opacity: 0.7 }}>✦</div>
                         <h1 style={{ margin: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", fontFamily: "'Cinzel', Georgia, serif", fontWeight: 400 }}>
-                                  <span style={{ fontSize: "clamp(24px,5vw,52px)", color: "#c9a84c", letterSpacing: "0.15em", textTransform: "uppercase" }}>Evolutionary</span>span>
-                                  <span style={{ fontSize: "clamp(32px,7vw,72px)", color: "#f0ead8", letterSpacing: "0.06em", lineHeight: 1 }}>Human Design</span>span>
-                                  <span style={{ fontSize: "clamp(11px,2vw,16px)", color: "rgba(240,234,216,0.55)", letterSpacing: "0.35em", textTransform: "uppercase", fontStyle: "italic", marginTop: "8px" }}>Living Blueprint Reader</span>span>
-                        </h1>h1>
-                        <div style={{ color: "#c9a84c", fontSize: "18px", marginTop: "12px", opacity: 0.7 }}>✦</div>div>
+                                  <span style={{ fontSize: "clamp(24px,5vw,52px)", color: "#c9a84c", letterSpacing: "0.15em", textTransform: "uppercase" }}>Evolutionary</span>
+                                  <span style={{ fontSize: "clamp(32px,7vw,72px)", color: "#f0ead8", letterSpacing: "0.06em", lineHeight: 1 }}>Human Design</span>
+                                  <span style={{ fontSize: "clamp(11px,2vw,16px)", color: "rgba(240,234,216,0.55)", letterSpacing: "0.35em", textTransform: "uppercase", fontStyle: "italic", marginTop: "8px" }}>Living Blueprint Reader</span>
+                        </h1>
+                        <div style={{ color: "#c9a84c", fontSize: "18px", marginTop: "12px", opacity: 0.7 }}>✦</div>
                   {chartDetected && birthdata && (
                       <div style={{ marginTop: "12px", fontSize: "12px", color: "rgba(134,239,172,0.85)", background: "rgba(134,239,172,0.08)", border: "1px solid rgba(134,239,172,0.2)", borderRadius: "20px", padding: "4px 16px", display: "inline-block" }}>
                                   Chart retrieved: {birthdata.birthdate} {birthdata.birthtime} — {birthdata.location}
-                      </div>div>
+                      </div>
                         )}
-                </div>div>
+                </div>
                 <div style={{
                     position: "relative",
                     zIndex: 1,
@@ -434,15 +434,15 @@ export default function App() {
                     )}
                   {isEmpty && (
                       <div style={{ textAlign: "center", padding: "60px 20px", color: "rgba(255,255,255,0.45)" }}>
-                                  <div style={{ fontSize: "32px", marginBottom: "16px", opacity: 0.6 }}>✦</div>div>
+                                  <div style={{ fontSize: "32px", marginBottom: "16px", opacity: 0.6 }}>✦</div>
                                   <div style={{ fontSize: "16px", lineHeight: "1.8", color: "rgba(200,180,255,0.7)" }}>
                                                 Share your birth date, time, and city<br />
                                                 to receive your evolutionary reading.
-                                  </div>div>
+                                  </div>
                                   <div style={{ marginTop: "16px", fontSize: "16px", color: "rgba(167,139,250,0.85)" }}>
                                                 Example: "My name is Sarah. October 5, 1975 at 6:30am in Chicago, Illinois"
-                                  </div>div>
-                      </div>div>
+                                  </div>
+                      </div>
                         )}
                   {messages.map((m, i) => <Message key={i} role={m.role} content={m.content} />)}
                   {loading && (
@@ -455,9 +455,9 @@ export default function App() {
                                       color: "rgba(167,139,250,0.7)",
                                       fontSize: "14px",
                       }}>
-                                                Reading your chart <span style={{ display: "inline-block", animation: "pulse 1.5s infinite" }}> ...</span>span>
-                                  </div>div>
-                      </div>div>
+                                                Reading your chart <span style={{ display: "inline-block", animation: "pulse 1.5s infinite" }}> ...</span>
+                                  </div>
+                      </div>
                         )}
                   {chartDetected && streamingDone && !loading && messages.length > 0 && messages[messages.length - 1].role === 'assistant' && (
                       <div style={{
@@ -473,7 +473,7 @@ export default function App() {
                                       letterSpacing: '0.05em'
                       }}>
                                                 To save your reading — Cmd+P (Mac) or Ctrl+P (Windows) → Save as PDF
-                                  </p>p>
+                                  </p>
                                   <p style={{
                                       fontSize: '0.8rem',
                                       color: 'rgba(201,168,76,0.7)',
@@ -483,7 +483,7 @@ export default function App() {
                                       textTransform: 'uppercase'
                       }}>
                                                 ✦ &nbsp; Continue your reading &nbsp; ✦
-                                  </p>p>
+                                  </p>
                                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                     {FOLLOWUP_PROMPTS.map((prompt, i) => (
                                         <button
@@ -513,13 +513,13 @@ export default function App() {
                                                             }}
                                                           >
                                                           ✦ &nbsp; {prompt}
-                                        </button>button>
+                                        </button>
                                       ))}
-                                  </div>div>
-                      </div>div>
+                                  </div>
+                      </div>
                         )}
                         <div ref={bottomRef} />
-                </div>div>
+                </div>
                 <div style={{
                     position: "relative",
                     zIndex: 1,
@@ -578,12 +578,12 @@ export default function App() {
                                                             <line x1="22" y1="2" x2="11" y2="13" />
                                                             <polygon points="22 2 15 22 11 13 2 9 22 2" />
                                               </svg>
-                                  </button>button>
-                        </div>div>
+                                  </button>
+                        </div>
                         <div style={{ textAlign: "center", marginTop: "8px", fontSize: "11px", color: "rgba(255,255,255,0.3)" }}>
                                   Press Enter to send · Shift+Enter for new line
-                        </div>div>
-                </div>div>
+                        </div>
+                </div>
                 <style>{`
                         @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&display=swap');
                                 * { box-sizing: border-box; }
@@ -611,7 +611,7 @@ export default function App() {
                                                                                                                                                                                                                                               background: #c9a84c;
                                                                                                                                                                                                                                                         color: #0f0d0a;
                                                                                                                                                                                                                                                                 }
-                                                                                                                                                                                                                                                                      `}</style>style>
-          </div>div>
+                                                                                                                                                                                                                                                                      `}</style>
+          </div>
         );
-}</circle>
+}
