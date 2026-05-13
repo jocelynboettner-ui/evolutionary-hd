@@ -295,11 +295,26 @@ export default function App() {
           let currentBirthdata;
           let newMessages;
           if (parsed) {
-                  currentBirthdata = parsed;
-                  setBirthdata(parsed);
-                  setChartDetected(true);
-                  setMessages([userMsg]);
-                  newMessages = [userMsg];
+                  // Redirect to Stripe checkout before delivering the reading
+                  setLoading(true);
+                  try {
+                      const res = await fetch(API_URL + "/api/create-checkout-session", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                              birthdate: parsed.isoDate,
+                              birthtime: parsed.birthTime,
+                              location: parsed.location,
+                              name: parsed.name,
+                          }),
+                      });
+                      const { url } = await res.json();
+                      window.location.href = url;
+                  } catch (err) {
+                      console.error("Stripe redirect error:", err);
+                      setLoading(false);
+                  }
+                  return;
           } else {
                   currentBirthdata = chartDetected ? birthdata : null;
                   newMessages = [...messages, userMsg];
