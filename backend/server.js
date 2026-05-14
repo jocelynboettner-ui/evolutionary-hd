@@ -747,7 +747,7 @@ app.post('/api/create-checkout-session', async (req, res) => {
                                                       name: 'The Evolutionary Human Design Reader',
                                                       description: 'Your design. Your wound. Your major life transits. All of it rendered into a reading so precise it will feel like someone finally turned the lights on in a room you\'ve been navigating in the dark.',
                                         },
-                                        unit_amount: 2700,
+                                        unit_amount: 3300,
                             },
                             quantity: 1,
                   }],
