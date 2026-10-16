@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { downloadReadingPdf } from "./readingPdf.js";
+import { parseBirthText } from "../../backend/birth-parse.js";
 import { renderBodygraphSVG, svgToPng } from "./bodygraph.js";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://evolutionary-hd-api.onrender.com";
@@ -121,65 +122,8 @@ function ReadingTableOfContents({ visible, birthdata }) {
 }
 
 function parseBirthData(text) {
-    const MONTHS = {
-          jan:"01",feb:"02",mar:"03",apr:"04",may:"05",jun:"06",
-          jul:"07",aug:"08",sep:"09",oct:"10",nov:"11",dec:"12"
-    };
-    let month, day, year;
-    const isoMatch = text.match(/\b(\d{4})-(\d{2})-(\d{2})\b/);
-    if (isoMatch) { year = isoMatch[1]; month = isoMatch[2]; day = isoMatch[3]; }
-    if (!month) {
-          const nm = text.match(/\b(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})\b/);
-          if (nm) { month = nm[1].padStart(2,"0"); day = nm[2].padStart(2,"0"); year = nm[3]; }
-    }
-    if (!month) {
-          const wordRe = /\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+(\d{1,2})(?:st|nd|rd|th)?[,\s]+(\d{4})\b/i;
-          const wordRe2 = /\b(\d{1,2})(?:st|nd|rd|th)?\s+(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s*[,\s]\s*(\d{4})\b/i;
-          const m1 = text.match(wordRe);
-          const m2 = !m1 && text.match(wordRe2);
-          if (m1) { month = MONTHS[m1[1].substring(0,3).toLowerCase()]; day = m1[2].padStart(2,"0"); year = m1[3]; }
-          else if (m2) { day = m2[1].padStart(2,"0"); month = MONTHS[m2[2].substring(0,3).toLowerCase()]; year = m2[3]; }
-    }
-    if (!month || !day || !year) return null;
-    const birthdate = year + "-" + month + "-" + day;
-    let birthtime = "12:00";
-    const time12 = text.match(/\b(\d{1,2})(?::(\d{2}))?\s*([ap]m)\b/i);
-    const time24 = !time12 && text.match(/\b([01]?\d|2[0-3]):(\d{2})\b/);
-    if (time12) {
-          let h = parseInt(time12[1]);
-          const m = time12[2] || "00";
-          const ampm = time12[3].toLowerCase();
-          if (ampm === "pm" && h !== 12) h += 12;
-          if (ampm === "am" && h === 12) h = 0;
-          birthtime = h.toString().padStart(2,"0") + ":" + m;
-    } else if (time24) {
-          birthtime = time24[1].padStart(2,"0") + ":" + time24[2];
-    }
-    let locText = text
-          .replace(/\b\d{4}-\d{2}-\d{2}\b/, "")
-          .replace(/\b\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}\b/, "")
-          .replace(/\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+\d{1,2}(?:st|nd|rd|th)?[,\s]+\d{4}\b/gi, "")
-          .replace(/\b\d{1,2}(?:st|nd|rd|th)?\s+(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s*[,\s]\s*\d{4}\b/gi, "")
-          .replace(/\b\d{1,2}(?::\d{2})?\s*[ap]m\b/gi, "")
-          .replace(/\b([01]?\d|2[0-3]):\d{2}\b/, "")
-          .replace(/\bat\b/gi, "")
-          .trim();
-    let location = null;
-    const inMatch = locText.match(/\bin\s+([A-Za-z][A-Za-z .]+(?:,\s*[A-Za-z]{2,})?)/i);
-    if (inMatch) location = inMatch[1].trim().replace(/[.,]+$/, "").trim();
-    if (!location) {
-          const commaMatch = locText.match(/([A-Za-z][A-Za-z .]{1,}),\s*([A-Za-z]{2,})/);
-          if (commaMatch) location = commaMatch[1].trim() + ", " + commaMatch[2].trim();
-    }
-    if (!location) {
-          const endMatch = locText.match(/\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\s+([A-Z]{2})\s*$/);
-          if (endMatch) location = endMatch[1] + ", " + endMatch[2];
-    }
-    if (!location) return null;
-    const nameMatch = text.match(/(?:my name is|i'm|i am|called)\s+([A-Z][a-z]+)/i)
-          || text.match(/^([A-Z][a-z]+)\s*[—\-,]/m);
-    const name = nameMatch ? nameMatch[1] : null;
-    return { birthdate, birthtime, location, name };
+    const p = parseBirthText(text);
+    return p.birthdate && p.location ? { birthdate: p.birthdate, birthtime: p.birthtime, location: p.location, name: p.name } : null;
 }
 
 function Message({ role, content }) {
@@ -368,6 +312,11 @@ export default function App() {
                   setStreamingDone(false);
                   newMessages = [...messages, userMsg];
                   setMessages(newMessages);
+          } else if (!parsed && !chartDetected) {
+                  // Couldn't read birth details: ask again locally instead of sending a chart-less request
+                  const miss = parseBirthText(text).missing;
+                  setMessages([...messages, userMsg, { role: "assistant", content: `I couldn't read ${miss.length ? miss.join(", ") : "your birth details"} from that. Please enter your name, birth date, birth time, and birthplace, for example:\n\nJocelyn, September 30, 1973, 5:07 AM, Reading, Pennsylvania` }]);
+                  return;
           } else if (parsed) {
                   // Redirect to Stripe checkout before delivering the reading
                   setLoading(true);

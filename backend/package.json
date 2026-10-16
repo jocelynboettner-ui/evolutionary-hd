@@ -5,7 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node test/reading-context.test.mjs"
+    "test": "node test/reading-context.test.mjs && node test/birth-parse.test.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.20.0",

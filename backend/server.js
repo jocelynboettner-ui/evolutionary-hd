@@ -6,6 +6,8 @@ import { fetchEvolutionaryArc, formatEvolutionaryArcForPrompt } from "./hd-evolu
 import { fileURLToPath } from 'url';
 import path from 'path';
 import crypto from 'crypto';
+import { tzForLocation } from './location-tz.js';
+import { parseBirthText } from './birth-parse.js';
 import { buildFactsBlock, attributeChannels, formatAttribution, channelList, currentCycleStatus, formatCycleStatus, bodygraphData, CYCLE_LABELS } from './reading-context.js';
 import Stripe from 'stripe';
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -22,6 +24,8 @@ const SACRED_CYCLES_URL = process.env.SACRED_CYCLES_URL || "http://localhost:800
 // SYSTEM PROMPT
 // ============================================================
 const SYSTEM_PROMPT = `
+OUTPUT RULE: You have NO tools. Never write tool calls, XML/HTML-style tags (e.g. <get_bodygraph>), JSON, or "processing"/"calculating" steps. All chart data is already provided in the user message. Never invent chart data or dates; if a value is missing, say it is unavailable.
+
 ABSOLUTE RULE: The user message begins with === CRITICAL CHART FACTS ===. Read the TYPE, AUTHORITY, PROFILE, and INCARNATION CROSS listed there. Write EXACTLY those values — no substitutions, no supplementing from training data. If TYPE says Generator, write Generator. If PROFILE says 4/6, write 4/6. If CROSS says Right Angle Cross of Service, write that. Your Human Design training knowledge is irrelevant — the chart facts are the only truth.
 
 
@@ -257,6 +261,7 @@ async function fetchHumanDesign(birthdate, birthtime, location) {
   else if (loc.includes('paris') || loc.includes('berlin') || loc.includes('amsterdam') || loc.includes('rome') || loc.includes('madrid')) timezone = 'Europe/Paris';
   else if (loc.includes('sydney') || loc.includes('melbourne') || loc.includes('brisbane')) timezone = 'Australia/Sydney';
   else if (loc.includes('toronto') || loc.includes('montreal') || loc.includes('new york') || loc.includes('boston') || loc.includes('miami') || loc.includes('atlanta') || loc.includes('philadelphia') || loc.includes('reading') || loc.includes('eastern')) timezone = 'America/New_York';
+  { const _tzx = tzForLocation(location || ''); if (_tzx) timezone = _tzx; }
 
   const params = new URLSearchParams({ date: isoDate, timezone });
   const url = 'https://api.humandesign.ai/v3/hd-data?' + params.toString() + '&api_key=' + encodeURIComponent(HD_AI_API_KEY);
@@ -355,6 +360,24 @@ function formatOverlayData(cycles, overlays, natalChart) {
 // ============================================================
 // CHAT ENDPOINT
 // ============================================================
+function birthDetailsHelp(missing) {
+  const need = (missing && missing.length) ? missing.join(', ') : 'your birth details';
+  return `I couldn't read ${need} from your message. Please enter your name, birth date, birth time, and birthplace, for example:\n\nJocelyn, September 30, 1973, 5:07 AM, Reading, Pennsylvania`;
+}
+function sendNotice(res, text, code) {
+  if (!res.headersSent) {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.flushHeaders();
+  }
+  if (res.writableEnded) return;
+  res.write('data: ' + JSON.stringify({ text, notice: code }) + '\n\n');
+  res.write('data: [DONE]\n\n');
+  res.end();
+}
+// Remove any tool-call-like tags the model might emit.
+const stripToolTags = (t) => String(t).replace(/<\/?(get|call|tool|function)_?[a-z_]*[^>]*>/gi, '');
+
 // ── ACCESS CHECK: paid Stripe session or owner preview code ──
 function isOwnerCode(code) {
   const expected = process.env.OWNER_PREVIEW_CODE;
@@ -388,7 +411,16 @@ app.post("/api/chat", async (req, res) => {
     res.end();
   });
 
-  const { messages, birthdata } = req.body;
+  const { messages } = req.body;
+  let { birthdata } = req.body;
+  // Fallback: parse birth details from the user's text if the client didn't send them (tolerant parser).
+  if (!birthdata?.birthdate && Array.isArray(messages)) {
+    for (const m of messages) {
+      if (m?.role !== 'user' || typeof m.content !== 'string') continue;
+      const p = parseBirthText(m.content);
+      if (p.birthdate && p.location) { birthdata = { birthdate: p.birthdate, birthtime: p.birthtime, location: p.location, name: p.name }; break; }
+    }
+  }
   if (!messages || !Array.isArray(messages)) {
     return res.status(400).json({ error: "messages array required" });
   }
@@ -416,6 +448,7 @@ app.post("/api/chat", async (req, res) => {
     else if (_tzLoc.includes('london') || _tzLoc.includes('uk') || _tzLoc.includes('england')) _timezone = 'Europe/London';
     else if (_tzLoc.includes('paris') || _tzLoc.includes('berlin') || _tzLoc.includes('amsterdam') || _tzLoc.includes('rome') || _tzLoc.includes('madrid')) _timezone = 'Europe/Paris';
     else if (_tzLoc.includes('sydney') || _tzLoc.includes('melbourne') || _tzLoc.includes('brisbane')) _timezone = 'Australia/Sydney';
+    { const _tzx = tzForLocation(birthdata.location || ''); if (_tzx) _timezone = _tzx; }
 
     try {
       [hdChart, cycles] = await Promise.all([
@@ -460,6 +493,13 @@ app.post("/api/chat", async (req, res) => {
       console.error('Group 1 error:', err.message);
     }
 
+    // Guard: no natal chart -> never call the model (it would hallucinate a chart).
+    if (!hdChart) {
+      console.error('No natal chart for birthdata', JSON.stringify(birthdata));
+      sendNotice(res, "I couldn't calculate your chart from those details. Please check your birth date, time, and birthplace and try again, for example:\n\nJocelyn, September 30, 1973, 5:07 AM, Reading, Pennsylvania", 'chart_unavailable');
+      return;
+    }
+
     // ── Current cycle (7-yr windows; Chiron permanent after return) + bodygraph data for the client ──
     const cycleStatus = currentCycleStatus(cycles, now);
     if (cycleStatus) chartText = formatCycleStatus(cycleStatus) + '\n\n' + chartText;
@@ -486,6 +526,7 @@ app.post("/api/chat", async (req, res) => {
               else if (_loc.includes('london') || _loc.includes('uk') || _loc.includes('england')) timezone = 'Europe/London';
               else if (_loc.includes('paris') || _loc.includes('berlin') || _loc.includes('amsterdam') || _loc.includes('rome') || _loc.includes('madrid')) timezone = 'Europe/Paris';
               else if (_loc.includes('sydney') || _loc.includes('melbourne') || _loc.includes('brisbane')) timezone = 'Australia/Sydney';
+              { const _tzx = tzForLocation(birthdata.location || ''); if (_tzx) timezone = _tzx; }
               return fetchEvolutionaryArc(
                 birthdata.birthtime, timezone, hdChart, cycles, null
               ).catch(err => { console.error('Arc error:', err.message); return null; });
@@ -709,7 +750,7 @@ This is the final section. The closing sentence is the last line of the entire a
       });
       stream.on('text', (text) => {
         fullText += text;
-        if (!res.writableEnded) res.write('data: ' + JSON.stringify({ text }) + '\n\n');
+        if (!res.writableEnded) res.write('data: ' + JSON.stringify({ text: stripToolTags(text) }) + '\n\n');
       });
       stream.on('message', runArcPhase);
       stream.on('error', (err) => {
@@ -720,26 +761,10 @@ This is the final section. The closing sentence is the last line of the entire a
     }
 
   } else {
-    // ── No birth data — regular chat ──
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.flushHeaders();
-
-    try {
-      const stream = anthropic.messages.stream({
-        model: "claude-sonnet-4-5",
-        max_tokens: 16000,
-        system: SYSTEM_PROMPT,
-        messages: augmentedMessages,
-      });
-      stream.on('text', (text) => { res.write('data: ' + JSON.stringify({ text }) + '\n\n'); });
-      stream.on('message', () => { res.write('data: [DONE]\n\n'); res.end(); });
-      stream.on('error', (err) => { res.write('data: ' + JSON.stringify({ error: err.message }) + '\n\n'); res.end(); });
-    } catch (err) {
-      res.write('data: ' + JSON.stringify({ error: err.message }) + '\n\n');
-      res.end();
-    }
+    // ── No birth data: never call the model without a chart ──
+    const lastUser = [...messages].reverse().find(m => m?.role === 'user');
+    const missing = parseBirthText(lastUser?.content || '').missing;
+    sendNotice(res, birthDetailsHelp(missing), 'missing_birthdata');
   }
 });
 
@@ -763,6 +788,7 @@ app.post("/api/debug-raw", async (req, res) => {
     if (_loc2.includes('los angeles') || _loc2.includes('pacific')) timezone = 'America/Los_Angeles';
     else if (_loc2.includes('chicago') || _loc2.includes('central')) timezone = 'America/Chicago';
     else if (_loc2.includes('london') || _loc2.includes('uk')) timezone = 'Europe/London';
+    { const _tzx = tzForLocation(location || ''); if (_tzx) timezone = _tzx; }
     const iso2 = String(birthdate).match(/^(\d{4})-(\d{2})-(\d{2})$/);
     const mdy2 = String(birthdate).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
     let year, month, day;
@@ -859,8 +885,11 @@ app.get('/api/verify-session/:sessionId', async (req, res) => {
 app.get("/health", (_req, res) => res.json({ ok: true }));
 
 // Serve React frontend
-app.use(express.static(path.join(__dirname, '../frontend/dist')));
+app.use(express.static(path.join(__dirname, '../frontend/dist'), {
+  setHeaders: (res, p) => { if (p.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache'); },
+}));
 app.get('*', (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache');
   res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
 });
 
