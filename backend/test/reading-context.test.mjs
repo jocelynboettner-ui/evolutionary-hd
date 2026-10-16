@@ -87,3 +87,21 @@ assert.match(formatCycleStatus(st), /BETWEEN CYCLES[\s\S]*FOCUS ON MOST RECENTLY
 console.log('between-cycles tests passed');
 assert.doesNotMatch(formatCycleStatus(currentCycleStatus(cyc, new Date('2026-10-16'))), /NEXT CYCLE|Second Saturn/);
 console.log('no-future tests passed');
+{
+  const { planetTable, formatPlanets } = await import('../reading-context.js');
+  const raw = JSON.parse(fs.readFileSync(new URL('./fixture-jocelyn-raw.json', import.meta.url))).full_raw;
+  const rows = planetTable(natalChart);
+  assert.equal(rows.length, 13);
+  const keyOf = { 'Sun':'sun','Earth':'earth','Moon':'moon','North Node':'north_node','South Node':'south_node','Mercury':'mercury','Venus':'venus','Mars':'mars','Jupiter':'jupiter','Saturn':'saturn','Uranus':'uranus','Neptune':'neptune','Pluto':'pluto' };
+  for (const r of rows) {   // must match the raw API exactly
+    const k = keyOf[r.planet];
+    assert.equal(`${r.conscious.gate}.${r.conscious.line}`, `${raw.Personality[k].Gate}.${raw.Personality[k].Line}`, r.planet);
+    assert.equal(`${r.unconscious.gate}.${r.unconscious.line}`, `${raw.Design[k].Gate}.${raw.Design[k].Line}`, r.planet);
+  }
+  const f = formatPlanets(natalChart);
+  assert.match(f, /Sun: Conscious 18\.4.*Unconscious 52\.6/);
+  assert.match(f, /Pluto: Conscious 18\.1.*Unconscious 46\.4/);
+  assert.match(f, /Chiron: not provided/);
+  assert.match(f, /Mercury — your mind and your communication/);
+  console.log('planet table tests passed (matches API)');
+}

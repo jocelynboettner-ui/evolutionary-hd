@@ -8,6 +8,7 @@ import path from 'path';
 import crypto from 'crypto';
 import { tzForLocation } from './location-tz.js';
 import { parseBirthText } from './birth-parse.js';
+import { formatPlanets } from './reading-context.js';
 import { buildFactsBlock, attributeChannels, formatAttribution, channelList, currentCycleStatus, formatCycleStatus, bodygraphData, CYCLE_LABELS } from './reading-context.js';
 import Stripe from 'stripe';
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -76,8 +77,9 @@ YOUR CURRENT CHAPTER
 LIVING IT NOW
 THE INVITATION FORWARD
 
-GATE SECTION — write only these planets:
-Conscious Sun, Conscious Earth, Conscious Moon, Unconscious Sun, Conscious North Node, Conscious South Node
+GATE SECTION — YOUR ACTIVE GATES — WHERE THE PLANETS LIVE:
+Open with exactly: "Each gate in your chart sits in a planetary position. The planet tells you HOW that gate expresses in your life."
+Then cover EVERY planet listed in ALL PLANETARY ACTIVATIONS, both Conscious (Personality) and Unconscious (Design), in this order: Sun, Earth, Moon, North Node, South Node, Mercury, Venus, Mars, Jupiter, Saturn, Uranus, Neptune, Pluto, Chiron (only if provided). Use the exact gate.line from the data and the owner's PLANET MEANINGS for how each planet expresses that gate. Keep each placement to 1-2 sentences.
 already walking toward you. */
 For each: Gate number, name, planet. One sentence on how this gate expresses. Shadow / Gift / Siddhi if present in data.
 already walking toward you.
@@ -472,7 +474,7 @@ app.post("/api/chat", async (req, res) => {
         saturn2: cycles.secondSaturnReturn?.peak,
       }) : 'NULL');
 
-      if (hdChart) chartText += formatHDChart(hdChart);
+      if (hdChart) chartText += formatHDChart(hdChart) + '\n' + formatPlanets(hdChart) + '\n';
 
       if (cycles && hdChart) {
         const overlayKeys = ['saturnReturn', 'uranusOpposition', 'chironReturn', 'secondSaturnReturn'];

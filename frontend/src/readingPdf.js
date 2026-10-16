@@ -1,5 +1,6 @@
 // readingPdf.js — client-side PDF export of a finished reading (no server cost).
 import { jsPDF } from "jspdf";
+import { PLANET_INTRO, planetMeaning } from "../../backend/reading-context.js";
 
 const clean = (t) => String(t || "")
   .replace(/\r/g, "")
@@ -23,7 +24,7 @@ function headingOf(line) {
  * @param {{ name?: string, birthdata?: {birthdate?:string,birthtime?:string,location?:string}, parts: string[], generatedAt?: Date }} opts
  * @returns {jsPDF}
  */
-export function buildReadingPdf({ name, birthdata, parts, images = [], generatedAt = new Date() }) {
+export function buildReadingPdf({ name, birthdata, parts, images = [], planets = [], generatedAt = new Date() }) {
   const doc = new jsPDF({ unit: "pt", format: "letter" });
   const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight();
   const M = 72, maxW = W - 2 * M;               // 1" margins -> ~70-75 characters per line at 12pt
@@ -69,6 +70,27 @@ export function buildReadingPdf({ name, birthdata, parts, images = [], generated
       doc.addPage(); y = M;
       images.slice(2).forEach((im, i) => { const h = w * (im.h / im.w); doc.addImage(im.dataUrl, "PNG", M + (i % 2) * (w + gap), y, w, h); if (i % 2) y += h + 10; });
     }
+    doc.addPage(); y = M;
+  }
+
+  // Planetary placements: stacked, one planet per block (Conscious / Unconscious gate.line)
+  if (planets.length) {
+    doc.setFont("times", "bold"); doc.setFontSize(15); doc.setTextColor(...gold);
+    doc.text("Your Planetary Placements", M, y); y += 20;
+    doc.setFont("times", "italic"); doc.setFontSize(BODY); doc.setTextColor(...ink);
+    doc.splitTextToSize(PLANET_INTRO, maxW).forEach(l => { doc.text(l, M, y); y += LH; }); y += 6;
+    const fmt = a => a ? `${a.gate}.${a.line}${a.name ? "  " + clean(a.name) : ""}` : "-";
+    planets.forEach(r => {
+      const cm = planetMeaning(r.planet, "Conscious"), um = planetMeaning(r.planet, "Unconscious");
+      const meaning = doc.splitTextToSize(clean(cm === um ? cm : `Conscious: ${cm}. Unconscious: ${um}.`), maxW - 100);
+      ensure(14 * (meaning.length + 2) + 10);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(...gold); doc.text(r.planet, M, y);
+      doc.setFont("times", "italic"); doc.setFontSize(11); doc.setTextColor(...muted);
+      meaning.forEach(l => { doc.text(l, M + 100, y); y += 14; });
+      doc.setFont("helvetica", "normal"); doc.setFontSize(10.5); doc.setTextColor(...ink);
+      doc.text("Conscious:  " + fmt(r.conscious), M + 100, y); y += 14;
+      doc.setTextColor(170, 50, 40); doc.text("Unconscious:  " + fmt(r.unconscious), M + 100, y); y += 18;
+    });
     doc.addPage(); y = M;
   }
 

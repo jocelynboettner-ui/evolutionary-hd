@@ -189,5 +189,58 @@ export function bodygraphData(chart) {
     type: chart.type, authority: chart.authority, profile: chart.profile, incarnation_cross: chart.incarnation_cross,
     defined_centers: chart.defined_centers || [], channels: (chart.channels || []).map(normChannelKey).filter(Boolean),
     gates: chart.gates || [], personalityGates: gatesOf('personality'), designGates: gatesOf('design'),
+    planets: planetTable(chart),
   };
+}
+
+// ── All planetary activations (owner's planet meanings) ──
+export const PLANET_ORDER = ['Sun','Earth','Moon','North Node','South Node','Mercury','Venus','Mars','Jupiter','Saturn','Uranus','Neptune','Pluto','Chiron'];
+export const PLANET_INTRO = 'Each gate in your chart sits in a planetary position. The planet tells you HOW that gate expresses in your life.';
+export const PLANET_MEANINGS = {
+  'Sun (Conscious)': 'your visible identity, what you radiate',
+  'Earth (Conscious)': 'your grounding, what stabilizes you',
+  'Moon (Conscious)': 'your emotional anchor, your inner rhythm',
+  'Sun (Unconscious)': 'your deepest nature, felt before seen',
+  'North Node': "your evolutionary direction, where you're going",
+  'South Node': 'your past patterns, what you came from',
+  'Saturn': 'your teacher, your discipline, your karma',
+  'Chiron': 'your wound and your medicine',
+  'Uranus': 'your disruption and your genius',
+  'Neptune': 'your dream and your dissolution',
+  'Pluto': 'your transformation and your power',
+  'Jupiter': 'your expansion and your wisdom',
+  'Mars': 'your drive and your will',
+  'Venus': 'your values and your magnetism',
+  'Mercury': 'your mind and your communication',
+};
+export function planetMeaning(planet, side) {
+  return PLANET_MEANINGS[`${planet} (${side})`] || PLANET_MEANINGS[planet] || PLANET_MEANINGS[`${planet} (Conscious)`] || '';
+}
+
+// [{ planet, conscious:{gate,line,name}|null, unconscious:{...}|null }]
+export function planetTable(chart) {
+  const pick = p => (p && p.gate ? { gate: p.gate, line: p.line, name: p.iChingName || '' } : null);
+  return PLANET_ORDER.map(planet => ({
+    planet,
+    conscious: pick(chart?.personality?.[planet]),
+    unconscious: pick(chart?.design?.[planet]),
+  })).filter(r => r.conscious || r.unconscious);
+}
+
+export function formatPlanets(chart) {
+  const rows = planetTable(chart);
+  if (!rows.length) return '';
+  const L = ['=== ALL PLANETARY ACTIVATIONS (gate.line; Conscious = Personality, Unconscious = Design) ==='];
+  for (const r of rows) {
+    const c = r.conscious ? `${r.conscious.gate}.${r.conscious.line}${r.conscious.name ? ' (' + r.conscious.name + ')' : ''}` : '—';
+    const u = r.unconscious ? `${r.unconscious.gate}.${r.unconscious.line}${r.unconscious.name ? ' (' + r.unconscious.name + ')' : ''}` : '—';
+    L.push(`${r.planet}: Conscious ${c} | Unconscious ${u}`);
+  }
+  if (!rows.find(r => r.planet === 'Chiron')) L.push('Chiron: not provided in the chart data (do not invent a Chiron gate).');
+  L.push('');
+  L.push('PLANET MEANINGS (use these exact meanings):');
+  L.push(PLANET_INTRO);
+  for (const [k, v] of Object.entries(PLANET_MEANINGS)) L.push(`${k} — ${v}`);
+  L.push('=== END PLANETARY ACTIVATIONS ===');
+  return L.join('\n');
 }

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { downloadReadingPdf } from "./readingPdf.js";
 import { parseBirthText } from "../../backend/birth-parse.js";
+import { PLANET_ORDER, planetMeaning } from "../../backend/reading-context.js";
 import { renderBodygraphSVG, svgToPng } from "./bodygraph.js";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://evolutionary-hd-api.onrender.com";
@@ -49,7 +50,7 @@ const PlanetaryKey = [
   { planet: "Mercury", meaning: "your mind and your communication" },
   ];
 
-function ReadingTableOfContents({ visible, birthdata }) {
+function ReadingTableOfContents({ visible, birthdata, planets }) {
     if (!visible) return null;
     return (
           <div style={{
@@ -94,14 +95,27 @@ function ReadingTableOfContents({ visible, birthdata }) {
                         <div style={{ fontSize: "16px", color: "rgba(240,234,216,0.85)", fontStyle: "italic", marginBottom: "16px", lineHeight: "1.6" }}>
                                   Each gate in your chart sits in a planetary position. The planet tells you HOW that gate expresses in your life.
                         </div>
-                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "6px 24px" }}>
-                          {PlanetaryKey.map(({ planet, meaning }) => (
-                        <div key={planet} style={{ display: "flex", alignItems: "baseline", gap: "8px", fontSize: "15px" }}>
-                                      <span style={{ color: "rgba(240,234,216,0.8)", whiteSpace: "nowrap", minWidth: "140px" }}>{planet}</span>
-                                      <span style={{ color: "rgba(184,134,11,0.4)", flexShrink: 0 }}>→</span>
-                                      <span style={{ color: "rgba(240,234,216,0.85)", fontStyle: "italic" }}>{meaning}</span>
-                        </div>
-                      ))}
+                        <div className="planet-list">
+                          {PLANET_ORDER.map(planet => {
+                              const row = (planets || []).find(r => r.planet === planet);
+                              if (planets && !row) return null;            // e.g. Chiron when not in chart data
+                              const fmt = a => a ? `${a.gate}.${a.line}${a.name ? " · " + a.name : ""}` : "—";
+                              const cm = planetMeaning(planet, "Conscious"), um = planetMeaning(planet, "Unconscious");
+                              return (
+                                  <div key={planet} className="planet-row">
+                                      <div className="planet-name">{planet}</div>
+                                      {cm === um
+                                          ? <div className="planet-meaning">{cm}</div>
+                                          : <div className="planet-meaning">Conscious: {cm}<br />Unconscious: {um}</div>}
+                                      {row && (
+                                          <div className="planet-gates">
+                                              <span><b>Conscious</b> {fmt(row.conscious)}</span>
+                                              <span className="unc"><b>Unconscious</b> {fmt(row.unconscious)}</span>
+                                          </div>
+                                      )}
+                                  </div>
+                              );
+                          })}
                         </div>
                 </div>
                 <div style={{ textAlign: "center", color: "rgba(184,134,11,0.3)", margin: "24px 0", letterSpacing: "0.3em" }}>—</div>
@@ -202,7 +216,63 @@ async function handleDownloadPdf(birthdata, messages, charts) {
         birthdata,
         parts: messages.filter(m => m.role === 'assistant' && m.content).map(m => m.content),
         images,
+        planets: charts?.natal?.planets || [],
     });
+}
+
+// Read one /api/chat SSE response fully (buffered; nothing is shown while it streams).
+async function streamChat(messages, birthdata) {
+    const body = { messages: messages.map(m => ({ role: m.role, content: m.content })), ...getAccess() };
+    if (birthdata) body.birthdata = birthdata;
+    const out = { text: "", charts: null, error: null, notice: null };
+    try {
+        const res = await fetch(API_URL + "/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+        if (res.status === 402) { out.error = "Payment is required to generate a reading."; return out; }
+        if (!res.ok || !res.body) { out.error = "Server error " + res.status; return out; }
+        const reader = res.body.getReader(); const decoder = new TextDecoder(); let buf = "";
+        outer: while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buf += decoder.decode(value, { stream: true });
+            let nl;
+            while ((nl = buf.indexOf("\n")) >= 0) {
+                const line = buf.slice(0, nl).trim(); buf = buf.slice(nl + 1);
+                if (!line.startsWith("data: ")) continue;
+                const data = line.slice(6);
+                if (data === "[DONE]") break outer;
+                try {
+                    const j = JSON.parse(data);
+                    if (j.charts) out.charts = j.charts;
+                    if (j.notice) out.notice = j.notice;
+                    if (j.text) out.text += j.text;
+                    if (j.error) out.error = j.error;
+                } catch (e) {}
+            }
+        }
+    } catch (err) { out.error = err.message || "Network error"; }
+    return out;
+}
+
+const GEN_LINES = [
+    "Calculating your chart and life cycles…",
+    "Mapping the channels that have come online…",
+    "Weaving your story of becoming…",
+    "Bringing it all together into your reading…",
+];
+
+function GeneratingScreen() {
+    const [i, setI] = useState(0);
+    useEffect(() => { const t = setInterval(() => setI(x => (x + 1) % GEN_LINES.length), 6000); return () => clearInterval(t); }, []);
+    return (
+        <div className="gen-screen" role="status" aria-live="polite">
+            <div className="gen-orb" aria-hidden="true" />
+            <div style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: "22px", color: "#e0c068", letterSpacing: "0.08em", margin: "28px 0 12px" }}>Generating your reading…</div>
+            <div style={{ fontSize: "17px", lineHeight: 1.6, color: "#f5f1e8", maxWidth: "46ch", margin: "0 auto" }}>
+                This takes a few minutes — your full reading and printable PDF will appear when it's ready. Feel free to relax.
+            </div>
+            <div key={i} className="gen-line">{GEN_LINES[i]}</div>
+        </div>
+    );
 }
 
 const FOLLOWUP_PROMPTS = [
@@ -251,44 +321,7 @@ export default function App() {
                                                       setChartDetected(true);
                                                       setStreamingDone(false);
                                                       const userMsg = { role: 'user', content: syntheticText };
-                                                      const newMessages = [userMsg];
-                                                      setMessages(newMessages);
-                                                      setLoading(true);
-                                                      fetch(`${API_URL}/api/chat`, {
-                                                                      method: 'POST',
-                                                                      headers: { 'Content-Type': 'application/json' },
-                                                                      body: JSON.stringify({ messages: newMessages, birthdata: parsed, ...getAccess() }),
-                                                      }).then(async res => {
-                                                                      if (!res.ok) { setLoading(false); return; }
-                                                                      const reader = res.body.getReader();
-                                                                      const decoder = new TextDecoder();
-                                                                      let fullText = '';
-                                                                      setMessages([...newMessages, { role: 'assistant', content: '' }]);
-                                                                      while (true) {
-                                                                                        const { done, value } = await reader.read();
-                                                                                        if (done) break;
-                                                                                        const chunk = decoder.decode(value);
-                                                                                        const lines = chunk.split('\n');
-                                                                                        for (const line of lines) {
-                                                                                                            if (line.startsWith('data: ')) {
-                                                                                                                                  const data = line.slice(6).trim();
-                                                                                                                                  if (data === '[DONE]') break;
-                                                                                                                                  try {
-                                                                                                                                                          const parsed2 = JSON.parse(data);
-                                                                                                                                                          if (parsed2.charts) setCharts(parsed2.charts);
-                                                                                                                                                          if (parsed2.text) {
-                                                                                                                                                                                    fullText += parsed2.text;
-                                                                                                                                                                                    setMessages([...newMessages, { role: 'assistant', content: fullText }]);
-                                                                                                                                                                                    await new Promise(r => setTimeout(r, 20));
-                                                                                                                                                            }
-                                                                                                                                    } catch (e) {}
-                                                                                                              }
-                                                                                          }
-                                                                      }
-                                                                      setLoading(false);
-                                                                      setStreamingDone(true);
-                                                                      setTimeout(() => topRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
-                                                      }).catch(() => setLoading(false));
+                                                      runReading([userMsg], parsed, true);
                                         }
                             })
                             .catch(err => console.error('Session verify error:', err));
@@ -343,63 +376,32 @@ export default function App() {
                   newMessages = [...messages, userMsg];
                   setMessages(newMessages);
           }
+          await runReading(newMessages, currentBirthdata, !!parsed);
+    }
+
+    // Generate (buffered) and reveal everything at once. For a new reading, part 2 ("continue")
+    // is generated automatically so the complete reading appears together.
+    async function runReading(newMessages, bd, full) {
+          setMessages(newMessages);
           setLoading(true);
+          setStreamingDone(false);
           try {
-                  const body = {
-                            messages: newMessages.map((m) => ({ role: m.role, content: m.content })),
-                            ...getAccess(),
-                  };
-                  if (currentBirthdata) {
-                            body.birthdata = currentBirthdata;
+                  const r1 = await streamChat(newMessages, bd);
+                  if (r1.charts) setCharts(r1.charts);
+                  if (r1.error || !r1.text) {
+                          setMessages([...newMessages, { role: "assistant", content: "Something interrupted your reading. Please try again in a moment." + (r1.error ? "\n\n(" + r1.error + ")" : "") }]);
+                          return;
                   }
-                  const res = await fetch(API_URL + "/api/chat", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify(body),
-                  });
-                  if (!res.ok) throw new Error("Server error: " + res.status);
-                  const contentType = res.headers.get("content-type") || "";
-                  if (contentType.includes("text/event-stream")) {
-                            const reader = res.body.getReader();
-                            const decoder = new TextDecoder();
-                            let fullText = "";
-                            setMessages([...newMessages, { role: "assistant", content: "" }]);
-                            while (true) {
-                                        const { done, value } = await reader.read();
-                                        if (done) break;
-                                        const chunk = decoder.decode(value);
-                                        const lines = chunk.split("\n");
-                                        for (const line of lines) {
-                                                      if (line.startsWith("data: ")) {
-                                                                      const data = line.slice(6).trim();
-                                                                      if (data === "[DONE]") break;
-                                                                      try {
-                                                                                        const parsed = JSON.parse(data);
-                                                                                        if (parsed.charts) setCharts(parsed.charts);
-                                                                                        if (parsed.text) {
-                                                                                                            fullText += parsed.text;
-                                                                                                            setMessages([...newMessages, { role: "assistant", content: fullText }]);
-                                                                                                            await new Promise(r => setTimeout(r, 20));
-                                                                                          }
-                                                                                        if (parsed.error) {
-                                                                                                            setMessages([...newMessages, {
-                                                                                                                                  role: "assistant",
-                                                                                                                                  content: "Something shifted — please try again in a moment. 🌀"
-                                                                                                              }]);
-                                                                                                            setLoading(false);
-                                                                                                            return;
-                                                                                          }
-                                                                      } catch (e) {}
-                                                      }
-                                        }
-                            }
-                  } else {
-                            const data = await res.json();
-                            const reply = data.content?.[0]?.text || "No response";
-                            setMessages([...newMessages, { role: "assistant", content: reply }]);
+                  let final = [...newMessages, { role: "assistant", content: r1.text }];
+                  if (full && !r1.notice) {
+                          const p1 = r1.text.split("\n").filter(l => !/type\s+["']?continue/i.test(l)).join("\n").trim();
+                          const withCont = [...newMessages, { role: "assistant", content: p1 }, { role: "user", content: "continue", hidden: true }];
+                          const r2 = await streamChat(withCont, bd);
+                          final = r2.text && !r2.error ? [...withCont, { role: "assistant", content: r2.text }] : [...newMessages, { role: "assistant", content: p1 }];
                   }
+                  setMessages(final);
           } catch (err) {
-                  setMessages([...newMessages, { role: "assistant", content: "Something went wrong: " + err.message }]);
+                  setMessages([...newMessages, { role: "assistant", content: "Something interrupted your reading. Please try again in a moment." }]);
           } finally {
                   setLoading(false);
                   setStreamingDone(true);
@@ -473,7 +475,7 @@ export default function App() {
           }}>
                         <div ref={topRef} />
                   {chartDetected && (
-                      <ReadingTableOfContents visible={true} birthdata={birthdata} />
+                      <ReadingTableOfContents visible={true} birthdata={birthdata} planets={charts?.natal?.planets} />
                     )}
                   {isEmpty && (
                       <div style={{ textAlign: "center", padding: "60px 20px", color: "rgba(255,255,255,0.45)" }}>
@@ -490,31 +492,10 @@ export default function App() {
                                   </div>
                       </div>
                         )}
-                  {charts && <Bodygraphs charts={charts} />}
-                  {messages.map((m, i) => <Message key={i} role={m.role} content={m.content} />)}
-                  {loading && chartDetected && (
-                      <div className="gen-banner" role="status" aria-live="polite">
-                          <div style={{ fontWeight: 600, fontSize: "17px", marginBottom: "6px", color: "#e0c068" }}>✦ Your reading is being created</div>
-                          <div style={{ fontSize: "16px", lineHeight: 1.6 }}>
-                              It takes a few minutes to fully generate. Feel free to relax rather than reading along. When it's complete, a <strong>Download PDF</strong> button will appear so you can print or save your full report.
-                          </div>
-                          <div className="gen-bar"><span /></div>
-                      </div>
-                  )}
-                  {loading && (
-                      <div style={{ display: "flex", justifyContent: "flex-start", padding: "0 8px", marginBottom: "16px" }}>
-                                  <div style={{
-                                      background: "rgba(255,255,255,0.07)",
-                                      border: "1px solid rgba(167,139,250,0.25)",
-                                      borderRadius: "18px 18px 18px 4px",
-                                      padding: "14px 20px",
-                                      color: "rgba(167,139,250,0.7)",
-                                      fontSize: "14px",
-                      }}>
-                                                Reading your chart <span style={{ display: "inline-block", animation: "pulse 1.5s infinite" }}> ...</span>
-                                  </div>
-                      </div>
-                        )}
+                  {loading && <GeneratingScreen />}
+                  {!loading && charts && <Bodygraphs charts={charts} />}
+                  {!loading && messages.filter(m => !m.hidden).map((m, i) => <Message key={i} role={m.role} content={m.content} />)}
+
                   {chartDetected && streamingDone && !loading && messages.length > 0 && messages[messages.length - 1].role === 'assistant' && (
                       <div style={{
                                     borderTop: '1px solid rgba(201,168,76,0.2)',
@@ -639,11 +620,19 @@ export default function App() {
                                 :root { --ui-font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; --reading-font: 'Lora', Georgia, 'Times New Roman', serif; }
                                 .pdf-btn { display:block; margin: 0 auto 1.5rem; padding: 12px 28px; background: #c9a84c; color: #140d02; border: none; border-radius: 999px; font-family: var(--ui-font); font-size: 16px; font-weight: 600; cursor: pointer; }
                                 .pdf-btn:hover { background: #e0c068; }
-                                .gen-banner { position: sticky; top: 12px; z-index: 50; margin: 0 8px 18px; padding: 16px 20px; background: rgba(30,18,52,0.97); border: 1px solid #c9a84c; border-radius: 14px; color: #f5f1e8; font-family: var(--ui-font); box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
-                                .gen-bar { margin-top: 12px; height: 6px; border-radius: 3px; background: rgba(201,168,76,0.2); overflow: hidden; }
-                                .gen-bar span { display: block; width: 35%; height: 100%; border-radius: 3px; background: #c9a84c; animation: genslide 1.8s ease-in-out infinite; }
-                                @keyframes genslide { 0% { transform: translateX(-100%) } 100% { transform: translateX(300%) } }
-                                @media (prefers-reduced-motion: reduce) { .gen-bar span { animation: none; width: 100%; opacity: 0.5 } }
+                                .planet-list { display: flex; flex-direction: column; gap: 10px; }
+                                .planet-row { padding: 10px 12px; border-left: 2px solid rgba(201,168,76,0.5); background: rgba(255,255,255,0.03); border-radius: 0 8px 8px 0; }
+                                .planet-name { font-family: var(--ui-font); font-weight: 600; font-size: 16px; color: #e0c068; }
+                                .planet-meaning { font-size: 16px; color: rgba(245,241,232,0.92); font-style: italic; margin-top: 2px; line-height: 1.5; }
+                                .planet-gates { display: flex; flex-wrap: wrap; gap: 4px 18px; margin-top: 6px; font-family: var(--ui-font); font-size: 15px; color: #f5f1e8; }
+                                .planet-gates b { font-weight: 600; color: rgba(245,241,232,0.7); margin-right: 4px; }
+                                .planet-gates .unc b { color: #e98b80; }
+.gen-screen { text-align: center; padding: 72px 20px 60px; font-family: var(--ui-font); }
+                                .gen-orb { width: 84px; height: 84px; margin: 0 auto; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #f3dd8a, #c9a84c 45%, rgba(201,168,76,0.15) 72%); box-shadow: 0 0 40px rgba(201,168,76,0.45); animation: orb 3.2s ease-in-out infinite; }
+                                @keyframes orb { 0%,100% { transform: scale(0.92); opacity: 0.75 } 50% { transform: scale(1.06); opacity: 1 } }
+                                .gen-line { margin-top: 22px; font-size: 16px; color: rgba(230,220,255,0.9); font-style: italic; animation: fadein 1.2s ease; }
+                                @keyframes fadein { from { opacity: 0 } to { opacity: 1 } }
+                                @media (prefers-reduced-motion: reduce) { .gen-orb, .gen-line { animation: none } }
                                 .pdf-btn:focus-visible { outline: 3px solid #f5f1e8; outline-offset: 2px; }
                                 * { box-sizing: border-box; }
                                         body { margin: 0; background: #000; }
