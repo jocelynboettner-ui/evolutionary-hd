@@ -600,7 +600,7 @@ End with one sentence that seeds the Uranus chapter.`,
               );
 
               res.write('data: ' + JSON.stringify({ text: 'YOUR STORY OF BECOMING\n\n' }) + '\n\n');
-              res.write('data: ' + JSON.stringify({ text: saturnText + '\n\n' }) + '\n\n');
+              res.write('data: ' + JSON.stringify({ text: saturnText.replace(/^\s*YOUR STORY OF BECOMING\s*/i, '') + '\n\n' }) + '\n\n');
 
               const uranusText = await generateArcSection(
                 `Write ONLY the URANUS OPPOSITION section of YOUR STORY OF BECOMING.
@@ -856,12 +856,14 @@ app.get('/api/verify-session/:sessionId', async (req, res) => {
 // ── END STRIPE ───────────────────────────────────────────────
 
 
+app.get("/health", (_req, res) => res.json({ ok: true }));
+
 // Serve React frontend
 app.use(express.static(path.join(__dirname, '../frontend/dist')));
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
 });
 
-app.get("/health", (_req, res) => res.json({ ok: true }));
+
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
