@@ -2,6 +2,12 @@ import { useState, useRef, useEffect } from "react";
 
 const API_URL = "https://evolutionary-hd-api.onrender.com";
 
+// Access credentials for /api/chat: paid Stripe session id or owner preview code (?preview=CODE)
+const getAccess = () => ({
+  sessionId: sessionStorage.getItem("ehd_session_id") || undefined,
+  previewCode: sessionStorage.getItem("ehd_preview_code") || undefined,
+});
+
 function Stars() {
     const stars = Array.from({ length: 120 }, (_, i) => ({
           id: i,
@@ -230,6 +236,12 @@ export default function App() {
     useEffect(() => {
           const params = new URLSearchParams(window.location.search);
           const sessionId = params.get('session_id');
+          const preview = params.get('preview');
+          if (preview) {
+                  sessionStorage.setItem('ehd_preview_code', preview);
+                  window.history.replaceState({}, '', '/');
+          }
+          if (sessionId) sessionStorage.setItem('ehd_session_id', sessionId);
           if (sessionId) {
                   window.history.replaceState({}, '', '/');
                   fetch(`${API_URL}/api/verify-session/${sessionId}`)
@@ -248,7 +260,7 @@ export default function App() {
                                                       fetch(`${API_URL}/api/chat`, {
                                                                       method: 'POST',
                                                                       headers: { 'Content-Type': 'application/json' },
-                                                                      body: JSON.stringify({ messages: newMessages, birthdata: parsed }),
+                                                                      body: JSON.stringify({ messages: newMessages, birthdata: parsed, ...getAccess() }),
                                                       }).then(async res => {
                                                                       if (!res.ok) { setLoading(false); return; }
                                                                       const reader = res.body.getReader();
@@ -294,7 +306,15 @@ export default function App() {
           const parsed = parseBirthData(text);
           let currentBirthdata;
           let newMessages;
-          if (parsed) {
+          if (parsed && getAccess().previewCode) {
+                  // Owner preview: skip Stripe, run the reading directly (server verifies the code)
+                  currentBirthdata = { birthdate: parsed.isoDate, birthtime: parsed.birthTime, location: parsed.location, name: parsed.name };
+                  setBirthdata(currentBirthdata);
+                  setChartDetected(true);
+                  setStreamingDone(false);
+                  newMessages = [...messages, userMsg];
+                  setMessages(newMessages);
+          } else if (parsed) {
                   // Redirect to Stripe checkout before delivering the reading
                   setLoading(true);
                   try {
@@ -324,6 +344,7 @@ export default function App() {
           try {
                   const body = {
                             messages: newMessages.map((m) => ({ role: m.role, content: m.content })),
+                            ...getAccess(),
                   };
                   if (currentBirthdata) {
                             body.birthdata = currentBirthdata;

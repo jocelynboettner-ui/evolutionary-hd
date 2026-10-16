@@ -5,6 +5,7 @@ import { transformV3Response, formatV3HDChart } from "./hd-v3-parser.js";
 import { fetchEvolutionaryArc, formatEvolutionaryArcForPrompt } from "./hd-evolutionary-arc.js";
 import { fileURLToPath } from 'url';
 import path from 'path';
+import crypto from 'crypto';
 import Stripe from 'stripe';
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -348,7 +349,29 @@ function formatOverlayData(cycles, overlays) {
 // ============================================================
 // CHAT ENDPOINT
 // ============================================================
+// ── ACCESS CHECK: paid Stripe session or owner preview code ──
+function isOwnerCode(code) {
+  const expected = process.env.OWNER_PREVIEW_CODE;
+  if (!expected || typeof code !== 'string' || !code) return false;
+  const a = Buffer.from(code), b = Buffer.from(expected);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+async function isPaidSession(sessionId) {
+  if (typeof sessionId !== 'string' || !sessionId.startsWith('cs_')) return false;
+  try {
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    return session.payment_status === 'paid';
+  } catch (err) {
+    console.error('Stripe session check error:', err.message);
+    return false;
+  }
+}
+
 app.post("/api/chat", async (req, res) => {
+  const { sessionId, previewCode } = req.body || {};
+  if (!isOwnerCode(previewCode) && !(await isPaidSession(sessionId))) {
+    return res.status(402).json({ error: "Payment required" });
+  }
   res.setTimeout(120000, () => {
     res.write('data: ' + JSON.stringify({
       error: "Reading is taking longer than expected. Please try again."
