@@ -161,7 +161,7 @@ export function currentCycleStatus(cycles, now = new Date()) {
   const between = active.length === 0;
   const done = list.filter(c => c.end < t);
   const recent = between && done.length ? { ...fmt(done[done.length - 1]), phase: 'most recently completed' } : null;
-  return { today: iso(t), active, between, recent, next: next ? fmt(next) : null };
+  return { today: iso(t), active, between, recent, next: null }; // future cycles are never surfaced
 }
 
 export function formatCycleStatus(st) {
@@ -174,10 +174,9 @@ export function formatCycleStatus(st) {
   } else {
     L.push('BETWEEN CYCLES: no 7-year cycle window contains today. Say so plainly near the start of the reading.');
     if (st.recent) L.push(`FOCUS ON MOST RECENTLY COMPLETED CYCLE: ${st.recent.label} — window ${st.recent.start} to ${st.recent.end}, peak ${st.recent.peak}. Describe what it activated and how those capacities are integrating now.`);
-    if (st.next) L.push('Then BRIEFLY name the next cycle below and when its window begins.');
   }
-  if (st.next) L.push(`NEXT CYCLE: ${st.next.label} — window opens ${st.next.start}, peak ${st.next.peak}`);
-  L.push('Rule: every cycle is a 7-year window (±3.5 years around the peak), except Chiron, which stays on permanently after its return.');
+  L.push('Do NOT mention, date, or forecast any future cycle.');
+  L.push('Rule: every cycle is a 7-year window (±3.5 years around the peak), except Chiron, which stays on permanently after its return. Only past and current cycles are discussed.');
   L.push('=== END CURRENT CYCLE ===');
   return L.join('\n');
 }

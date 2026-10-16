@@ -72,7 +72,7 @@ function ReadingTableOfContents({ visible, birthdata }) {
             { title: "PART ONE — WHO YOU ARE", items: ["Type & Strategy", "Inner Authority", "Profile", "Incarnation Cross", "Definition"] },
             { title: "PART TWO — YOUR SUPERPOWERS AND SUPERHIGHWAYS", items: ["Your Channels", "Your Active Gates with Planetary Placements"] },
             { title: "PART THREE — YOUR CURRENT CHAPTER", items: ["Your Current Chapter", "Living It Now", "Decision-Making In This Cycle"] },
-            { title: "PART FOUR — YOUR STORY OF BECOMING", items: ["Saturn Return", "Uranus Opposition", "Chiron Return", "Your Role in the New Era"] },
+            { title: "PART FOUR — YOUR STORY OF BECOMING", items: ["Saturn Return", "Uranus Opposition", "Chiron Return"] },
             { title: "PART FIVE — WHAT IS MOST ALIVE RIGHT NOW", items: ["Today's Transit Activations", "What You Are Learning", "Who You Are Becoming"] },
             { title: "PART SIX — THE INVITATION FORWARD", items: [] },
                     ].map(({ title, items }) => (
@@ -180,7 +180,7 @@ function Bodygraphs({ charts }) {
                 <p style={{ margin: "0 0 14px", color: "#f5f1e8", fontSize: "17px", lineHeight: 1.6, textAlign: "center" }}>
                     {st.active.length
                         ? <>You are in: <strong style={{ color: "#e0c068" }}>{st.active.map(c => c.label).join(" + ")}</strong></>
-                        : <>Between cycles{st.recent ? <> · most recently completed: <strong style={{ color: "#e0c068" }}>{st.recent.label}</strong></> : null}{st.next ? <> · next: <strong style={{ color: "#e0c068" }}>{st.next.label}</strong> (opens {st.next.start})</> : null}</>}
+                        : <>Between cycles{st.recent ? <> · most recently completed: <strong style={{ color: "#e0c068" }}>{st.recent.label}</strong></> : null}</>}
                 </p>
             )}
             <div style={{ display: "flex", flexWrap: "wrap", gap: "16px", justifyContent: "center" }}>
@@ -210,7 +210,7 @@ const FOLLOWUP_PROMPTS = [
     "What are my greatest gifts to embody right now — the capacities that are fully online and ready to be lived?",
     "Tell me more about what I am learning in the cycle I am currently navigating.",
     "What is the wound that is becoming my medicine — and how do I know when it has fully turned?",
-    "What does my design say about how I am meant to serve in this next chapter?"
+    "What does my design say about how I am meant to serve in the season I am in now?"
   ];
 
 export default function App() {

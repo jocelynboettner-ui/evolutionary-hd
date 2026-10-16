@@ -33,6 +33,7 @@ function channelGates(chStr) {
 // -- Fetch a single overlay chart for a peak date --
 async function fetchOverlayChart(peakDate, birthtime, timezone, apiKey) {
   if (!peakDate) return null;
+  if (new Date(peakDate).getTime() > Date.now()) return null; // never chart future cycles
 
   // Use full datetime directly if available (peak_datetime from Python service)
   // Fall back to date + birth time if only a date string (e.g. from humandesign.ai exactDate)
@@ -242,6 +243,7 @@ export function formatEvolutionaryArcForPrompt(arc, natalChart) {
 
   cycleOrder.forEach(({ key, label }) => {
     const entry = arc[key];
+    if (!entry?.peakDate || new Date(entry.peakDate).getTime() > Date.now()) return; // past/current only
     L.push('---');
     L.push(label);
     if (!entry?.chart) {

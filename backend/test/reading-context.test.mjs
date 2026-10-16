@@ -49,7 +49,8 @@ const txt = formatEvolutionaryArcForPrompt(arc, natal);
 const block = txt.split('=== CHANNEL COMPLETION BY CYCLE')[1];
 assert.equal((block.match(/- 21-45 Channel of Money/g)||[]).length, 1);
 assert.equal((block.match(/- 42-53 Channel of Maturation/g)||[]).length, 1);
-const chironSection = txt.split('CHIRON RETURN (~Age 50)')[1].split('---')[0];
+const chironSection = txt.split('CHIRON RETURN (~Age 50)')[1].split(/---|=== CHANNEL COMPLETION/)[0];
+assert.doesNotMatch(txt, /2ND SATURN RETURN \(~Age 58\)\n  Peak/);
 assert.doesNotMatch(chironSection, /21-45|42-53/);
 assert.match(txt, /natal authority stays Sacral Authority/);
 console.log('all reading-context tests passed');
@@ -64,11 +65,11 @@ let st = currentCycleStatus(cyc, new Date('2026-10-16'));
 assert.deepEqual(st.active.map(c => c.key), ['chironReturn']);         // past Chiron -> permanent
 assert.equal(st.active[0].permanent, true);
 assert.equal(st.active[0].end, 'for the rest of life');
-assert.equal(st.next.key, 'secondSaturnReturn');
+assert.equal(st.next, null);
 st = currentCycleStatus(cyc, new Date('2030-01-01'));                  // Chiron + 2nd Saturn window
 assert.deepEqual(st.active.map(c => c.key), ['chironReturn', 'secondSaturnReturn']);
 st = currentCycleStatus(cyc, new Date('2010-01-01'));                  // between Saturn1 (ends 2007) and Uranus (opens 2012)
-assert.equal(st.between, true); assert.equal(st.next.key, 'uranusOpposition');
+assert.equal(st.between, true); assert.equal(st.next, null);
 st = currentCycleStatus(cyc, new Date('2005-01-01'));
 assert.deepEqual(st.active.map(c => c.key), ['saturnReturn']);
 assert.match(formatCycleStatus(currentCycleStatus(cyc, new Date('2026-10-16'))), /PRIMARY: Chiron Return.*permanent overlay/);
@@ -82,5 +83,7 @@ assert.ok(bg.personalityGates.length > 5 && bg.designGates.length > 5);
 console.log('cycle model + bodygraph data tests passed');
 st = currentCycleStatus(cyc, new Date('2010-01-01'));
 assert.equal(st.recent.key, 'saturnReturn');
-assert.match(formatCycleStatus(st), /BETWEEN CYCLES[\s\S]*FOCUS ON MOST RECENTLY COMPLETED CYCLE: First Saturn Return[\s\S]*NEXT CYCLE: Uranus Opposition/);
+assert.match(formatCycleStatus(st), /BETWEEN CYCLES[\s\S]*FOCUS ON MOST RECENTLY COMPLETED CYCLE: First Saturn Return/);
 console.log('between-cycles tests passed');
+assert.doesNotMatch(formatCycleStatus(currentCycleStatus(cyc, new Date('2026-10-16'))), /NEXT CYCLE|Second Saturn/);
+console.log('no-future tests passed');

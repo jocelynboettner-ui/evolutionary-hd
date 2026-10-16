@@ -24,6 +24,8 @@ const SACRED_CYCLES_URL = process.env.SACRED_CYCLES_URL || "http://localhost:800
 // SYSTEM PROMPT
 // ============================================================
 const SYSTEM_PROMPT = `
+TIME SCOPE RULE (overrides everything below): Only write about the cycle the person is in now and cycles they have already lived through. NEVER describe, chart, date, forecast, or tease future cycles (including a Second Saturn Return that has not begun, or any cycle not yet reached). NEVER mention the 2027 era shift, "the new era", or invite them to type "new era". No "looking ahead" or "what's coming next" content. Keep the tone integrative: help them understand and integrate what is here now and what they have been through. Ignore any later instruction that conflicts with this rule.
+
 OUTPUT RULE: You have NO tools. Never write tool calls, XML/HTML-style tags (e.g. <get_bodygraph>), JSON, or "processing"/"calculating" steps. All chart data is already provided in the user message. Never invent chart data or dates; if a value is missing, say it is unavailable.
 
 ABSOLUTE RULE: The user message begins with === CRITICAL CHART FACTS ===. Read the TYPE, AUTHORITY, PROFILE, and INCARNATION CROSS listed there. Write EXACTLY those values — no substitutions, no supplementing from training data. If TYPE says Generator, write Generator. If PROFILE says 4/6, write 4/6. If CROSS says Right Angle Cross of Service, write that. Your Human Design training knowledge is irrelevant — the chart facts are the only truth.
@@ -81,8 +83,7 @@ For each: Gate number, name, planet. One sentence on how this gate expresses. Sh
 already walking toward you.
 
 CLOSING PROMPT 2 — END OF "continue" RESPONSE:
-After the Second Saturn Return section, always end with this exact paragraph:
-"2027 marks the beginning of a 400-year era shift — a transition so significant it has not occurred in your lifetime, or your parents' lifetime, or their parents' lifetime. Every person alive right now has a specific role to play in this crossing. If you would like to discover yours, type new era."
+End with one warm, integrative sentence about what she is living now. Do not invite any further prompt about eras or future cycles.
 
 CLOSING PROMPT 3 — NEW ERA RESPONSE INSTRUCTIONS:
 Triggers when user types: new era
@@ -143,7 +144,7 @@ CRITICAL — STOP AFTER EACH SECTION:
 The reading is delivered in layers. You MUST stop completely after THE INVITATION FORWARD and wait for the user to respond.
 Do NOT continue into YOUR STORY OF BECOMING automatically.
 Do NOT generate the arc unless the user types "continue."
-Do NOT generate the New Era section unless the user types "new era."
+Never generate a New Era section.
 Do NOT generate the activation section unless the user types "activation."
 
 After THE INVITATION FORWARD, write the closing line and then STOP. Generate nothing else. Wait for input.
@@ -186,7 +187,7 @@ Saturn Return = 2 sentences maximum — what it initiated, what it gave permanen
 Uranus Opposition = 2 sentences maximum — what it disrupted, what it revealed.
 Chiron Return = full depth, present tense, no length limit — this is where they are NOW.
 Second Saturn Return = DO NOT INCLUDE. Remove entirely from the arc. It belongs in the follow-up prompts only. Do not generate it.
-New Era section = full depth.
+New Era section = never include.
 
 The reader is here for where they are NOW. Everything else is context, not content. The past thresholds become two sentences of thread. The Chiron Return is the whole story. Do not give equal weight to all four thresholds — weight the Chiron Return heavily and keep the others to their sentence limits.
 
@@ -477,7 +478,7 @@ app.post("/api/chat", async (req, res) => {
         const overlayKeys = ['saturnReturn', 'uranusOpposition', 'chironReturn', 'secondSaturnReturn'];
         const overlayCharts = await Promise.all(
           overlayKeys.map(key =>
-            cycles[key]?.peak_datetime
+            (cycles[key]?.peak_datetime && new Date(cycles[key].peak_datetime).getTime() <= Date.now())
               ? fetchOverlayChart(cycles[key].peak_datetime, _timezone)
                   .catch(err => { console.error(`Overlay ${key} error:`, err.message); return null; })
               : Promise.resolve(null)
@@ -558,7 +559,6 @@ app.post("/api/chat", async (req, res) => {
     const lastUserMsg = messages[messages.length - 1];
     const userText = (typeof lastUserMsg?.content === 'string' ? lastUserMsg.content : '').toLowerCase().trim();
     const isContinue = userText === 'continue' || userText.endsWith('\ncontinue') || userText.split('\n').pop().trim() === 'continue';
-    const isNewEra = userText === 'new era' || userText.includes('new era');
 
     // ── Stream 1: Natal blueprint ──
     console.log('CHART TEXT SENT TO AI:', chartText?.substring(0, 500));
@@ -618,8 +618,11 @@ app.post("/api/chat", async (req, res) => {
               },
             ];
 
+            const _nowMs = Date.now();
+            const reached = (k) => { const c = cycles?.[k]; if (!c) return false; const pk = new Date(c.peak_datetime || c.peak).getTime(); return !isNaN(pk) && pk - 3.5 * 365.25 * 864e5 <= _nowMs; };
             try {
-              const saturnText = await generateArcSection(
+              let saturnText = '', uranusText = '', chironText = '';
+              if (reached('saturnReturn')) saturnText = await generateArcSection(
                 `Write ONLY the SATURN RETURN section of YOUR STORY OF BECOMING.
 
 HARD LIMITS:
@@ -635,7 +638,7 @@ RULES:
 - DO NOT write about any other threshold
 
 Begin with the threshold dateline (age and approximate year).
-End with one sentence that seeds the Uranus chapter.`,
+End with one integrative sentence about what this threshold left them with.`,
                 700,
                 arcContext
               );
@@ -643,7 +646,7 @@ End with one sentence that seeds the Uranus chapter.`,
               res.write('data: ' + JSON.stringify({ text: 'YOUR STORY OF BECOMING\n\n' }) + '\n\n');
               res.write('data: ' + JSON.stringify({ text: saturnText.replace(/^\s*YOUR STORY OF BECOMING\s*/i, '') + '\n\n' }) + '\n\n');
 
-              const uranusText = await generateArcSection(
+              if (reached('uranusOpposition')) uranusText = await generateArcSection(
                 `Write ONLY the URANUS OPPOSITION section of YOUR STORY OF BECOMING.
 
 HARD LIMITS:
@@ -659,14 +662,14 @@ RULES:
 - DO NOT write about any other threshold
 
 Begin with the threshold dateline.
-End with one sentence that seeds the Chiron chapter.`,
+End with one integrative sentence about what this threshold left them with.`,
                 500,
                 [...arcContext, { role: 'assistant', content: saturnText }]
               );
 
-              res.write('data: ' + JSON.stringify({ text: uranusText + '\n\n' }) + '\n\n');
+              if (uranusText) res.write('data: ' + JSON.stringify({ text: uranusText + '\n\n' }) + '\n\n');
 
-              const chironText = await generateArcSection(
+              if (reached('chironReturn')) chironText = await generateArcSection(
                 `Write ONLY the CHIRON RETURN section of YOUR STORY OF BECOMING.
 
 HARD LIMITS:
@@ -683,41 +686,28 @@ RULES:
 - DO NOT write about any other threshold
 
 Begin with the threshold dateline.
-End with one sentence that seeds the next chapter — the era transition.`,
+End with one sentence about how this is integrating in their life now. Do not mention anything still to come.`,
                 700,
                 [...arcContext, { role: 'assistant', content: saturnText + '\n\n' + uranusText }]
               );
 
-              res.write('data: ' + JSON.stringify({ text: chironText + '\n\n' }) + '\n\n');
+              if (chironText) res.write('data: ' + JSON.stringify({ text: chironText + '\n\n' }) + '\n\n');
+
+              if (reached('secondSaturnReturn')) {
+                const s2 = await generateArcSection(
+                  `Write ONLY the SECOND SATURN RETURN section of YOUR STORY OF BECOMING (this person is in or past it).
+
+HARD LIMITS: 3 paragraphs, 150 words maximum.
+RULES: one transformation only; present tense if active, past tense if complete; no gate/channel lists; do not write about any other threshold or anything still to come.
+Begin with the threshold dateline. End with one integrative sentence.`,
+                  700,
+                  [...arcContext, { role: 'assistant', content: [saturnText, uranusText, chironText].filter(Boolean).join('\n\n') }]
+                );
+                if (s2) res.write('data: ' + JSON.stringify({ text: s2 + '\n\n' }) + '\n\n');
+              }
 
 
-              if (isNewEra) { const newEraText = await generateArcSection(
-                `Write ONLY the YOUR ROLE IN THE NEW ERA section.
-
-HARD LIMITS:
-- 5 paragraphs maximum
-- 300 words maximum
-- Stop completely after the closing sentence
-
-STRUCTURE:
-Paragraph 1: 3 sentences orienting to the 2027 shift — no more
-Paragraph 2: Name their role(s) — Lock Keeper, Guardian, Pioneer, or combination — connected to moments already told in the arc
-Paragraph 3: Cross-reference natal AND transit-activated era gates — distinguish "you came in carrying this" vs "this was switched on at [threshold]"
-Paragraph 4: Name Era Superpowers if present (Channel 34-57, 57-20, 34-20, or any channel with Individual-era Key gates)
-Paragraph 5: One closing paragraph personalized to their specific gate combination and cross arc
-
-RULES:
-- Weave gate references into narrative — do not list as inventory
-- Name the Left Angle Cross of Penetration explicitly if it appears at any threshold: "all four gates are Era of Individual Keys — you carried the new era frequency before the world had a name for it"
-- Name the Right Angle Cross of the Sleeping Phoenix explicitly if present: "This IS the incarnation cross of the new era itself"
-- Close with ONE final sentence that names why this person's design exists at this exact moment in history
-
-This is the final section. The closing sentence is the last line of the entire arc.`,
-                1100,
-                [...arcContext, { role: 'assistant', content: saturnText + '\n\n' + uranusText + '\n\n' + chironText }]
-              );
-
-              res.write('data: ' + JSON.stringify({ text: 'YOUR ROLE IN THE NEW ERA\n\n' + newEraText + '\n\n' }) + '\n\n'); }
+              // (New Era section removed: readings do not forecast future eras or cycles.)
 
             } catch (err) {
               console.error('Arc section error:', err.message);
