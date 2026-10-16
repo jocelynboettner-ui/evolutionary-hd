@@ -315,7 +315,7 @@ export default function App() {
           } else if (!parsed && !chartDetected) {
                   // Couldn't read birth details: ask again locally instead of sending a chart-less request
                   const miss = parseBirthText(text).missing;
-                  setMessages([...messages, userMsg, { role: "assistant", content: `I couldn't read ${miss.length ? miss.join(", ") : "your birth details"} from that. Please enter your name, birth date, birth time, and birthplace, for example:\n\nJocelyn, September 30, 1973, 5:07 AM, Reading, Pennsylvania` }]);
+                  setMessages([...messages, userMsg, { role: "assistant", content: `I couldn't read ${miss.length ? miss.join(", ") : "your birth details"} from that. Please enter your name, birth date, birth time, and birthplace, for example:\n\nJocelyn, September 30, 1973, 5:07 AM, Reading, Pennsylvania\n\nYour reading takes a few minutes to generate; when it's complete, a Download PDF button will appear.` }]);
                   return;
           } else if (parsed) {
                   // Redirect to Stripe checkout before delivering the reading
@@ -485,10 +485,22 @@ export default function App() {
                                   <div style={{ marginTop: "16px", fontSize: "16px", color: "rgba(167,139,250,0.85)" }}>
                                                 Example: "My name is Sarah. October 5, 1975 at 6:30am in Chicago, Illinois"
                                   </div>
+                                  <div style={{ marginTop: "20px", fontSize: "16px", lineHeight: "1.6", color: "rgba(245,241,232,0.9)", maxWidth: "52ch", marginLeft: "auto", marginRight: "auto" }}>
+                                                Your reading takes a few minutes to fully generate. Feel free to relax rather than reading along. When it's complete, a Download PDF button will appear so you can print or save your full report.
+                                  </div>
                       </div>
                         )}
                   {charts && <Bodygraphs charts={charts} />}
                   {messages.map((m, i) => <Message key={i} role={m.role} content={m.content} />)}
+                  {loading && chartDetected && (
+                      <div className="gen-banner" role="status" aria-live="polite">
+                          <div style={{ fontWeight: 600, fontSize: "17px", marginBottom: "6px", color: "#e0c068" }}>✦ Your reading is being created</div>
+                          <div style={{ fontSize: "16px", lineHeight: 1.6 }}>
+                              It takes a few minutes to fully generate. Feel free to relax rather than reading along. When it's complete, a <strong>Download PDF</strong> button will appear so you can print or save your full report.
+                          </div>
+                          <div className="gen-bar"><span /></div>
+                      </div>
+                  )}
                   {loading && (
                       <div style={{ display: "flex", justifyContent: "flex-start", padding: "0 8px", marginBottom: "16px" }}>
                                   <div style={{
@@ -627,6 +639,11 @@ export default function App() {
                                 :root { --ui-font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; --reading-font: 'Lora', Georgia, 'Times New Roman', serif; }
                                 .pdf-btn { display:block; margin: 0 auto 1.5rem; padding: 12px 28px; background: #c9a84c; color: #140d02; border: none; border-radius: 999px; font-family: var(--ui-font); font-size: 16px; font-weight: 600; cursor: pointer; }
                                 .pdf-btn:hover { background: #e0c068; }
+                                .gen-banner { position: sticky; top: 12px; z-index: 50; margin: 0 8px 18px; padding: 16px 20px; background: rgba(30,18,52,0.97); border: 1px solid #c9a84c; border-radius: 14px; color: #f5f1e8; font-family: var(--ui-font); box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
+                                .gen-bar { margin-top: 12px; height: 6px; border-radius: 3px; background: rgba(201,168,76,0.2); overflow: hidden; }
+                                .gen-bar span { display: block; width: 35%; height: 100%; border-radius: 3px; background: #c9a84c; animation: genslide 1.8s ease-in-out infinite; }
+                                @keyframes genslide { 0% { transform: translateX(-100%) } 100% { transform: translateX(300%) } }
+                                @media (prefers-reduced-motion: reduce) { .gen-bar span { animation: none; width: 100%; opacity: 0.5 } }
                                 .pdf-btn:focus-visible { outline: 3px solid #f5f1e8; outline-offset: 2px; }
                                 * { box-sizing: border-box; }
                                         body { margin: 0; background: #000; }

@@ -363,7 +363,7 @@ function formatOverlayData(cycles, overlays, natalChart) {
 // ============================================================
 function birthDetailsHelp(missing) {
   const need = (missing && missing.length) ? missing.join(', ') : 'your birth details';
-  return `I couldn't read ${need} from your message. Please enter your name, birth date, birth time, and birthplace, for example:\n\nJocelyn, September 30, 1973, 5:07 AM, Reading, Pennsylvania`;
+  return `I couldn't read ${need} from your message. Please enter your name, birth date, birth time, and birthplace, for example:\n\nJocelyn, September 30, 1973, 5:07 AM, Reading, Pennsylvania\n\nYour reading takes a few minutes to generate; when it is complete, a Download PDF button will appear so you can print or save it.`;
 }
 function sendNotice(res, text, code) {
   if (!res.headersSent) {
