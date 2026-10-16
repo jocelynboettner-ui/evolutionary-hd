@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { downloadReadingPdf } from "./readingPdf.js";
+import { renderBodygraphSVG, svgToPng } from "./bodygraph.js";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://evolutionary-hd-api.onrender.com";
 
@@ -211,6 +212,55 @@ function Message({ role, content }) {
         );
 }
 
+// Bodygraph SVGs: natal + each currently-active cycle overlay (natal + cycle activations)
+function bodygraphSvgs(charts) {
+    if (!charts?.natal) return [];
+    const n = charts.natal;
+    const list = [{ key: 'natal', svg: renderBodygraphSVG({ natal: n, title: 'Natal Bodygraph', subtitle: [n.type, n.profile, n.authority].filter(Boolean).join(' · ') }) }];
+    (charts.cycles || []).forEach(c => {
+        if (!c.chart) return;
+        const recent = charts.status?.between;
+        const sub = c.key === 'chironReturn' && c.permanent ? 'Permanent overlay since ' + c.peak : (recent ? 'Completed · window ' : 'Window ') + c.start + ' to ' + c.end;
+        list.push({ key: c.key, svg: renderBodygraphSVG({ natal: n, overlay: c.chart, title: (recent ? 'Most recently completed: ' : 'Current cycle: ') + c.label, subtitle: sub }) });
+    });
+    return list;
+}
+
+function Bodygraphs({ charts }) {
+    const list = bodygraphSvgs(charts);
+    if (!list.length) return null;
+    const st = charts.status;
+    return (
+        <div style={{ background: "rgba(14,8,26,0.92)", border: "1px solid rgba(201,168,76,0.3)", borderRadius: "16px", padding: "20px", marginBottom: "20px" }}>
+            {st && (
+                <p style={{ margin: "0 0 14px", color: "#f5f1e8", fontSize: "17px", lineHeight: 1.6, textAlign: "center" }}>
+                    {st.active.length
+                        ? <>You are in: <strong style={{ color: "#e0c068" }}>{st.active.map(c => c.label).join(" + ")}</strong></>
+                        : <>Between cycles{st.recent ? <> · most recently completed: <strong style={{ color: "#e0c068" }}>{st.recent.label}</strong></> : null}{st.next ? <> · next: <strong style={{ color: "#e0c068" }}>{st.next.label}</strong> (opens {st.next.start})</> : null}</>}
+                </p>
+            )}
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "16px", justifyContent: "center" }}>
+                {list.map(b => (
+                    <div key={b.key} className="bodygraph" style={{ flex: "1 1 300px", maxWidth: "340px", borderRadius: "12px", overflow: "hidden" }}
+                        dangerouslySetInnerHTML={{ __html: b.svg.replace('width="400"', 'width="100%"').replace(/height="\d+"/, '') }} />
+                ))}
+            </div>
+        </div>
+    );
+}
+
+async function handleDownloadPdf(birthdata, messages, charts) {
+    let images = [];
+    try { images = await Promise.all(bodygraphSvgs(charts).map(b => svgToPng(b.svg))); }
+    catch (e) { console.error('Bodygraph image error:', e); }
+    downloadReadingPdf({
+        name: birthdata?.name,
+        birthdata,
+        parts: messages.filter(m => m.role === 'assistant' && m.content).map(m => m.content),
+        images,
+    });
+}
+
 const FOLLOWUP_PROMPTS = [
     "What are the locks and keys I carry in my Chiron overlay — and what do they mean for my role in the great transition?",
     "What are my greatest gifts to embody right now — the capacities that are fully online and ready to be lived?",
@@ -225,6 +275,7 @@ export default function App() {
     const [loading, setLoading] = useState(false);
     const [streamingDone, setStreamingDone] = useState(false);
     const [birthdata, setBirthdata] = useState(null);
+    const [charts, setCharts] = useState(null);
     const [chartDetected, setChartDetected] = useState(false);
     const bottomRef = useRef(null);
     const topRef = useRef(null);
@@ -280,6 +331,7 @@ export default function App() {
                                                                                                                                   if (data === '[DONE]') break;
                                                                                                                                   try {
                                                                                                                                                           const parsed2 = JSON.parse(data);
+                                                                                                                                                          if (parsed2.charts) setCharts(parsed2.charts);
                                                                                                                                                           if (parsed2.text) {
                                                                                                                                                                                     fullText += parsed2.text;
                                                                                                                                                                                     setMessages([...newMessages, { role: 'assistant', content: fullText }]);
@@ -374,6 +426,7 @@ export default function App() {
                                                                       if (data === "[DONE]") break;
                                                                       try {
                                                                                         const parsed = JSON.parse(data);
+                                                                                        if (parsed.charts) setCharts(parsed.charts);
                                                                                         if (parsed.text) {
                                                                                                             fullText += parsed.text;
                                                                                                             setMessages([...newMessages, { role: "assistant", content: fullText }]);
@@ -407,6 +460,7 @@ export default function App() {
   
     function handleNewReading() {
           setMessages([]);
+          setCharts(null);
           setBirthdata(null);
           setChartDetected(false);
           setStreamingDone(false);
@@ -484,6 +538,7 @@ export default function App() {
                                   </div>
                       </div>
                         )}
+                  {charts && <Bodygraphs charts={charts} />}
                   {messages.map((m, i) => <Message key={i} role={m.role} content={m.content} />)}
                   {loading && (
                       <div style={{ display: "flex", justifyContent: "flex-start", padding: "0 8px", marginBottom: "16px" }}>
@@ -505,11 +560,7 @@ export default function App() {
                                     paddingTop: '2rem',
                                     marginTop: '2rem'
                       }}>
-                                  <button className="pdf-btn" onClick={() => downloadReadingPdf({
-                                      name: birthdata?.name,
-                                      birthdata,
-                                      parts: messages.filter(m => m.role === 'assistant' && m.content).map(m => m.content),
-                                  })}>
+                                  <button className="pdf-btn" onClick={() => handleDownloadPdf(birthdata, messages, charts)}>
                                       ⬇ Download PDF
                                   </button>
                                   <p style={{

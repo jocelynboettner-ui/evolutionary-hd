@@ -6,7 +6,7 @@ import { fetchEvolutionaryArc, formatEvolutionaryArcForPrompt } from "./hd-evolu
 import { fileURLToPath } from 'url';
 import path from 'path';
 import crypto from 'crypto';
-import { buildFactsBlock, attributeChannels, formatAttribution, channelList } from './reading-context.js';
+import { buildFactsBlock, attributeChannels, formatAttribution, channelList, currentCycleStatus, formatCycleStatus, bodygraphData, CYCLE_LABELS } from './reading-context.js';
 import Stripe from 'stripe';
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -303,12 +303,14 @@ async function fetchTransitCycles(birthdate, birthtime, timezone) {
     const saturn2PeakMs = saturnPeakMs + (SATURN_PERIOD_DAYS * 24 * 60 * 60 * 1000);
     const saturn2Peak = new Date(saturn2PeakMs);
     const windowMs = 3.5 * 365.25 * 24 * 60 * 60 * 1000;
-    cycles.secondSaturnReturn = {
+    // Prefer the ephemeris-computed 2nd Saturn return from sacred-cycles-api; fall back to 1st + period.
+    if (!cycles.secondSaturnReturn?.peak_datetime) cycles.secondSaturnReturn = {
           start: new Date(saturn2PeakMs - windowMs).toISOString().split('T')[0],
           peak: saturn2Peak.toISOString().split('T')[0],
           end: new Date(saturn2PeakMs + windowMs).toISOString().split('T')[0],
           peak_datetime: saturn2Peak.toISOString(),
     };
+    else cycles.secondSaturnReturn.source = 'ephemeris';
   return cycles;
 }
 
@@ -398,6 +400,8 @@ app.post("/api/chat", async (req, res) => {
     let hdChart = null;
     let cycles = null;
 
+    let overlaysForClient = null;
+    const now = new Date();
     // ── GROUP 1: Parallel fetch — natal chart + transit cycles ──
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
@@ -447,12 +451,26 @@ app.post("/api/chat", async (req, res) => {
           )
         );
         const overlays = Object.fromEntries(overlayKeys.map((k, i) => [k, overlayCharts[i]]));
+        overlaysForClient = overlays;
         console.log('Overlays fetched:', overlayKeys.map((k,i) => k + '=' + (overlayCharts[i] ? overlayCharts[i].incarnation_cross : 'null')).join(', '));
         const overlayText = formatOverlayData(cycles, overlays, hdChart);
         if (overlayText) chartText += overlayText;
       }
     } catch (err) {
       console.error('Group 1 error:', err.message);
+    }
+
+    // ── Current cycle (7-yr windows; Chiron permanent after return) + bodygraph data for the client ──
+    const cycleStatus = currentCycleStatus(cycles, now);
+    if (cycleStatus) chartText = formatCycleStatus(cycleStatus) + '\n\n' + chartText;
+    if (hdChart) {
+      const natalBg = bodygraphData(hdChart);
+      const shownCycles = cycleStatus?.between ? (cycleStatus.recent ? [cycleStatus.recent] : []) : (cycleStatus?.active || []);
+      const activeOverlays = shownCycles.map(c => {
+        const ov = overlaysForClient?.[c.key];
+        return ov ? { ...c, chart: bodygraphData(ov) } : null;
+      }).filter(Boolean);
+      res.write('data: ' + JSON.stringify({ charts: { natal: natalBg, cycles: activeOverlays, status: cycleStatus } }) + '\n\n');
     }
 
         // ── GROUP 2: Start slow fetches in background ──
@@ -490,7 +508,7 @@ app.post("/api/chat", async (req, res) => {
       if (lastMsg?.role === 'user') {
         augmentedMessages[augmentedMessages.length - 1] = {
           ...lastMsg,
-          content: buildFactsBlock(hdChart, birthdata) + '\n\n' + chartText + '\n\n' + lastMsg.content,
+          content: buildFactsBlock(hdChart, birthdata, now) + '\n\n' + chartText + '\n\n' + lastMsg.content,
         };
       }
     }

@@ -129,3 +129,66 @@ export function formatAttribution(attributed, labels) {
   L.push('=== END CHANNEL COMPLETION BY CYCLE ===');
   return L.join('\n');
 }
+
+// ── Cycle model (owner's teaching, after Ra Uru Hu) ──
+// Every cycle is a 7-year transit window (±3.5 yrs around the exact peak), EXCEPT Chiron:
+// from the Chiron return onward its overlay is permanent for the rest of life ("the full flowering").
+export const CYCLE_LABELS = {
+  saturnReturn: 'First Saturn Return',
+  uranusOpposition: 'Uranus Opposition',
+  chironReturn: 'Chiron Return',
+  secondSaturnReturn: 'Second Saturn Return',
+};
+const YEAR_MS = 365.25 * 864e5;
+
+export function currentCycleStatus(cycles, now = new Date()) {
+  if (!cycles) return null;
+  const t = now.getTime();
+  const list = Object.keys(CYCLE_LABELS).filter(k => cycles[k]).map(k => {
+    const c = cycles[k];
+    const peak = new Date(c.peak_datetime || c.peak).getTime();
+    const start = peak - 3.5 * YEAR_MS, end = k === 'chironReturn' ? Infinity : peak + 3.5 * YEAR_MS;
+    return { key: k, label: CYCLE_LABELS[k], peak, start, end };
+  }).filter(c => !isNaN(c.peak)).sort((a, b) => a.peak - b.peak);
+  const iso = ms => (ms === Infinity ? 'for the rest of life' : new Date(ms).toISOString().slice(0, 10));
+  const fmt = c => ({ key: c.key, label: c.label, start: iso(c.start), peak: iso(c.peak), end: iso(c.end),
+    permanent: c.key === 'chironReturn' && t >= c.peak,
+    phase: t < c.peak ? 'approaching peak' : (c.key === 'chironReturn' ? 'past peak: permanent overlay (the full flowering)' : 'past peak, integrating') });
+  const active = list.filter(c => t >= c.start && t <= c.end)
+    // Chiron (permanent) first, then by most recent peak
+    .sort((a, b) => (b.key === 'chironReturn') - (a.key === 'chironReturn') || b.peak - a.peak).map(fmt);
+  const next = list.find(c => c.start > t);
+  const between = active.length === 0;
+  const done = list.filter(c => c.end < t);
+  const recent = between && done.length ? { ...fmt(done[done.length - 1]), phase: 'most recently completed' } : null;
+  return { today: iso(t), active, between, recent, next: next ? fmt(next) : null };
+}
+
+export function formatCycleStatus(st) {
+  if (!st) return '';
+  const L = ['=== CURRENT CYCLE (computed; LEAD THE READING WITH THIS) ==='];
+  if (st.active.length) {
+    st.active.forEach((c, i) => L.push(`${i === 0 ? 'PRIMARY' : 'ALSO ACTIVE'}: ${c.label} — window ${c.start} to ${c.end}, peak ${c.peak} (${c.phase})`));
+    if (st.active.some(c => c.key === 'chironReturn' && c.permanent))
+      L.push('Chiron overlay is PERMANENT from the Chiron return onward: describe its channels/gates as integrated, lifelong capacities, not a passing transit.');
+  } else {
+    L.push('BETWEEN CYCLES: no 7-year cycle window contains today. Say so plainly near the start of the reading.');
+    if (st.recent) L.push(`FOCUS ON MOST RECENTLY COMPLETED CYCLE: ${st.recent.label} — window ${st.recent.start} to ${st.recent.end}, peak ${st.recent.peak}. Describe what it activated and how those capacities are integrating now.`);
+    if (st.next) L.push('Then BRIEFLY name the next cycle below and when its window begins.');
+  }
+  if (st.next) L.push(`NEXT CYCLE: ${st.next.label} — window opens ${st.next.start}, peak ${st.next.peak}`);
+  L.push('Rule: every cycle is a 7-year window (±3.5 years around the peak), except Chiron, which stays on permanently after its return.');
+  L.push('=== END CURRENT CYCLE ===');
+  return L.join('\n');
+}
+
+// Compact chart data for the client-side bodygraph.
+export function bodygraphData(chart) {
+  if (!chart) return null;
+  const gatesOf = side => [...new Set(Object.values(chart[side] || {}).map(p => p?.gate).filter(Boolean))];
+  return {
+    type: chart.type, authority: chart.authority, profile: chart.profile, incarnation_cross: chart.incarnation_cross,
+    defined_centers: chart.defined_centers || [], channels: (chart.channels || []).map(normChannelKey).filter(Boolean),
+    gates: chart.gates || [], personalityGates: gatesOf('personality'), designGates: gatesOf('design'),
+  };
+}

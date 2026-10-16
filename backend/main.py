@@ -109,6 +109,7 @@ class TransitResponse(BaseModel):
     saturnReturn: CycleWindow
     uranusOpposition: CycleWindow
     chironReturn: CycleWindow
+    secondSaturnReturn: Optional[CycleWindow] = None
 
 
 class HumanDesignRequest(BaseModel):
@@ -304,6 +305,8 @@ def calculate_transit_cycles(birth_utc, lat, lon_coord):
     saturn_peak = find_cycle_peak_precise(SATURN, natal_saturn, birth_utc, expected_years=29.5)
     uranus_peak = find_cycle_peak_precise(URANUS, natal_uranus, birth_utc, expected_years=42.0, is_opposition=True)
     chiron_peak = find_cycle_peak_precise(None, natal_chiron, birth_utc, expected_years=50.7, use_chiron=True)
+    # Second Saturn return from the ephemeris (first direct crossing ~58-59 yrs), not first + fixed period
+    saturn2_peak = find_cycle_peak_precise(SATURN, natal_saturn, birth_utc, expected_years=58.9)
 
     window = timedelta(days=365.25 * 3.5)
     chiron_peak_lon = get_chiron_longitude(datetime_to_jd(chiron_peak))
@@ -334,7 +337,16 @@ def calculate_transit_cycles(birth_utc, lat, lon_coord):
             "peak_transit_degree": round(chiron_peak_lon, 4),
             "peak_datetime": chiron_peak.strftime("%Y-%m-%dT%H:%M:%S"),
             "description": f"Transit Chiron returns to natal Chiron at {natal_chiron:.2f}" + ("" if SE_FILES_AVAILABLE else " (Moshier approx)"),
-        }
+        },
+        "secondSaturnReturn": {
+            "start": (saturn2_peak - window).strftime("%Y-%m-%d"),
+            "peak": saturn2_peak.strftime("%Y-%m-%d"),
+            "end": (saturn2_peak + window).strftime("%Y-%m-%d"),
+            "natal_degree": round(natal_saturn, 4),
+            "peak_transit_degree": round(get_planet_longitude(datetime_to_jd(saturn2_peak), SATURN), 4),
+            "peak_datetime": saturn2_peak.strftime("%Y-%m-%dT%H:%M:%S"),
+            "description": f"Transit Saturn returns to natal Saturn (2nd) at {natal_saturn:.2f}",
+        },
     }
 
 

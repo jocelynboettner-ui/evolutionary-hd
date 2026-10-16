@@ -53,3 +53,34 @@ const chironSection = txt.split('CHIRON RETURN (~Age 50)')[1].split('---')[0];
 assert.doesNotMatch(chironSection, /21-45|42-53/);
 assert.match(txt, /natal authority stays Sacral Authority/);
 console.log('all reading-context tests passed');
+
+// ── cycle model ──
+import fs from 'node:fs';
+import { currentCycleStatus, formatCycleStatus, bodygraphData } from '../reading-context.js';
+import { transformV3Response } from '../hd-v3-parser.js';
+const cyc = JSON.parse(fs.readFileSync(new URL('./fixture-jocelyn-cycles.json', import.meta.url)));
+cyc.secondSaturnReturn = { peak: '2032-12-01', peak_datetime: '2032-12-01T00:00:00' };
+let st = currentCycleStatus(cyc, new Date('2026-10-16'));
+assert.deepEqual(st.active.map(c => c.key), ['chironReturn']);         // past Chiron -> permanent
+assert.equal(st.active[0].permanent, true);
+assert.equal(st.active[0].end, 'for the rest of life');
+assert.equal(st.next.key, 'secondSaturnReturn');
+st = currentCycleStatus(cyc, new Date('2030-01-01'));                  // Chiron + 2nd Saturn window
+assert.deepEqual(st.active.map(c => c.key), ['chironReturn', 'secondSaturnReturn']);
+st = currentCycleStatus(cyc, new Date('2010-01-01'));                  // between Saturn1 (ends 2007) and Uranus (opens 2012)
+assert.equal(st.between, true); assert.equal(st.next.key, 'uranusOpposition');
+st = currentCycleStatus(cyc, new Date('2005-01-01'));
+assert.deepEqual(st.active.map(c => c.key), ['saturnReturn']);
+assert.match(formatCycleStatus(currentCycleStatus(cyc, new Date('2026-10-16'))), /PRIMARY: Chiron Return.*permanent overlay/);
+
+// bodygraph data from real v3 fixture
+const natalChart = transformV3Response(JSON.parse(fs.readFileSync(new URL('./fixture-jocelyn-raw.json', import.meta.url))).full_raw);
+const bg = bodygraphData(natalChart);
+assert.equal(bg.type, 'Generator');
+assert.deepEqual(bg.channels.sort(), ['10-34', '10-57', '18-58', '34-57']);
+assert.ok(bg.personalityGates.length > 5 && bg.designGates.length > 5);
+console.log('cycle model + bodygraph data tests passed');
+st = currentCycleStatus(cyc, new Date('2010-01-01'));
+assert.equal(st.recent.key, 'saturnReturn');
+assert.match(formatCycleStatus(st), /BETWEEN CYCLES[\s\S]*FOCUS ON MOST RECENTLY COMPLETED CYCLE: First Saturn Return[\s\S]*NEXT CYCLE: Uranus Opposition/);
+console.log('between-cycles tests passed');

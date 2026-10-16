@@ -23,7 +23,7 @@ function headingOf(line) {
  * @param {{ name?: string, birthdata?: {birthdate?:string,birthtime?:string,location?:string}, parts: string[], generatedAt?: Date }} opts
  * @returns {jsPDF}
  */
-export function buildReadingPdf({ name, birthdata, parts, generatedAt = new Date() }) {
+export function buildReadingPdf({ name, birthdata, parts, images = [], generatedAt = new Date() }) {
   const doc = new jsPDF({ unit: "pt", format: "letter" });
   const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight();
   const M = 72, maxW = W - 2 * M;               // 1" margins -> ~70-75 characters per line at 12pt
@@ -54,6 +54,23 @@ export function buildReadingPdf({ name, birthdata, parts, generatedAt = new Date
   if (bd.birthdate) { doc.text(clean(birthLine), W / 2, y, { align: "center" }); y += 16; }
   doc.text("Generated " + generatedAt.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }), W / 2, y, { align: "center" }); y += 20;
   doc.setDrawColor(...gold); doc.setLineWidth(0.75); doc.line(W / 2 - 60, y, W / 2 + 60, y); y += 30;
+
+  // Bodygraphs (PNG data URLs), side by side, scaled to fit
+  if (images.length) {
+    const n = Math.min(images.length, 2), gap = 18;
+    const w = (maxW - gap * (n - 1)) / n;
+    let rowH = 0;
+    images.slice(0, 2).forEach((im, i) => {
+      const h = w * (im.h / im.w); rowH = Math.max(rowH, h);
+      doc.addImage(im.dataUrl, "PNG", M + i * (w + gap), y, w, h);
+    });
+    y += rowH + 10;
+    if (images.length > 2) {                  // extra active cycles on following page
+      doc.addPage(); y = M;
+      images.slice(2).forEach((im, i) => { const h = w * (im.h / im.w); doc.addImage(im.dataUrl, "PNG", M + (i % 2) * (w + gap), y, w, h); if (i % 2) y += h + 10; });
+    }
+    doc.addPage(); y = M;
+  }
 
   parts.filter(Boolean).forEach((part, pi) => {
     if (pi > 0) { doc.addPage(); y = M; }
