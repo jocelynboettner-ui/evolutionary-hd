@@ -4,6 +4,7 @@
 // Each chart is cast using: date=exact peak, time=birth time, timezone=birth timezone
 
 import { transformV3Response } from './hd-v3-parser.js';
+import { channelLabel, channelList, attributeChannels, formatAttribution } from './reading-context.js';
 
 const HD_API_BASE = 'https://api.humandesign.ai';
 
@@ -216,7 +217,8 @@ export function formatEvolutionaryArcForPrompt(arc, natalChart) {
   L.push('Profile: ' + (natalChart.profile || ''));
   L.push('Cross: ' + (natalChart.incarnation_cross || ''));
   L.push('Defined: ' + (natalChart.defined_centers || []).join(', '));
-  L.push('Channels: ' + (natalChart.channels || []).join(', '));
+  L.push('Authority (FIXED for life, never changes in any cycle): ' + (natalChart.authority || ''));
+  L.push('Channels: ' + channelList(natalChart.channels));
   L.push('Gates: ' + (natalChart.gates || []).join(', '));
   L.push('');
 
@@ -226,6 +228,17 @@ export function formatEvolutionaryArcForPrompt(arc, natalChart) {
     { key: 'chironReturn',     label: 'CHIRON RETURN (~Age 50)' },
     { key: 'saturnReturn2',    label: '2ND SATURN RETURN (~Age 58)' },
   ];
+
+  // Each channel is attributed to exactly one cycle: the earliest whose overlay produced it.
+  const labelMap = Object.fromEntries(cycleOrder.map(c => [c.key, c.label]));
+  const attributed = attributeChannels(cycleOrder.map(({ key }) => ({
+    key,
+    peakDate: arc[key]?.peakDate,
+    channels: arc[key]?.delta ? [...arc[key].delta.fullyNewChannels, ...arc[key].delta.electromagneticChannels] : [],
+  })));
+  const ownedBy = {};
+  attributed.forEach(c => { ownedBy[c.key] = new Set(c.assigned.map(a => a.key)); });
+  const owns = (key, ch) => ownedBy[key]?.has(String(ch).replace(/\s/g, ''));
 
   cycleOrder.forEach(({ key, label }) => {
     const entry = arc[key];
@@ -250,27 +263,29 @@ export function formatEvolutionaryArcForPrompt(arc, natalChart) {
       if (delta.crossShifted)   L.push('  CROSS SHIFT: ' + natalChart.incarnation_cross + ' -> ' + chart.incarnation_cross);
 
       // Layer 1 -- Fully new channels
-      if (delta.fullyNewChannels.length > 0) {
+      const fullyNew = delta.fullyNewChannels.filter(ch => owns(key, ch));
+      const emag = delta.electromagneticChannels.filter(e => owns(key, e.ch));
+      if (fullyNew.length > 0) {
         L.push('  FULLY NEW CHANNELS (both gates arrive with this overlay):');
-        delta.fullyNewChannels.forEach(ch => L.push('    ' + ch));
+        fullyNew.forEach(ch => L.push('    ' + channelLabel(ch)));
       }
 
       // Layer 2 -- Electromagnetic completions
-      if (delta.electromagneticChannels.length > 0) {
+      if (emag.length > 0) {
         L.push('  ELECTROMAGNETICALLY COMPLETED CHANNELS');
         L.push('  (natal gate + new overlay gate -- latent potential completing temporarily):');
-        delta.electromagneticChannels.forEach(({ ch, natalGate, overlayGate }) => {
-          L.push('    ' + ch + ' -- natal Gate ' + natalGate + ' completed by overlay Gate ' + overlayGate);
+        emag.forEach(({ ch, natalGate, overlayGate }) => {
+          L.push('    ' + channelLabel(ch) + ' -- natal Gate ' + natalGate + ' completed by overlay Gate ' + overlayGate);
         });
       }
 
       // Layer 3 -- Releasing
       if (delta.releasingChannels.length > 0) {
-        L.push('  NATAL CHANNELS NOT ACTIVE AT THIS PEAK: ' + delta.releasingChannels.join(', '));
+        L.push('  NATAL CHANNELS NOT ACTIVE AT THIS PEAK: ' + channelList(delta.releasingChannels));
         L.push('  (natal design -- do NOT describe these as active at this threshold)');
       }
 
-      if (delta.newlyDefined.length)  L.push('  NEWLY DEFINED CENTERS: ' + delta.newlyDefined.join(', '));
+      if (delta.newlyDefined.length)  L.push('  NEWLY DEFINED CENTERS (temporary for this season; natal authority stays ' + (natalChart.authority || 'unchanged') + '): ' + delta.newlyDefined.join(', '));
       if (delta.newlyOpen.length)     L.push('  RELEASING DEFINITION: ' + delta.newlyOpen.join(', '));
       if (delta.definitionExpanding)  L.push('  DIRECTION: More of the vehicle coming online');
 
@@ -282,6 +297,8 @@ export function formatEvolutionaryArcForPrompt(arc, natalChart) {
     L.push('');
   });
 
+  L.push(formatAttribution(attributed, labelMap));
+  L.push('');
   L.push('---');
   L.push('INSTRUCTIONS FOR WRITING THE EVOLUTIONARY ARC SECTION:');
   L.push('');
@@ -305,6 +322,9 @@ export function formatEvolutionaryArcForPrompt(arc, natalChart) {
   L.push('- Throat defined without Sacral connection → "Manifestor capacity — ability to initiate"');
   L.push('- Both Sacral and Throat connected → "Manifesting Generator capacity — speed of initiation married to depth of response"');
   L.push('- No motor to Throat → "Projector capacity — guiding, seeing, waiting for the correct invitation"');
+  L.push('');
+  L.push('AUTHORITY IS FIXED: a center defined by a cycle overlay (e.g. Solar Plexus) is a temporary theme. Never say the authority changes.');
+  L.push('CHANNEL ATTRIBUTION: attribute each channel ONLY to the cycle listed in CHANNEL COMPLETION BY CYCLE. Use the exact channel names given.');
   L.push('');
   L.push('CHIRON RETURN — SPECIAL INSTRUCTIONS:');
   L.push('The Chiron Return channels are EARNED WISDOM, not temporary activations.');

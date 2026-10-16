@@ -5,6 +5,8 @@ import { transformV3Response, formatV3HDChart } from "./hd-v3-parser.js";
 import { fetchEvolutionaryArc, formatEvolutionaryArcForPrompt } from "./hd-evolutionary-arc.js";
 import { fileURLToPath } from 'url';
 import path from 'path';
+import crypto from 'crypto';
+import { buildFactsBlock, attributeChannels, formatAttribution, channelList, currentCycleStatus, formatCycleStatus, bodygraphData, CYCLE_LABELS } from './reading-context.js';
 import Stripe from 'stripe';
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -301,12 +303,14 @@ async function fetchTransitCycles(birthdate, birthtime, timezone) {
     const saturn2PeakMs = saturnPeakMs + (SATURN_PERIOD_DAYS * 24 * 60 * 60 * 1000);
     const saturn2Peak = new Date(saturn2PeakMs);
     const windowMs = 3.5 * 365.25 * 24 * 60 * 60 * 1000;
-    cycles.secondSaturnReturn = {
+    // Prefer the ephemeris-computed 2nd Saturn return from sacred-cycles-api; fall back to 1st + period.
+    if (!cycles.secondSaturnReturn?.peak_datetime) cycles.secondSaturnReturn = {
           start: new Date(saturn2PeakMs - windowMs).toISOString().split('T')[0],
           peak: saturn2Peak.toISOString().split('T')[0],
           end: new Date(saturn2PeakMs + windowMs).toISOString().split('T')[0],
           peak_datetime: saturn2Peak.toISOString(),
     };
+    else cycles.secondSaturnReturn.source = 'ephemeris';
   return cycles;
 }
 
@@ -320,7 +324,7 @@ async function fetchOverlayChart(peakDatetime, timezone) {
   return transformV3Response(await response.json());
 }
 
-function formatOverlayData(cycles, overlays) {
+function formatOverlayData(cycles, overlays, natalChart) {
   const labels = {
     saturnReturn:       'FIRST SATURN RETURN',
     uranusOpposition:   'URANUS OPPOSITION (Great Disruption)',
@@ -330,6 +334,8 @@ function formatOverlayData(cycles, overlays) {
   let text = '\n=== THRESHOLD OVERLAY CHARTS ===\n';
   text += 'These are the Human Design charts calculated at the exact peak of each planetary threshold.\n';
   text += 'Use these overlay crosses, channels, and centers in the YOUR STORY OF BECOMING response.\n\n';
+  const natalSet = new Set((natalChart?.channels || []).map(c => String(c).replace(/\s/g, '')));
+  const perCycle = [];
   for (const [key, label] of Object.entries(labels)) {
     const cycle = cycles[key];
     const chart = overlays[key];
@@ -337,10 +343,11 @@ function formatOverlayData(cycles, overlays) {
     text += `--- ${label} ---\n`;
     text += `Peak date: ${cycle.peak || cycle.peak_datetime?.slice(0,10)}\n`;
     text += `Overlay Cross: ${chart.incarnation_cross || 'unknown'}\n`;
-    text += `Channels online at this threshold: ${(chart.channels || []).join(', ') || 'none'}\n`;
-    text += `Defined centers at this threshold: ${(chart.defined_centers || []).join(', ') || 'none'}\n`;
+    text += `Defined centers in this overlay (temporary themes; natal authority does NOT change): ${(chart.defined_centers || []).join(', ') || 'none'}\n`;
     text += '\n';
+    perCycle.push({ key, peakDate: cycle.peak_datetime || cycle.peak, channels: (chart.channels || []).filter(c => !natalSet.has(String(c).replace(/\s/g, ''))) });
   }
+  text += formatAttribution(attributeChannels(perCycle), labels) + '\n';
   text += '=== END THRESHOLD OVERLAY CHARTS ===\n';
   return text;
 }
@@ -348,8 +355,33 @@ function formatOverlayData(cycles, overlays) {
 // ============================================================
 // CHAT ENDPOINT
 // ============================================================
+// ── ACCESS CHECK: paid Stripe session or owner preview code ──
+function isOwnerCode(code) {
+  const expected = process.env.OWNER_PREVIEW_CODE;
+  if (!expected || typeof code !== 'string' || !code) return false;
+  const a = Buffer.from(code), b = Buffer.from(expected);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+async function isPaidSession(sessionId) {
+  if (typeof sessionId !== 'string' || !sessionId.startsWith('cs_')) return false;
+  try {
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    return session.payment_status === 'paid';
+  } catch (err) {
+    console.error('Stripe session check error:', err.message);
+    return false;
+  }
+}
+
 app.post("/api/chat", async (req, res) => {
-  res.setTimeout(120000, () => {
+  const { sessionId, previewCode } = req.body || {};
+  if (!isOwnerCode(previewCode) && !(await isPaidSession(sessionId))) {
+    return res.status(402).json({ error: "Payment required" });
+  }
+  // Full readings (natal + multi-section arc) can take several minutes; allow 5 min.
+  req.setTimeout(300000);
+  res.setTimeout(300000, () => {
+    if (res.writableEnded) return;
     res.write('data: ' + JSON.stringify({
       error: "Reading is taking longer than expected. Please try again."
     }) + '\n\n');
@@ -368,6 +400,8 @@ app.post("/api/chat", async (req, res) => {
     let hdChart = null;
     let cycles = null;
 
+    let overlaysForClient = null;
+    const now = new Date();
     // ── GROUP 1: Parallel fetch — natal chart + transit cycles ──
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
@@ -417,12 +451,26 @@ app.post("/api/chat", async (req, res) => {
           )
         );
         const overlays = Object.fromEntries(overlayKeys.map((k, i) => [k, overlayCharts[i]]));
+        overlaysForClient = overlays;
         console.log('Overlays fetched:', overlayKeys.map((k,i) => k + '=' + (overlayCharts[i] ? overlayCharts[i].incarnation_cross : 'null')).join(', '));
-        const overlayText = formatOverlayData(cycles, overlays);
+        const overlayText = formatOverlayData(cycles, overlays, hdChart);
         if (overlayText) chartText += overlayText;
       }
     } catch (err) {
       console.error('Group 1 error:', err.message);
+    }
+
+    // ── Current cycle (7-yr windows; Chiron permanent after return) + bodygraph data for the client ──
+    const cycleStatus = currentCycleStatus(cycles, now);
+    if (cycleStatus) chartText = formatCycleStatus(cycleStatus) + '\n\n' + chartText;
+    if (hdChart) {
+      const natalBg = bodygraphData(hdChart);
+      const shownCycles = cycleStatus?.between ? (cycleStatus.recent ? [cycleStatus.recent] : []) : (cycleStatus?.active || []);
+      const activeOverlays = shownCycles.map(c => {
+        const ov = overlaysForClient?.[c.key];
+        return ov ? { ...c, chart: bodygraphData(ov) } : null;
+      }).filter(Boolean);
+      res.write('data: ' + JSON.stringify({ charts: { natal: natalBg, cycles: activeOverlays, status: cycleStatus } }) + '\n\n');
     }
 
         // ── GROUP 2: Start slow fetches in background ──
@@ -460,36 +508,24 @@ app.post("/api/chat", async (req, res) => {
       if (lastMsg?.role === 'user') {
         augmentedMessages[augmentedMessages.length - 1] = {
           ...lastMsg,
-          content: `=== CRITICAL CHART FACTS (use EXACTLY these values, no exceptions) ===\nTYPE: ${hdChart?.type || 'unknown'}\nAUTHORITY: ${hdChart?.authority || 'unknown'}\nPROFILE: ${hdChart?.profile || 'unknown'}\nINCARNATION CROSS: ${hdChart?.incarnation_cross || 'unknown'}\nDEFINED CENTERS COUNT: ${(hdChart?.defined_centers || []).length}\n=== END CRITICAL CHART FACTS ===\n\n` + chartText + '\n\n' + lastMsg.content,
+          content: buildFactsBlock(hdChart, birthdata, now) + '\n\n' + chartText + '\n\n' + lastMsg.content,
         };
       }
     }
 
+    // Only generate the arc if the user explicitly typed "continue"
+    const lastUserMsg = messages[messages.length - 1];
+    const userText = (typeof lastUserMsg?.content === 'string' ? lastUserMsg.content : '').toLowerCase().trim();
+    const isContinue = userText === 'continue' || userText.endsWith('\ncontinue') || userText.split('\n').pop().trim() === 'continue';
+    const isNewEra = userText === 'new era' || userText.includes('new era');
+
     // ── Stream 1: Natal blueprint ──
     console.log('CHART TEXT SENT TO AI:', chartText?.substring(0, 500));
   console.log('FULL CHART TEXT:', JSON.stringify(chartText));
-    const stream = anthropic.messages.stream({
-      model: "claude-sonnet-4-5",
-      max_tokens: 16000,
-      system: SYSTEM_PROMPT,
-      messages: augmentedMessages,
-    });
-
     let fullText = '';
 
-    stream.on('text', (text) => {
-      fullText += text;
-      res.write('data: ' + JSON.stringify({ text }) + '\n\n');
-    });
-
-    stream.on('message', async () => {
+    const runArcPhase = async () => {
       try {
-        // Only generate the arc if the user explicitly typed "continue"
-        const lastUserMsg = messages[messages.length - 1];
-        const userText = (typeof lastUserMsg?.content === 'string' ? lastUserMsg.content : '').toLowerCase().trim();
-        const isContinue = userText === 'continue' || userText.endsWith('\ncontinue') || userText.split('\n').pop().trim() === 'continue';
-        const isNewEra = userText === 'new era' || userText.includes('new era');
-        const isActivation = userText === 'activation' || userText.includes('activation');
 
                 const [arc, activationText] = await group2Promise;
 
@@ -519,7 +555,13 @@ app.post("/api/chat", async (req, res) => {
                   { role: 'user', content: sectionPrompt },
                 ],
               });
-              return msg.content[0].text;
+              let t = msg.content[0].text;
+              // Safety net: never emit a section cut off mid-sentence.
+              if (msg.stop_reason === 'max_tokens') {
+                const cut = Math.max(t.lastIndexOf('. '), t.lastIndexOf('.\n'), t.lastIndexOf('."'), t.lastIndexOf('? '), t.lastIndexOf('! '));
+                if (cut > 0) t = t.slice(0, cut + 1);
+              }
+              return t;
             };
 
             const arcContext = [
@@ -553,7 +595,7 @@ RULES:
 
 Begin with the threshold dateline (age and approximate year).
 End with one sentence that seeds the Uranus chapter.`,
-                280,
+                700,
                 arcContext
               );
 
@@ -577,7 +619,7 @@ RULES:
 
 Begin with the threshold dateline.
 End with one sentence that seeds the Chiron chapter.`,
-                175,
+                500,
                 [...arcContext, { role: 'assistant', content: saturnText }]
               );
 
@@ -601,7 +643,7 @@ RULES:
 
 Begin with the threshold dateline.
 End with one sentence that seeds the next chapter — the era transition.`,
-                280,
+                700,
                 [...arcContext, { role: 'assistant', content: saturnText + '\n\n' + uranusText }]
               );
 
@@ -630,7 +672,7 @@ RULES:
 - Close with ONE final sentence that names why this person's design exists at this exact moment in history
 
 This is the final section. The closing sentence is the last line of the entire arc.`,
-                450,
+                1100,
                 [...arcContext, { role: 'assistant', content: saturnText + '\n\n' + uranusText + '\n\n' + chironText }]
               );
 
@@ -641,21 +683,41 @@ This is the final section. The closing sentence is the last line of the entire a
               res.write('data: ' + JSON.stringify({ text: '\n\n[Arc generation encountered an error. Please try again.]\n\n' }) + '\n\n');
             }
 
-            res.write('data: [DONE]\n\n');
-            res.end();
           }
         }
       } catch (err) {
         console.error('Group 2 completion error:', err.message);
       }
-      res.write('data: [DONE]\n\n');
-      res.end();
-    });
+      if (!res.writableEnded) {
+        res.write('data: [DONE]\n\n');
+        res.end();
+      }
+    };
 
-    stream.on('error', (err) => {
-      res.write('data: ' + JSON.stringify({ error: err.message }) + '\n\n');
-      res.end();
-    });
+    // On "continue", stream ONLY the section-by-section Story of Becoming.
+    // (Previously the model also streamed its own full story first, so it appeared twice.)
+    const [arcForContinue] = isContinue ? await group2Promise : [null];
+    if (isContinue && arcForContinue) {
+      fullText = '(The natal reading above has been delivered. Continuing with the Story of Becoming.)';
+      await runArcPhase();
+    } else {
+      const stream = anthropic.messages.stream({
+        model: "claude-sonnet-4-5",
+        max_tokens: 16000,
+        system: SYSTEM_PROMPT,
+        messages: augmentedMessages,
+      });
+      stream.on('text', (text) => {
+        fullText += text;
+        if (!res.writableEnded) res.write('data: ' + JSON.stringify({ text }) + '\n\n');
+      });
+      stream.on('message', runArcPhase);
+      stream.on('error', (err) => {
+        if (res.writableEnded) return;
+        res.write('data: ' + JSON.stringify({ error: err.message }) + '\n\n');
+        res.end();
+      });
+    }
 
   } else {
     // ── No birth data — regular chat ──

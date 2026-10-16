@@ -114,7 +114,7 @@ CHANNELS = {
     (33, 13): ("Throat",      "G Center",      "Channel of the Prodigal"),
     (34, 20): ("Sacral",      "Throat",        "Channel of Charisma"),
     (34, 57): ("Sacral",      "Spleen",        "Channel of Power"),
-    (35, 36): ("Throat",      "Solar Plexus",  "Channel of Transience"),
+    (35, 36): ("Throat",      "Solar Plexus",  "Channel of Transitoriness"),
     (37, 40): ("Solar Plexus","Heart",         "Channel of Community"),
     (39, 55): ("Root",        "Solar Plexus",  "Channel of Emoting"),
     (40, 37): ("Heart",       "Solar Plexus",  "Channel of Community"),

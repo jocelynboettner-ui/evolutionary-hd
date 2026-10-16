@@ -171,6 +171,8 @@ export function transformV3Response(raw) {
   };
 }
 
+import { channelList } from './reading-context.js';
+
 export function formatV3HDChart(data) {
   // Retrograde section
   let retrogradeSection = '';
@@ -225,7 +227,7 @@ export function formatV3HDChart(data) {
     'NOT-SELF THEME: ' + data.not_self + '\n\n' +
     'DEFINED CENTERS: ' + data.defined_centers.join(', ') + '\n' +
     'OPEN CENTERS: ' + data.open_centers.join(', ') + '\n\n' +
-    'CHANNELS: ' + data.channels.join(', ') + '\n' +
+    'CHANNELS: ' + channelList(data.channels) + '\n' +
     'GATES: ' + data.gates.join(', ') + '\n' +
     retrogradeSection + geneKeysSection + variablesSection + circuitSection +
     '\n=== END NATAL CHART DATA ===\n';
