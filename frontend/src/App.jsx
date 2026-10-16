@@ -456,7 +456,7 @@ export default function App() {
                                   <span style={{ fontSize: "clamp(11px,2vw,16px)", color: "rgba(240,234,216,0.55)", letterSpacing: "0.35em", textTransform: "uppercase", fontStyle: "italic", marginTop: "8px" }}>Living Blueprint Reader</span>
                         </h1>
                         <div style={{ color: "#c9a84c", fontSize: "18px", marginTop: "12px", opacity: 0.7 }}>✦</div>
-                  {chartDetected && birthdata && (
+                  {chartDetected && birthdata && !loading && (
                       <div style={{ marginTop: "12px", fontSize: "12px", color: "rgba(134,239,172,0.85)", background: "rgba(134,239,172,0.08)", border: "1px solid rgba(134,239,172,0.2)", borderRadius: "20px", padding: "4px 16px", display: "inline-block" }}>
                                   Chart retrieved: {birthdata.birthdate} {birthdata.birthtime} — {birthdata.location}
                       </div>
