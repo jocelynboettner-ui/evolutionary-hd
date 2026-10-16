@@ -474,7 +474,7 @@ export default function App() {
                     boxSizing: "border-box",
           }}>
                         <div ref={topRef} />
-                  {chartDetected && (
+                  {chartDetected && !loading && (
                       <ReadingTableOfContents visible={true} birthdata={birthdata} planets={charts?.natal?.planets} />
                     )}
                   {isEmpty && (
