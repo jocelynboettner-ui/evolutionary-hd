@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
+import { downloadReadingPdf } from "./readingPdf.js";
 
-const API_URL = "https://evolutionary-hd-api.onrender.com";
+const API_URL = import.meta.env.VITE_API_URL || "https://evolutionary-hd-api.onrender.com";
 
 // Access credentials for /api/chat: paid Stripe session id or owner preview code (?preview=CODE)
 const getAccess = () => ({
@@ -55,7 +56,7 @@ function ReadingTableOfContents({ visible, birthdata }) {
                   borderRadius: "8px",
                   padding: "32px",
                   margin: "24px 0",
-                  fontFamily: "'Cormorant Garamond', Georgia, serif",
+                  fontFamily: "var(--reading-font)",
           }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "16px", marginBottom: "28px" }}>
                         <span style={{ color: "#b8860b", fontSize: "14px", opacity: 0.7 }}>✦</span>
@@ -74,11 +75,11 @@ function ReadingTableOfContents({ visible, birthdata }) {
             { title: "PART SIX — THE INVITATION FORWARD", items: [] },
                     ].map(({ title, items }) => (
                                 <div key={title} style={{ borderLeft: "1px solid rgba(184,134,11,0.2)", paddingLeft: "16px" }}>
-                                            <div style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: "12px", letterSpacing: "0.15em", textTransform: "uppercase", color: "#b8860b", marginBottom: "8px" }}>{title}</div>
+                                            <div style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: "14px", letterSpacing: "0.15em", textTransform: "uppercase", color: "#b8860b", marginBottom: "8px" }}>{title}</div>
                                   {items.length > 0 && (
                                                 <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                                                   {items.map(item => (
-                                                                    <span key={item} style={{ fontSize: "15px", color: "rgba(240,234,216,0.8)", fontStyle: "italic" }}>{item}</span>
+                                                                    <span key={item} style={{ fontSize: "17px", color: "rgba(240,234,216,0.92)", fontStyle: "italic" }}>{item}</span>
                                                                   ))}
                                                 </div>
                                             )}
@@ -88,15 +89,15 @@ function ReadingTableOfContents({ visible, birthdata }) {
                 <div style={{ textAlign: "center", color: "rgba(184,134,11,0.3)", margin: "24px 0", letterSpacing: "0.3em" }}>—</div>
                 <div style={{ marginBottom: "8px" }}>
                         <div style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: "10px", letterSpacing: "0.15em", textTransform: "uppercase", color: "#b8860b", marginBottom: "8px" }}>PLANETARY KEY — How To Read Your Gates</div>
-                        <div style={{ fontSize: "13px", color: "rgba(240,234,216,0.5)", fontStyle: "italic", marginBottom: "16px", lineHeight: "1.5" }}>
+                        <div style={{ fontSize: "16px", color: "rgba(240,234,216,0.85)", fontStyle: "italic", marginBottom: "16px", lineHeight: "1.6" }}>
                                   Each gate in your chart sits in a planetary position. The planet tells you HOW that gate expresses in your life.
                         </div>
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "6px 24px" }}>
                           {PlanetaryKey.map(({ planet, meaning }) => (
-                        <div key={planet} style={{ display: "flex", alignItems: "baseline", gap: "8px", fontSize: "12px" }}>
+                        <div key={planet} style={{ display: "flex", alignItems: "baseline", gap: "8px", fontSize: "15px" }}>
                                       <span style={{ color: "rgba(240,234,216,0.8)", whiteSpace: "nowrap", minWidth: "140px" }}>{planet}</span>
                                       <span style={{ color: "rgba(184,134,11,0.4)", flexShrink: 0 }}>→</span>
-                                      <span style={{ color: "rgba(240,234,216,0.45)", fontStyle: "italic" }}>{meaning}</span>
+                                      <span style={{ color: "rgba(240,234,216,0.85)", fontStyle: "italic" }}>{meaning}</span>
                         </div>
                       ))}
                         </div>
@@ -104,14 +105,14 @@ function ReadingTableOfContents({ visible, birthdata }) {
                 <div style={{ textAlign: "center", color: "rgba(184,134,11,0.3)", margin: "24px 0", letterSpacing: "0.3em" }}>—</div>
                 <div>
                         <div style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: "10px", letterSpacing: "0.15em", textTransform: "uppercase", color: "#b8860b", marginBottom: "12px" }}>HOW TO READ YOUR DEFINITION</div>
-                        <p style={{ fontSize: "13px", color: "rgba(240,234,216,0.55)", lineHeight: "1.7", margin: "0 0 12px 0" }}>
-                                  Think of your defined centers as <strong style={{ color: "rgba(240,234,216,0.8)", fontWeight: 600 }}>towns you know intimately</strong>strong> — you grew up here, you know every street, you can give directions with confidence, you know exactly what to do and where to go. This is consistent, reliable energy that is always available to you.
+                        <p style={{ fontSize: "16px", color: "rgba(240,234,216,0.88)", lineHeight: "1.65", margin: "0 0 12px 0" }}>
+                                  Think of your defined centers as <strong style={{ color: "rgba(240,234,216,0.8)", fontWeight: 600 }}>towns you know intimately</strong> — you grew up here, you know every street, you can give directions with confidence, you know exactly what to do and where to go. This is consistent, reliable energy that is always available to you.
                         </p>
-                        <p style={{ fontSize: "13px", color: "rgba(240,234,216,0.55)", lineHeight: "1.7", margin: "0 0 12px 0" }}>
-                                  Your defined <strong style={{ color: "rgba(240,234,216,0.8)", fontWeight: 600 }}>channels are the superhighways</strong>strong> between those towns — familiar routes you travel automatically, with no need to think about which way to turn. This is where your most consistent gifts live.
+                        <p style={{ fontSize: "16px", color: "rgba(240,234,216,0.88)", lineHeight: "1.65", margin: "0 0 12px 0" }}>
+                                  Your defined <strong style={{ color: "rgba(240,234,216,0.8)", fontWeight: 600 }}>channels are the superhighways</strong> between those towns — familiar routes you travel automatically, with no need to think about which way to turn. This is where your most consistent gifts live.
                         </p>
-                        <p style={{ fontSize: "13px", color: "rgba(240,234,216,0.55)", lineHeight: "1.7", margin: 0 }}>
-                                  Your <strong style={{ color: "rgba(240,234,216,0.8)", fontWeight: 600 }}>undefined or open centers</strong>strong> are places you are still exploring — like visiting a new city where you might take a taxi or ask a local for directions. You are learning here, not leading. These are also the places where you are most receptive, most flexible, and most wise about the experiences of others.
+                        <p style={{ fontSize: "16px", color: "rgba(240,234,216,0.88)", lineHeight: "1.65", margin: 0 }}>
+                                  Your <strong style={{ color: "rgba(240,234,216,0.8)", fontWeight: 600 }}>undefined or open centers</strong> are places you are still exploring — like visiting a new city where you might take a taxi or ask a local for directions. You are learning here, not leading. These are also the places where you are most receptive, most flexible, and most wise about the experiences of others.
                         </p>
                 </div>
           </div>
@@ -190,16 +191,17 @@ function Message({ role, content }) {
                   padding: "0 8px",
           }}>
                 <div style={{
-                    maxWidth: "80%",
+                    maxWidth: isUser ? "80%" : "min(100%, 70ch)",
                     background: isUser
-                                ? "linear-gradient(135deg, rgba(139,92,246,0.6), rgba(109,40,217,0.6))"
-                                : "rgba(255,255,255,0.07)",
+                                ? "linear-gradient(135deg, rgba(109,40,217,0.9), rgba(76,29,149,0.9))"
+                                : "rgba(14,8,26,0.92)",
                     border: isUser ? "none" : "1px solid rgba(167,139,250,0.25)",
                     borderRadius: isUser ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
-                    padding: "14px 18px",
-                    color: "rgba(255,255,255,0.92)",
-                    fontSize: "1.1rem",
-                    lineHeight: "1.9",
+                    padding: isUser ? "14px 18px" : "22px 26px",
+                    color: "#f5f1e8",
+                    fontFamily: isUser ? "var(--ui-font)" : "var(--reading-font)",
+                    fontSize: isUser ? "17px" : "18px",
+                    lineHeight: "1.65",
                     whiteSpace: "pre-wrap",
                     wordBreak: "break-word",
           }}>
@@ -281,7 +283,7 @@ export default function App() {
                                                                                                                                                           if (parsed2.text) {
                                                                                                                                                                                     fullText += parsed2.text;
                                                                                                                                                                                     setMessages([...newMessages, { role: 'assistant', content: fullText }]);
-                                                                                                                                                                                    await new Promise(r => setTimeout(r, 1200));
+                                                                                                                                                                                    await new Promise(r => setTimeout(r, 20));
                                                                                                                                                             }
                                                                                                                                     } catch (e) {}
                                                                                                               }
@@ -308,7 +310,7 @@ export default function App() {
           let newMessages;
           if (parsed && getAccess().previewCode) {
                   // Owner preview: skip Stripe, run the reading directly (server verifies the code)
-                  currentBirthdata = { birthdate: parsed.isoDate, birthtime: parsed.birthTime, location: parsed.location, name: parsed.name };
+                  currentBirthdata = { birthdate: parsed.birthdate, birthtime: parsed.birthtime, location: parsed.location, name: parsed.name };
                   setBirthdata(currentBirthdata);
                   setChartDetected(true);
                   setStreamingDone(false);
@@ -322,8 +324,8 @@ export default function App() {
                           method: "POST",
                           headers: { "Content-Type": "application/json" },
                           body: JSON.stringify({
-                              birthdate: parsed.isoDate,
-                              birthtime: parsed.birthTime,
+                              birthdate: parsed.birthdate,
+                              birthtime: parsed.birthtime,
                               location: parsed.location,
                               name: parsed.name,
                           }),
@@ -375,7 +377,7 @@ export default function App() {
                                                                                         if (parsed.text) {
                                                                                                             fullText += parsed.text;
                                                                                                             setMessages([...newMessages, { role: "assistant", content: fullText }]);
-                                                                                                            await new Promise(r => setTimeout(r, 1200));
+                                                                                                            await new Promise(r => setTimeout(r, 20));
                                                                                           }
                                                                                         if (parsed.error) {
                                                                                                             setMessages([...newMessages, {
@@ -427,7 +429,7 @@ export default function App() {
                   display: "flex",
                   flexDirection: "column",
                   position: "relative",
-                  fontFamily: "'Georgia', serif",
+                  fontFamily: "var(--ui-font)",
           }}>
                 <Stars />
             {chartDetected && (
@@ -473,7 +475,7 @@ export default function App() {
                   {isEmpty && (
                       <div style={{ textAlign: "center", padding: "60px 20px", color: "rgba(255,255,255,0.45)" }}>
                                   <div style={{ fontSize: "32px", marginBottom: "16px", opacity: 0.6 }}>✦</div>
-                                  <div style={{ fontSize: "16px", lineHeight: "1.8", color: "rgba(200,180,255,0.7)" }}>
+                                  <div style={{ fontSize: "18px", lineHeight: "1.65", color: "rgba(230,220,255,0.92)" }}>
                                                 Share your birth date, time, and city<br />
                                                 to receive your evolutionary reading.
                                   </div>
@@ -503,15 +505,13 @@ export default function App() {
                                     paddingTop: '2rem',
                                     marginTop: '2rem'
                       }}>
-                                  <p style={{
-                                      fontSize: '0.75rem',
-                                      color: 'rgba(240,234,216,0.4)',
-                                      marginBottom: '1.5rem',
-                                      textAlign: 'center',
-                                      letterSpacing: '0.05em'
-                      }}>
-                                                To save your reading — Cmd+P (Mac) or Ctrl+P (Windows) → Save as PDF
-                                  </p>
+                                  <button className="pdf-btn" onClick={() => downloadReadingPdf({
+                                      name: birthdata?.name,
+                                      birthdata,
+                                      parts: messages.filter(m => m.role === 'assistant' && m.content).map(m => m.content),
+                                  })}>
+                                      ⬇ Download PDF
+                                  </button>
                                   <p style={{
                                       fontSize: '0.8rem',
                                       color: 'rgba(201,168,76,0.7)',
@@ -535,10 +535,10 @@ export default function App() {
                                                                                   padding: '0.75rem 1.25rem',
                                                                                   textAlign: 'left',
                                                                                   cursor: 'pointer',
-                                                                                  fontSize: '0.95rem',
+                                                                                  fontSize: '17px',
                                                                                   lineHeight: '1.5',
                                                                                   transition: 'background 0.2s, border-color 0.2s',
-                                                                                  fontFamily: 'Georgia, serif',
+                                                                                  fontFamily: 'var(--ui-font)',
                                                                                   fontStyle: 'italic',
                                                             }}
                                                             onMouseEnter={e => {
@@ -587,7 +587,7 @@ export default function App() {
                                                                 border: "none",
                                                                 outline: "none",
                                                                 color: "rgba(255,255,255,0.95)",
-                                                                fontSize: "15px",
+                                                                fontSize: "17px",
                                                                 resize: "none",
                                                                 padding: "10px 0",
                                                                 fontFamily: "inherit",
@@ -623,7 +623,11 @@ export default function App() {
                         </div>
                 </div>
                 <style>{`
-                        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&display=swap');
+                        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Inter:wght@400;500;600&family=Lora:ital,wght@0,400;0,600;1,400&display=swap');
+                                :root { --ui-font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; --reading-font: 'Lora', Georgia, 'Times New Roman', serif; }
+                                .pdf-btn { display:block; margin: 0 auto 1.5rem; padding: 12px 28px; background: #c9a84c; color: #140d02; border: none; border-radius: 999px; font-family: var(--ui-font); font-size: 16px; font-weight: 600; cursor: pointer; }
+                                .pdf-btn:hover { background: #e0c068; }
+                                .pdf-btn:focus-visible { outline: 3px solid #f5f1e8; outline-offset: 2px; }
                                 * { box-sizing: border-box; }
                                         body { margin: 0; background: #000; }
                                                 textarea::placeholder { color: rgba(220,200,255,0.75); }
