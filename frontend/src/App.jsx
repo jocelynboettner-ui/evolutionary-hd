@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from "react";
+import { CycleCards, cycleCardsCss } from "./CycleCards.jsx";
+import { downloadWorkbookPdf } from "./workbookPdf.js";
 import { downloadReadingPdf } from "./readingPdf.js";
 import { parseBirthText } from "../../backend/birth-parse.js";
 import { PLANET_ORDER, planetMeaning } from "../../backend/reading-context.js";
@@ -74,8 +76,9 @@ function ReadingTableOfContents({ visible, birthdata, planets }) {
             { title: "PART TWO — YOUR SUPERPOWERS AND SUPERHIGHWAYS", items: ["Your Channels", "Your Active Gates with Planetary Placements"] },
             { title: "PART THREE — YOUR CURRENT CHAPTER", items: ["Your Current Chapter", "Living It Now", "Decision-Making In This Cycle"] },
             { title: "PART FOUR — YOUR STORY OF BECOMING", items: ["Saturn Return", "Uranus Opposition", "Chiron Return"] },
-            { title: "PART FIVE — WHAT IS MOST ALIVE RIGHT NOW", items: ["Today's Transit Activations", "What You Are Learning", "Who You Are Becoming"] },
-            { title: "PART SIX — THE INVITATION FORWARD", items: [] },
+            { title: "PART FIVE — THE INITIATIONS OF YOUR CYCLES", items: ["The Profile, Cross & Type You Are Learning", "Your Magic Wand: Gifts That Came Online", "Gene Keys for Your New Gates", "Your Second-Half-of-Life Purpose", "Themes Across Your Cycles", "Integration Practices"] },
+            { title: "PART SIX — WHAT IS MOST ALIVE RIGHT NOW", items: ["Today's Transit Activations", "What You Are Learning", "Who You Are Becoming"] },
+            { title: "PART SEVEN — THE INVITATION FORWARD", items: [] },
                     ].map(({ title, items }) => (
                                 <div key={title} style={{ borderLeft: "1px solid rgba(184,134,11,0.2)", paddingLeft: "16px" }}>
                                             <div style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: "14px", letterSpacing: "0.15em", textTransform: "uppercase", color: "#b8860b", marginBottom: "8px" }}>{title}</div>
@@ -237,6 +240,7 @@ async function handleDownloadPdf(birthdata, messages, charts) {
         ...splitForPdf(messages),
         images,
         planets: charts?.natal?.planets || [],
+        enrichment: charts?.enrichment || [],
     });
 }
 
@@ -263,6 +267,7 @@ async function streamChat(messages, birthdata) {
                 try {
                     const j = JSON.parse(data);
                     if (j.charts) out.charts = j.charts;
+                    if (j.workbook) out.workbook = j.workbook;
                     if (j.notice) out.notice = j.notice;
                     if (j.text) out.text += j.text;
                     if (j.error) out.error = j.error;
@@ -311,6 +316,7 @@ export default function App() {
     const [birthdata, setBirthdata] = useState(null);
     const [charts, setCharts] = useState(null);
     const [chartDetected, setChartDetected] = useState(false);
+    const [workbook, setWorkbook] = useState(null);
     const bottomRef = useRef(null);
     const topRef = useRef(null);
   
@@ -417,6 +423,7 @@ export default function App() {
                           const p1 = r1.text.split("\n").filter(l => !/type\s+["']?continue/i.test(l)).join("\n").trim();
                           const withCont = [...newMessages, { role: "assistant", content: p1, main: true }, { role: "user", content: "continue", hidden: true }];
                           const r2 = await streamChat(withCont, bd);
+                          if (r2.workbook) setWorkbook(r2.workbook);
                           final = r2.text && !r2.error ? [...withCont, { role: "assistant", content: r2.text, main: true }] : [...newMessages, { role: "assistant", content: p1, main: true }];
                   }
                   setMessages(final);
@@ -432,6 +439,7 @@ export default function App() {
     function handleNewReading() {
           setMessages([]);
           setCharts(null);
+          setWorkbook(null);
           setBirthdata(null);
           setChartDetected(false);
           setStreamingDone(false);
@@ -514,6 +522,7 @@ export default function App() {
                         )}
                   {loading && <GeneratingScreen />}
                   {!loading && charts && <Bodygraphs charts={charts} />}
+                  {!loading && charts?.enrichment?.length > 0 && <CycleCards enrichment={charts.enrichment} />}
                   {!loading && messages.filter(m => !m.hidden).map((m, i) => <Message key={i} role={m.role} content={m.content} />)}
 
                   {chartDetected && streamingDone && !loading && messages.length > 0 && messages[messages.length - 1].role === 'assistant' && (
@@ -525,6 +534,11 @@ export default function App() {
                                   <button className="pdf-btn" onClick={() => handleDownloadPdf(birthdata, messages, charts)}>
                                       ⬇ Download PDF{splitForPdf(messages).qa.length ? " (includes your questions)" : ""}
                                   </button>
+                                  {charts?.natal && (
+                                      <button className="pdf-btn wb-btn" onClick={() => downloadWorkbookPdf({ name: birthdata?.name, birthdata, natal: charts.natal, enrichment: charts.enrichment || [], workbook })}>
+                                          ✎ Download Workbook
+                                      </button>
+                                  )}
                                   <p style={{
                                       fontSize: '0.8rem',
                                       color: 'rgba(201,168,76,0.7)',
@@ -640,6 +654,9 @@ export default function App() {
                                 :root { --ui-font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; --reading-font: 'Lora', Georgia, 'Times New Roman', serif; }
                                 .pdf-btn { display:block; margin: 0 auto 1.5rem; padding: 12px 28px; background: #c9a84c; color: #140d02; border: none; border-radius: 999px; font-family: var(--ui-font); font-size: 16px; font-weight: 600; cursor: pointer; }
                                 .pdf-btn:hover { background: #e0c068; }
+                                .wb-btn { background: transparent; color: #e0c068; border: 1.5px solid #c9a84c; margin-top: -0.75rem; }
+                                .wb-btn:hover { background: rgba(201,168,76,0.15); }
+                                ${cycleCardsCss}
                                 .planet-list { display: flex; flex-direction: column; gap: 10px; }
                                 .planet-row { padding: 10px 12px; border-left: 2px solid rgba(201,168,76,0.5); background: rgba(255,255,255,0.03); border-radius: 0 8px 8px 0; }
                                 .planet-name { font-family: var(--ui-font); font-weight: 600; font-size: 16px; color: #e0c068; }

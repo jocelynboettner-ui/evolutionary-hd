@@ -1,13 +1,14 @@
 // readingPdf.js — client-side PDF export of a finished reading (no server cost).
 import { jsPDF } from "jspdf";
 import { PLANET_INTRO, planetMeaning } from "../../backend/reading-context.js";
+import { writer, renderCycleSummary } from "./workbookPdf.js";
 
 const clean = (t) => String(t || "")
   .replace(/\r/g, "")
   .replace(/\*\*(.+?)\*\*/g, "$1")
   .replace(/(^|\s)\*(.+?)\*(?=\s|$)/g, "$1$2")
   .replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"')
-  .replace(/\u2014/g, " - ").replace(/\u2013/g, "-").replace(/\u2026/g, "...")
+  .replace(/\u2192/g, "->").replace(/\u2022/g, "-").replace(/\u2014/g, " - ").replace(/\u2013/g, "-").replace(/\u2026/g, "...")
   .replace(/[\u2726\u2727\u2605\u2606]/g, "*")
   .replace(/[^\x09\x0A\x20-\x7E\xA0-\xFF]/g, "");
 
@@ -24,7 +25,7 @@ function headingOf(line) {
  * @param {{ name?: string, birthdata?: {birthdate?:string,birthtime?:string,location?:string}, parts: string[], generatedAt?: Date }} opts
  * @returns {jsPDF}
  */
-export function buildReadingPdf({ name, birthdata, parts, qa = [], images = [], planets = [], generatedAt = new Date() }) {
+export function buildReadingPdf({ name, birthdata, parts, qa = [], images = [], planets = [], enrichment = [], generatedAt = new Date() }) {
   const doc = new jsPDF({ unit: "pt", format: "letter" });
   const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight();
   const M = 72, maxW = W - 2 * M;               // 1" margins -> ~70-75 characters per line at 12pt
@@ -93,6 +94,14 @@ export function buildReadingPdf({ name, birthdata, parts, qa = [], images = [], 
     });
     doc.addPage(); y = M;
   }
+
+  // Cycle initiation summaries (structured, computed from cycle-peak charts)
+  if (enrichment.length) {
+    const w = writer(doc);
+    enrichment.forEach((c, i) => { if (i) w.page(); renderCycleSummary(w, c); });
+    doc.addPage(); y = M;
+  }
+
 
   const renderText = (part) => {
     const paras = clean(part).split(/\n\s*\n/);

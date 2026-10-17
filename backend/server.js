@@ -11,6 +11,7 @@ import { parseBirthText } from './birth-parse.js';
 import { formatPlanets } from './reading-context.js';
 import { buildFactsBlock, attributeChannels, formatAttribution, channelList, currentCycleStatus, formatCycleStatus, bodygraphData, CYCLE_LABELS } from './reading-context.js';
 import Stripe from 'stripe';
+import { buildEnrichment, formatEnrichmentForPrompt } from './cycle-enrichment.js';
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -436,6 +437,7 @@ app.post("/api/chat", async (req, res) => {
     let cycles = null;
 
     let overlaysForClient = null;
+    let enrichment = [];
     const now = new Date();
     // ── GROUP 1: Parallel fetch — natal chart + transit cycles ──
     res.setHeader('Content-Type', 'text/event-stream');
@@ -488,6 +490,7 @@ app.post("/api/chat", async (req, res) => {
         );
         const overlays = Object.fromEntries(overlayKeys.map((k, i) => [k, overlayCharts[i]]));
         overlaysForClient = overlays;
+        try { enrichment = buildEnrichment(hdChart, overlays, cycles, now); } catch (e) { console.error('Enrichment error:', e.message); }
         console.log('Overlays fetched:', overlayKeys.map((k,i) => k + '=' + (overlayCharts[i] ? overlayCharts[i].incarnation_cross : 'null')).join(', '));
         const overlayText = formatOverlayData(cycles, overlays, hdChart);
         if (overlayText) chartText += overlayText;
@@ -513,7 +516,7 @@ app.post("/api/chat", async (req, res) => {
         const ov = overlaysForClient?.[c.key];
         return ov ? { ...c, chart: bodygraphData(ov) } : null;
       }).filter(Boolean);
-      res.write('data: ' + JSON.stringify({ charts: { natal: natalBg, cycles: activeOverlays, status: cycleStatus } }) + '\n\n');
+      res.write('data: ' + JSON.stringify({ charts: { natal: natalBg, cycles: activeOverlays, status: cycleStatus, enrichment } }) + '\n\n');
     }
 
         // ── GROUP 2: Start slow fetches in background ──
@@ -585,11 +588,17 @@ app.post("/api/chat", async (req, res) => {
           }
 
           if (activationText) arcChartText += '\n' + activationText;
+          if (enrichment.length) arcChartText += '\n' + formatEnrichmentForPrompt(enrichment, hdChart);
 
           if (arcChartText) {
             // Helper — non-streaming, constrained, one section at a time
             const generateArcSection = async (sectionPrompt, maxTokens, priorMessages) => {
-              const msg = await anthropic.messages.create({
+              const create = (args) => anthropic.messages.create(args).catch(async (e) => {
+                if (![429, 500, 529].includes(e?.status)) throw e;
+                await new Promise(r => setTimeout(r, 4000));
+                return anthropic.messages.create(args);
+              });
+              const msg = await create({
                 model: "claude-sonnet-4-5",
                 max_tokens: maxTokens,
                 system: SYSTEM_PROMPT,
@@ -619,6 +628,46 @@ app.post("/api/chat", async (req, res) => {
                 content: 'Understood. One section at a time. Matching the example exactly.',
               },
             ];
+
+            // ── Cycle embodiment sections (parallel with the arc chain; one call each) ──
+            const activeKeys = new Set((cycleStatus?.active || []).map(c => c.key));
+            const splitWb = (t) => {
+              const i = t.indexOf('<<<WORKBOOK>>>');
+              if (i < 0) return { text: t.trim(), wb: null };
+              const js = t.slice(i + 14); const a = js.indexOf('{'), b = js.lastIndexOf('}');
+              let wb = null; try { wb = JSON.parse(js.slice(a, b + 1)); } catch (e) { console.error('Workbook JSON parse error:', e.message); }
+              return { text: t.slice(0, i).trim(), wb };
+            };
+            const nm = birthdata.name || 'them';
+            const RULES = `Plain text only: no markdown, no #, no **, no bullet symbols except "• " where asked. Sub-headings are ALL-CAPS lines on their own. Only this cycle; never mention or forecast any future cycle. Natal profile, cross, type and authority are HOME BASE; the cycle adds what ${nm} is LEARNING TO EMBODY (never "you became"). Use exact names and numbers from CYCLE EMBODIMENT DATA. When naming a planet carrying a gate, use its given meaning.`;
+            const wandPrompt = (c) => `Write ONLY the section "YOUR ${c.label.toUpperCase()} MAGIC WAND" for ${nm}. This cycle is ${activeKeys.has(c.key) ? 'CURRENT (present tense)' : 'COMPLETED (past tense, integrated now)'}. Use the ${c.label.toUpperCase()} block of CYCLE EMBODIMENT DATA.
+First line exactly: YOUR ${c.label.toUpperCase()} MAGIC WAND
+Then these sub-headings in order:
+THE PROFILE YOU ARE LEARNING: ${c.profile.cycle}  (one paragraph: what the ${c.profile.cycle} lines teach in this season, sitting on top of home-base ${c.profile.natal})
+${c.key === 'chironReturn' ? '' : `THE CROSS OF THIS SEASON  (one paragraph: the exact cross "${c.cross.cycle}" as the purpose being practiced; natal cross stays home)
+`}${c.type.shifted ? `THE TYPE YOU ARE LEARNING: ${c.type.cycle}  (a rich subsection, 2-3 paragraphs, framed as the type initiation of this season while natal ${c.type.natal} remains home base: its strategy "${c.type.info?.strategy || ''}", its signature "${c.type.info?.signature || ''}" and not-self "${c.type.info?.notSelf || ''}", what it asks of ${nm}, and how it adds to the natal ${c.type.natal} way of moving)
+` : ''}${c.authority.shifted ? `THE AWARENESS YOU ARE PRACTICING: ${c.authority.cycle}  (one short paragraph: practicing this awareness; natal ${c.authority.natal} authority remains the decision-maker, never replaced)
+` : ''}THE GIFTS THAT CAME ONLINE  (the heart of this section: every newly defined center and every channel listed, each as a gift; name the planet carrying the new gate and what that planet means)
+GENE KEYS FOR YOUR NEW GATES  (choose the 3-5 most important new gates, prioritising channel and cross gates; for each, one line "Gate N: Shadow X → Gift Y → Siddhi Z" then one sentence of contemplation)
+INTEGRATION PRACTICES  (exactly 3 lines, each starting "• ")
+Frame the cycle profile, cross and type together as the initiation of this season. Length 550-800 words. ${RULES}
+After the section output a line exactly <<<WORKBOOK>>> and then ONE JSON object only: {"cycleReflection":"2-3 sentence intro for this cycle's workbook page","practices":["3 practices"],"journalPrompts":["3 journal prompts"],"geneKeyContemplations":[{"gate":N,"prompt":"..."}]} (3 contemplations).`;
+            const chiron = enrichment.find(c => c.key === 'chironReturn');
+            const purposePrompt = chiron && `Write ONLY the section "YOUR SECOND-HALF-OF-LIFE PURPOSE" for ${nm}. It is the Chiron Return incarnation cross: "${chiron.cross.cycle}" (gates ${chiron.cross.gates.join(', ')}). Home base stays the natal cross "${chiron.cross.natal}".
+First line exactly: YOUR SECOND-HALF-OF-LIFE PURPOSE
+Write a rich, specific section (500-700 words): what this cross is and the purpose it carries; each of its four gates with its Gene Key Shadow → Gift → Siddhi as given; how the natal cross (home base) and this Chiron cross work together; how the wound becomes medicine through this purpose; what living this purpose looks like now. End with sub-heading INTEGRATION PRACTICES and exactly 3 lines starting "• ". ${RULES}
+After the section output a line exactly <<<WORKBOOK>>> and then ONE JSON object only: {"purposeReflection":"2-3 sentence intro","practices":["3 practices"],"journalPrompts":["3 journal prompts"]}.`;
+            const themesPrompt = `Write ONLY the section "THEMES ACROSS YOUR CYCLES" for ${nm}. Thread how ${enrichment.map(c => c.label).join(' → ')} built on one another: what each began, how the next deepened it, using each cycle's profile, cross and magic wand gifts. Only these cycles; nothing in the future. First line exactly: THEMES ACROSS YOUR CYCLES. 250-380 words. ${RULES}
+After the section output a line exactly <<<WORKBOOK>>> and then ONE JSON object only: {"intro":"warm 3-4 sentence workbook introduction addressed to ${nm}","homeBase":"2-3 sentences summarising natal home base","themesPrompts":["3 reflection prompts about the thread across cycles"],"closing":"warm 3-4 sentence closing blessing"}.`;
+            const extraCtx = [
+              ...augmentedMessages,
+              { role: 'assistant', content: fullText },
+              { role: 'user', content: arcChartText + '\n\nEach following request asks for ONE section. Follow that request\'s structure and length exactly; it overrides any earlier brevity or no-listing rule.' },
+              { role: 'assistant', content: 'Understood. One section per request, following its structure exactly.' },
+            ];
+            const wandJobs = enrichment.map(c => generateArcSection(wandPrompt(c), 2600, extraCtx).then(splitWb).catch(e => { console.error('Wand error', c.key, e.message); return null; }));
+            const purposeJob = chiron ? generateArcSection(purposePrompt, 2000, extraCtx).then(splitWb).catch(e => { console.error('Purpose error', e.message); return null; }) : Promise.resolve(null);
+            const themesJob = enrichment.length ? generateArcSection(themesPrompt, 1400, extraCtx).then(splitWb).catch(e => { console.error('Themes error', e.message); return null; }) : Promise.resolve(null);
 
             const _nowMs = Date.now();
             const reached = (k) => { const c = cycles?.[k]; if (!c) return false; const pk = new Date(c.peak_datetime || c.peak).getTime(); return !isNaN(pk) && pk - 3.5 * 365.25 * 864e5 <= _nowMs; };
@@ -710,6 +759,19 @@ Begin with the threshold dateline. End with one integrative sentence.`,
 
 
               // (New Era section removed: readings do not forecast future eras or cycles.)
+
+              // Emit the embodiment sections in order, then the workbook data.
+              const wands = await Promise.all(wandJobs);
+              const [purpose, themes] = await Promise.all([purposeJob, themesJob]);
+              const workbook = { cycles: {}, purpose: purpose?.wb || null, themes: themes?.wb || null };
+              enrichment.forEach((c, i) => {
+                const w = wands[i];
+                if (w?.text) res.write('data: ' + JSON.stringify({ text: stripToolTags(w.text) + '\n\n' }) + '\n\n');
+                if (w?.wb) workbook.cycles[c.key] = w.wb;
+                if (c.key === 'chironReturn' && purpose?.text) res.write('data: ' + JSON.stringify({ text: stripToolTags(purpose.text) + '\n\n' }) + '\n\n');
+              });
+              if (themes?.text) res.write('data: ' + JSON.stringify({ text: stripToolTags(themes.text) + '\n\n' }) + '\n\n');
+              res.write('data: ' + JSON.stringify({ workbook }) + '\n\n');
 
             } catch (err) {
               console.error('Arc section error:', err.message);
