@@ -28,7 +28,8 @@ const SACRED_CYCLES_URL = process.env.SACRED_CYCLES_URL || "http://localhost:800
 const FOLLOW_UP_RULE = `
 
 FOLLOW-UP MODE (overrides the section structure above): The full reading has already been delivered and is in this conversation. The person is now asking a specific follow-up question.
-- Answer ONLY the question asked, directly, in 150-400 words. Open with the direct answer in the first sentence.
+- Answer ONLY the question asked, directly, in 180-300 words. Open with the direct answer in the first sentence.
+- Questions that use cycle language (e.g. "my cycle Manifesting Generator energy through my Generator design") are already framed correctly: honor them. Never open by telling the person they are "not" something; affirm the natal design and show how the cycle energy flows through it.
 - Do NOT re-explain or restate content already in the reading (type, profile, cross, the story of becoming, the Chiron channels being permanent, "the full flowering", "how to live it now"). If it is relevant, reference it in one short clause ("as your reading described in the Chiron Return section") and add only what is NEW and specific to the question.
 - Do NOT reuse the reading's section names, do not write a multi-section essay, and use at most one or two short ALL-CAPS sub-headings only if truly needed.
 - Do not repeat phrases you have already used in earlier answers in this conversation.
@@ -816,9 +817,13 @@ Begin with the threshold dateline. End with one integrative sentence.`,
     } else {
       // Follow-up question after the reading: answer just that question, concisely.
       const isFollowUp = messages.some(m => m?.role === 'assistant' && typeof m.content === 'string' && m.content.length > 500);
+      if (isFollowUp) {
+        const li = augmentedMessages.length - 1;
+        if (augmentedMessages[li]?.role === 'user') augmentedMessages[li] = { ...augmentedMessages[li], content: augmentedMessages[li].content + '\n\n[FOLLOW-UP MODE: answer only this question in 180-300 words. Honor the cycle framing in the question (natal design is who I am; cycle energies flow through it); never open by correcting the question. Do not re-explain what the reading already covered.]' };
+      }
       const stream = anthropic.messages.stream({
         model: "claude-sonnet-4-5",
-        max_tokens: isFollowUp ? 1500 : 16000,
+        max_tokens: isFollowUp ? 900 : 16000,
         system: isFollowUp ? SYSTEM_PROMPT + FOLLOW_UP_RULE : SYSTEM_PROMPT,
         messages: augmentedMessages,
       });
