@@ -24,3 +24,17 @@ assert.deepEqual(geneKey(22), { shadow: 'Dishonour', gift: 'Graciousness', siddh
 const txt = formatEnrichmentForPrompt(e, natal);
 assert.ok(!/2032|Second Saturn/i.test(txt));
 console.log('cycle enrichment tests passed (Chiron: 2/4, Rulership 45/26|22/47, Manifesting Generator)');
+// canonical EROS phase names + windows
+{
+  const { CYCLE_LABELS, phaseFrameworkText, currentCycleStatus, formatCycleStatus } = await import('../reading-context.js');
+  assert.equal(c.label, 'Chiron Return: The Phoenix'); assert.equal(c.transit, 'Chiron Return'); assert.equal(c.phase, 'The Phoenix');
+  assert.equal(CYCLE_LABELS.saturnReturn, 'First Saturn Return: The Maiden');
+  assert.equal(CYCLE_LABELS.uranusOpposition, 'Uranus Opposition: Closing the Mother');
+  assert.equal(CYCLE_LABELS.secondSaturnReturn, 'Second Saturn Return: Into the Sovereign');
+  const f = phaseFrameworkText();
+  assert.match(f, /about ages 24–33, peak 27–30/); assert.match(f, /about ages 35–47, peak 38–44/); assert.match(f, /Phoenix phase spans about 47–63/);
+  const st = formatCycleStatus(currentCycleStatus({ chironReturn: { peak_datetime: '2023-06-09T02:49:00' } }, new Date('2026-10-16')));
+  assert.match(st, /Chiron Return: The Phoenix — window 2019-12-\d\d to for the rest of life/);
+  assert.doesNotMatch((st + f).split('\n').filter(l => !l.startsWith('Never use')).join('\n'), /Great Disruption|Deep Healing|Legacy Catalyst|Integration season/);
+  console.log('EROS phase naming tests passed');
+}

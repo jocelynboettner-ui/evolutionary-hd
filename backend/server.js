@@ -177,7 +177,7 @@ Do NOT generate the activation section unless the user types "activation."
 After YOUR ACTIVE GATES — WHERE THE PLANETS LIVE, write the closing line and then STOP. Generate nothing else. Wait for input.
 
 The closing line after the natal reading is:
-"You have seen your blueprint. If you are ready to understand where you are in the erotic arc of your life — the initiation you are currently inside — type continue."
+"You have seen your blueprint. If you are ready to understand where you are in the arc of your life — the initiation you are currently inside — type continue."
 
 Then stop completely.
 
@@ -191,13 +191,17 @@ When the user asks about their cycles, thresholds, or story of becoming, follow 
 OVERLAY CROSS DATA: The user message will contain a section called THRESHOLD OVERLAY CHARTS. This gives you the exact Human Design chart calculated at the peak of each planetary threshold — the incarnation cross, channels, and defined centers active at that precise moment. This is the core differentiator of this reading. Use the overlay cross for each threshold as the central theme of that section. Reference the channels that came online at each threshold as the specific capacity that arrived. Do not list gate numbers — translate them into what they enable in plain language.
 
 
-STEP 1 — OPEN WITH THE THREE CYCLES FRAMEWORK: Name which cycle they are currently in before anything else. Use this language as the entry point:
+STEP 1 — OPEN WITH THE EROS PHASES FRAMEWORK: Name which cycle they are currently in before anything else, leading with the phase name and keeping the transit name alongside. Use this language as the entry point:
 
-The Great Disruption (approximately ages 38-45, Uranus Opposition): The life you built starts to feel too small. Restlessness arrives. This is the invitation to question everything and reclaim the parts of yourself you left behind. This is not a crisis. This is a calling.
+First Saturn Return: The Maiden (about ages 24-33, peak 27-30, varies by chart): The first great initiation into adulthood. The structures you were handed are tested, and you begin to become your own authority.
 
-The Deep Healing (approximately ages 47-54, Chiron Return): Your oldest wounds rise to finally heal. Compassion for yourself becomes possible. Your pain transforms into purpose. This is the threshold where the wound and the medicine reveal themselves as the same thing.
+Uranus Opposition: Closing the Mother (about ages 35-47, peak 38-44): The closing threshold of the Mother phase. The life you built starts to feel too small. Restlessness arrives. This is the invitation to question everything and reclaim the parts of yourself you left behind. This is not a crisis. This is a calling.
 
-The Legacy Catalyst (approximately ages 56-63, Second Saturn Return): The question shifts from "what do I do?" to "what do I leave?" You stop building a life and start distilling one. What remains when everything unnecessary falls away is what you actually came to offer.
+Chiron Return: The Phoenix (peak about 50-51; opens around 47, moves through about 54, and does not close): The Chiron Return opens the Phoenix phase. Your oldest wounds rise to finally heal. Your pain transforms into purpose. The wound and the medicine reveal themselves as the same thing, and what comes online here integrates permanently, an overlay for the rest of life.
+
+Second Saturn Return: Into the Sovereign (peak 58-60, window about 55-63): The threshold into the Sovereign, which opens about 55-63 and does not close. The question shifts from "what do I do?" to "what do I leave?"
+
+The Phoenix phase spans about 47-63 and holds both the Chiron Return and the Second Saturn Return, so a woman in her 50s may be inside overlapping initiations. Never use the old labels "Great Disruption", "Deep Healing" or "Legacy Catalyst", and never use erotic-arc stage labels (such as Foreplay).
 
 Name their cycle directly and warmly before going deeper. Make them feel seen in the broader human experience first. Then show them how their specific design illuminates their unique version of that universal journey.
 
@@ -207,7 +211,7 @@ Name this window for each threshold so the person understands they are not waiti
 
 Example language: "Your Chiron window opened around [age]. You did not need to wait for the exact return to feel it. What you have been experiencing for the past few years already has a name."
 
-"The Great Disruption began building around [age]. The restlessness you felt was not confusion — it was the threshold arriving early."
+"Closing the Mother began building around [age]. The restlessness you felt was not confusion — it was the threshold arriving early."
 
 LENGTH RULE FOR ARC — FOLLOW EXACTLY:
 Saturn Return = 2 sentences maximum — what it initiated, what it gave permanently.
@@ -248,21 +252,17 @@ TONE THROUGHOUT: Warm, wise, personal. Write as if you have watched this person'
 
 AGE CALCULATION — CRITICAL: Use today's date and the age given in CRITICAL CHART FACTS. State all ages accurately before writing anything about timing.
 
-Approximate threshold windows:
+Approximate threshold windows (framing only; each opens about 3.5 years before its peak and closes about 3.5 years after; when the data gives actual window dates from this chart's transit, use those):
 
-First Saturn Return: ages 26-33 (peak 29-30)
+First Saturn Return: The Maiden — about ages 24-33 (peak 27-30, varies by chart)
 
-Integration season: ages 33-40
+Uranus Opposition: Closing the Mother — about ages 35-47 (peak 38-44)
 
-Uranus Opposition / Great Disruption: ages 38-45 (peak 40-42)
+Chiron Return: The Phoenix — opens about 47, moves through about 54 (peak 50-51), does not close: integrates permanently, an overlay for life
 
-Integration season: ages 42-49
+Second Saturn Return: Into the Sovereign — about ages 55-63 (peak 58-60); the Sovereign opens about 55-63 and does not close
 
-Chiron Return / Deep Healing: ages 47-54 (peak 50-51)
-
-Integration season: ages 51-58
-
-Second Saturn Return / Legacy Catalyst: ages 56-63 (peak 58-60) */`;
+The Phoenix phase spans about 47-63 and holds both the Chiron Return and the Second Saturn Return. */`;
 async function fetchHumanDesign(birthdate, birthtime, location) {
   // Parse birthdate — accepts "YYYY-MM-DD" or "MM/DD/YYYY"
   let year, month, day;
@@ -359,10 +359,10 @@ async function fetchOverlayChart(peakDatetime, timezone) {
 
 function formatOverlayData(cycles, overlays, natalChart) {
   const labels = {
-    saturnReturn:       'FIRST SATURN RETURN',
-    uranusOpposition:   'URANUS OPPOSITION (Great Disruption)',
-    chironReturn:       'CHIRON RETURN (Deep Healing)',
-    secondSaturnReturn: 'SECOND SATURN RETURN (Legacy Catalyst)',
+    saturnReturn:       'FIRST SATURN RETURN: THE MAIDEN',
+    uranusOpposition:   'URANUS OPPOSITION: CLOSING THE MOTHER',
+    chironReturn:       'CHIRON RETURN: THE PHOENIX',
+    secondSaturnReturn: 'SECOND SATURN RETURN: INTO THE SOVEREIGN',
   };
   let text = '\n=== THRESHOLD OVERLAY CHARTS ===\n';
   text += 'These are the Human Design charts calculated at the exact peak of each planetary threshold.\n';
@@ -665,8 +665,8 @@ app.post("/api/chat", async (req, res) => {
             };
             const nm = birthdata.name || 'them';
             const RULES = `ANTI-REPETITION: other sections already cover the natal design (Part 1), the narrative story of each threshold (the YOUR [CYCLE] story section), the Chiron cross purpose (YOUR SECOND-HALF-OF-LIFE PURPOSE) and the thread across cycles (THEMES ACROSS YOUR CYCLES); cover only this section's purpose, state each idea once, and avoid "permanently yours" / "full flowering" unless this is the only place it appears. Plain text only: no markdown, no #, no **, no bullet symbols except "• " where asked. Sub-headings are ALL-CAPS lines on their own. Only this cycle; never mention or forecast any future cycle. Follow the CYCLE FRAMING RULE: natal design is who ${nm} is and never changes; the cycle type, profile and cross are energies flowing THROUGH it in this season, and natal authority still chooses which to follow (never "you became" / "you are now"). Use exact names and numbers from CYCLE EMBODIMENT DATA. When naming a planet carrying a gate, use its given meaning.`;
-            const wandPrompt = (c) => `Write ONLY the section "YOUR ${c.label.toUpperCase()} MAGIC WAND" for ${nm}. This cycle is ${activeKeys.has(c.key) ? 'CURRENT (present tense)' : 'COMPLETED (past tense, integrated now)'}. Use the ${c.label.toUpperCase()} block of CYCLE EMBODIMENT DATA.
-First line exactly: YOUR ${c.label.toUpperCase()} MAGIC WAND
+            const wandPrompt = (c) => `Write ONLY the section "YOUR ${c.transit.toUpperCase()} MAGIC WAND" for ${nm} (phase: ${c.label}). This cycle is ${activeKeys.has(c.key) ? 'CURRENT (present tense)' : 'COMPLETED (past tense, integrated now)'}. Use the ${c.label.toUpperCase()} block of CYCLE EMBODIMENT DATA. Name the phase (${c.phase}) alongside the transit name.
+First line exactly: YOUR ${c.transit.toUpperCase()} MAGIC WAND
 Then these sub-headings in order:
 THE PROFILE YOU ARE LEARNING: ${c.profile.cycle}  (one paragraph: what the ${c.profile.cycle} lines teach in this season, sitting on top of home-base ${c.profile.natal})
 ${c.key === 'chironReturn' ? '' : `THE CROSS OF THIS SEASON  (one paragraph: the exact cross "${c.cross.cycle}" as the purpose being practiced; natal cross stays home)
@@ -718,7 +718,7 @@ RULES:
 - DO NOT list gates, channels, centers, or what defined/released
 - DO NOT write about any other threshold
 
-Begin with the threshold dateline (age and approximate year).
+Begin with the threshold dateline (actual dates from the data), naming its EROS phase (The Maiden / Closing the Mother / The Phoenix / Into the Sovereign) alongside the transit name (age and approximate year).
 End with one integrative sentence about what this threshold left them with.`,
                 700,
                 arcContext
@@ -740,7 +740,7 @@ RULES:
 - DO NOT list gates, channels, centers, or what defined/released
 - DO NOT write about any other threshold
 
-Begin with the threshold dateline.
+Begin with the threshold dateline (actual dates from the data), naming its EROS phase (The Maiden / Closing the Mother / The Phoenix / Into the Sovereign) alongside the transit name.
 End with one integrative sentence about what this threshold left them with.`,
                 500,
                 [...arcContext, { role: 'assistant', content: saturnText }]
@@ -763,7 +763,7 @@ RULES:
 - DO NOT list multiple channels, gates, or center activations
 - DO NOT write about any other threshold
 
-Begin with the threshold dateline.
+Begin with the threshold dateline (actual dates from the data), naming its EROS phase (The Maiden / Closing the Mother / The Phoenix / Into the Sovereign) alongside the transit name.
 End with one sentence about how this is integrating in their life now. Do not mention anything still to come.`,
                 700,
                 [...arcContext, { role: 'assistant', content: saturnText + '\n\n' + uranusText }]
@@ -777,7 +777,7 @@ End with one sentence about how this is integrating in their life now. Do not me
 
 HARD LIMITS: 3 paragraphs, 150 words maximum.
 RULES: one transformation only; present tense if active, past tense if complete; no gate/channel lists; do not write about any other threshold or anything still to come.
-Begin with the threshold dateline. End with one integrative sentence.`,
+Begin with the threshold dateline (actual dates from the data), naming its EROS phase (The Maiden / Closing the Mother / The Phoenix / Into the Sovereign) alongside the transit name. End with one integrative sentence.`,
                   700,
                   [...arcContext, { role: 'assistant', content: [saturnText, uranusText, chironText].filter(Boolean).join('\n\n') }]
                 );
@@ -791,7 +791,7 @@ Begin with the threshold dateline. End with one integrative sentence.`,
               const [purpose, themes] = await Promise.all([purposeJob, themesJob]);
               const workbook = { cycles: {}, purpose: purpose?.wb || null, themes: themes?.wb || null };
               const stories = { saturnReturn: saturnText, uranusOpposition: uranusText, chironReturn: chironText, secondSaturnReturn: s2 };
-              const LABEL = { saturnReturn: 'SATURN RETURN', uranusOpposition: 'URANUS OPPOSITION', chironReturn: 'CHIRON RETURN', secondSaturnReturn: 'SECOND SATURN RETURN' };
+              const LABEL = { saturnReturn: 'FIRST SATURN RETURN: THE MAIDEN', uranusOpposition: 'URANUS OPPOSITION: CLOSING THE MOTHER', chironReturn: 'CHIRON RETURN: THE PHOENIX', secondSaturnReturn: 'SECOND SATURN RETURN: INTO THE SOVEREIGN' };
               const emit = t => res.write('data: ' + JSON.stringify({ text: stripToolTags(t) }) + '\n\n');
               const cleanStory = t => String(t || '').replace(/^\s*YOUR STORY OF BECOMING\s*/i, '').replace(new RegExp('^\\s*(YOUR\\s+)?(THE\\s+)?(1ST\\s+|FIRST\\s+)?(SATURN RETURN|URANUS OPPOSITION|CHIRON RETURN|SECOND SATURN RETURN|2ND SATURN RETURN)[^\\n]{0,40}\\n'), '').trim();
               for (const key of ['saturnReturn', 'uranusOpposition', 'chironReturn', 'secondSaturnReturn']) {
@@ -799,7 +799,7 @@ Begin with the threshold dateline. End with one integrative sentence.`,
                 const story = cleanStory(stories[key]);
                 const w = ei >= 0 ? wands[ei] : null;
                 if (!story && !w?.text) continue;
-                emit(`[[CYCLE:${key}]]\n\nYOUR ${LABEL[key]}\n\n` + (story ? story + '\n\n' : ''));
+                emit(`[[CYCLE:${key}]]\n\n${LABEL[key]}\n\n` + (story ? story + '\n\n' : ''));
                 if (w?.text) emit(w.text + '\n\n');
                 if (w?.wb) workbook.cycles[key] = w.wb;
                 if (key === 'chironReturn' && purpose?.text) emit(purpose.text + '\n\n');

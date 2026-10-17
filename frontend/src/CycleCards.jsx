@@ -3,6 +3,11 @@
 import React from "react";
 
 const gold = "#e0c068";
+export function actualWindow(c) {
+    const pk = new Date(c.peakDate); if (isNaN(pk)) return "";
+    const d = y => new Date(pk.getTime() + y * 365.25 * 864e5).toISOString().slice(0, 7);
+    return c.key === "chironReturn" ? `opened ${d(-3.5)} · peak ${c.peakDate} · permanent overlay for life` : `${d(-3.5)} to ${d(3.5)} · peak ${c.peakDate}`;
+}
 const H = ({ children }) => <div className="cc-h">{children}</div>;
 
 export function CycleCards({ enrichment, compact = false }) {
@@ -13,7 +18,9 @@ export function CycleCards({ enrichment, compact = false }) {
             {!compact && <p className="cc-intro">Your natal design is who you are, and it never changes. Each cycle adds energies that flow through your design in that season: a profile, a cross and sometimes a type. Your natal authority still chooses which to follow.</p>}
             {enrichment.map(c => (
                 <div key={c.key} className="cc-card">
-                    <div className="cc-cycle">{c.label}<span className="cc-date"> · peak {c.peakDate}</span></div>
+                    <div className="cc-cycle">{c.label}</div>
+                    <div className="cc-small">Your window (from your chart): {actualWindow(c)}</div>
+                    {c.window && <div className="cc-small">Typical window: {c.window}</div>}
                     <div className="cc-grid">
                         <div><H>Profile you are learning</H><div className="cc-big">{c.profile.cycle}</div><div className="cc-small">home base {c.profile.natal}</div></div>
                         <div><H>Type initiation</H><div className="cc-big">{c.type.cycle}</div><div className="cc-small">{c.type.shifted ? `home base ${c.type.natal}` : "same as natal"}</div></div>

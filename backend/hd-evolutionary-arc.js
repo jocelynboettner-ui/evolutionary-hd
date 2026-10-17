@@ -224,10 +224,10 @@ export function formatEvolutionaryArcForPrompt(arc, natalChart) {
   L.push('');
 
   const cycleOrder = [
-    { key: 'saturnReturn1',    label: '1ST SATURN RETURN (~Age 29)' },
-    { key: 'uranusOpposition', label: 'URANUS OPPOSITION (~Age 41)' },
-    { key: 'chironReturn',     label: 'CHIRON RETURN (~Age 50)' },
-    { key: 'saturnReturn2',    label: '2ND SATURN RETURN (~Age 58)' },
+    { key: 'saturnReturn1',    label: 'FIRST SATURN RETURN: THE MAIDEN (peak ~27-30)' },
+    { key: 'uranusOpposition', label: 'URANUS OPPOSITION: CLOSING THE MOTHER (peak ~38-44)' },
+    { key: 'chironReturn',     label: 'CHIRON RETURN: THE PHOENIX (peak ~50-51)' },
+    { key: 'saturnReturn2',    label: 'SECOND SATURN RETURN: INTO THE SOVEREIGN (peak ~58-60)' },
   ];
 
   // Each channel is attributed to exactly one cycle: the earliest whose overlay produced it.

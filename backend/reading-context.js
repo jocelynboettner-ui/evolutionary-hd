@@ -133,12 +133,28 @@ export function formatAttribution(attributed, labels) {
 // ── Cycle model (owner's teaching, after Ra Uru Hu) ──
 // Every cycle is a 7-year transit window (±3.5 yrs around the exact peak), EXCEPT Chiron:
 // from the Chiron return onward its overlay is permanent for the rest of life ("the full flowering").
-export const CYCLE_LABELS = {
-  saturnReturn: 'First Saturn Return',
-  uranusOpposition: 'Uranus Opposition',
-  chironReturn: 'Chiron Return',
-  secondSaturnReturn: 'Second Saturn Return',
+// Owner's canonical EROS phases + approximate age windows (framing text only; real windows are
+// computed from each chart's actual transit date ±3.5 years).
+export const CYCLE_PHASES = {
+  saturnReturn:       { transit: 'First Saturn Return', phase: 'The Maiden', title: 'First Saturn Return: The Maiden',
+    window: 'about ages 24–33', peak: '27–30', note: 'the Maiden phase; varies by chart' },
+  uranusOpposition:   { transit: 'Uranus Opposition', phase: 'Closing the Mother', title: 'Uranus Opposition: Closing the Mother',
+    window: 'about ages 35–47', peak: '38–44', note: 'the closing threshold of the Mother phase' },
+  chironReturn:       { transit: 'Chiron Return', phase: 'The Phoenix', title: 'Chiron Return: The Phoenix',
+    window: 'opens about age 47, moves through about 54, and does not close', peak: '50–51', note: 'opens the Phoenix phase (about 47–63); integrates permanently and stays an overlay for life' },
+  secondSaturnReturn: { transit: 'Second Saturn Return', phase: 'Into the Sovereign', title: 'Second Saturn Return: Into the Sovereign',
+    window: 'about ages 55–63', peak: '58–60', note: 'the threshold into Sovereign, which opens about 55–63 and does not close' },
 };
+export const CYCLE_LABELS = Object.fromEntries(Object.entries(CYCLE_PHASES).map(([k, v]) => [k, v.title]));
+export function phaseFrameworkText(keys = Object.keys(CYCLE_PHASES)) {
+  const L = ['EROS PHASES AND APPROXIMATE WINDOWS (owner\'s canonical framing; lead with the phase name, keep the transit name alongside):',
+    'Each window opens about 3.5 years before its peak and closes about 3.5 years after (about 7 years), except where noted. Real dates vary by chart; when CURRENT CYCLE gives actual window dates, use those.'];
+  for (const k of keys) { const v = CYCLE_PHASES[k]; if (v) L.push(`- ${v.title}: ${v.window}, peak ${v.peak} — ${v.note}.`); }
+  if (keys.includes('secondSaturnReturn')) L.push('- The Phoenix phase spans about 47–63 and holds both the Chiron Return and the Second Saturn Return, so women in their 50s may be in overlapping initiations.');
+  else if (keys.includes('chironReturn')) L.push('- The Phoenix phase spans about 47–63.');
+  L.push('Never use the labels "Great Disruption", "Deep Healing", "Legacy Catalyst", or any "erotic arc" stage labels (e.g. Foreplay).');
+  return L.join('\n');
+}
 const YEAR_MS = 365.25 * 864e5;
 
 export function currentCycleStatus(cycles, now = new Date()) {
@@ -161,7 +177,8 @@ export function currentCycleStatus(cycles, now = new Date()) {
   const between = active.length === 0;
   const done = list.filter(c => c.end < t);
   const recent = between && done.length ? { ...fmt(done[done.length - 1]), phase: 'most recently completed' } : null;
-  return { today: iso(t), active, between, recent, next: null }; // future cycles are never surfaced
+  const reached = list.filter(c => c.start <= t).map(c => ({ key: c.key }));
+  return { today: iso(t), active, between, recent, reached, next: null }; // future cycles are never surfaced
 }
 
 export function formatCycleStatus(st) {
@@ -176,7 +193,8 @@ export function formatCycleStatus(st) {
     if (st.recent) L.push(`FOCUS ON MOST RECENTLY COMPLETED CYCLE: ${st.recent.label} — window ${st.recent.start} to ${st.recent.end}, peak ${st.recent.peak}. Describe what it activated and how those capacities are integrating now.`);
   }
   L.push('Do NOT mention, date, or forecast any future cycle.');
-  L.push('Rule: every cycle is a 7-year window (±3.5 years around the peak), except Chiron, which stays on permanently after its return. Only past and current cycles are discussed.');
+  L.push('Rule: every cycle is a 7-year window (±3.5 years around the actual peak date in this chart), except Chiron, which stays on permanently after its return. Only past and current cycles are discussed.');
+  L.push(phaseFrameworkText([...st.active, ...(st.recent ? [st.recent] : []), ...(st.reached || [])].map(c => c.key).filter((k, i, a) => a.indexOf(k) === i)));
   L.push('=== END CURRENT CYCLE ===');
   return L.join('\n');
 }

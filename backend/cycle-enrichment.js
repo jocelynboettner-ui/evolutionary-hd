@@ -2,7 +2,7 @@
 // computed from each cycle-peak (overlay) chart against the natal chart.
 // Natal profile / cross / type / authority are always HOME BASE; the cycle chart adds what
 // the person is learning to embody. Only reached (past/current) cycles are ever included.
-import { planetTable, planetMeaning, channelLabel, normChannelKey } from './reading-context.js';
+import { planetTable, planetMeaning, channelLabel, normChannelKey, CYCLE_PHASES } from './reading-context.js';
 
 // Gene Keys (Richard Rudd): gate -> [Shadow, Gift, Siddhi]
 export const GENE_KEYS = {
@@ -77,10 +77,10 @@ export const TYPE_INFO = {
 const typeInfo = t => TYPE_INFO[t] || null;
 
 export const CYCLE_META = {
-  saturnReturn:       { label: 'Saturn Return', theme: 'becoming your own authority' },
-  uranusOpposition:   { label: 'Uranus Opposition', theme: 'awakening to your authentic difference' },
-  chironReturn:       { label: 'Chiron Return', theme: 'the wound becoming medicine; your second-half-of-life purpose' },
-  secondSaturnReturn: { label: 'Second Saturn Return', theme: 'elderhood and the harvest of mastery' },
+  saturnReturn:       { theme: 'the Maiden: becoming your own authority' },
+  uranusOpposition:   { theme: 'closing the Mother: awakening to your authentic difference' },
+  chironReturn:       { theme: 'the Phoenix: the wound becoming medicine; your second-half-of-life purpose' },
+  secondSaturnReturn: { theme: 'into the Sovereign: elderhood and the harvest of mastery' },
 };
 
 // natal, overlay: transformed v3 charts. Returns one cycle's enrichment.
@@ -107,7 +107,7 @@ export function cycleEnrichment(key, natal, overlay, peakDate, ownedChannels) {
   const cg = crossGates(overlay), ncg = crossGates(natal);
   const sun = overlay.personality?.Sun, dsun = overlay.design?.Sun;
   return {
-    key, label: CYCLE_META[key]?.label || key, theme: CYCLE_META[key]?.theme || '', peakDate: String(peakDate || '').slice(0, 10),
+    key, label: CYCLE_PHASES[key]?.title || key, transit: CYCLE_PHASES[key]?.transit || key, phase: CYCLE_PHASES[key]?.phase || '', window: CYCLE_PHASES[key]?.window || '', theme: CYCLE_META[key]?.theme || '', peakDate: String(peakDate || '').slice(0, 10),
     profile: { natal: profileLabel(natal.profile), cycle: profileLabel(overlay.profile), shifted: profileLabel(natal.profile) !== profileLabel(overlay.profile),
       fromSun: sun && dsun ? `Conscious Sun ${sun.gate}.${sun.line} / Unconscious Sun ${dsun.gate}.${dsun.line}` : '' },
     cross: { natal: natal.incarnation_cross || '', cycle: overlay.incarnation_cross || '', gates: cg, natalGates: ncg,
@@ -145,7 +145,7 @@ export function formatEnrichmentForPrompt(list, natal) {
     'FRAMING: The natal design is who the person is and never changes. A cycle chart (even Chiron, the full flowering) is not a new identity: its type, profile and cross are energies flowing THROUGH the natal design in that season, and natal authority still chooses which to follow. Never "you became" or "you are now".',
     `NATAL HOME BASE: ${pretty(natal.type)}, ${profileLabel(natal.profile)} profile, ${authLabel(natal.authority)} authority, ${natal.incarnation_cross || ''}`];
   for (const c of list) {
-    L.push('', `--- ${c.label.toUpperCase()} (peak ${c.peakDate}) ---`);
+    L.push('', `--- ${c.label.toUpperCase()} (actual peak ${c.peakDate}; approximate window ${c.window}) ---`);
     L.push(`Cycle profile they are learning: ${c.profile.cycle} (${c.profile.fromSun}); home base stays ${c.profile.natal}.`);
     L.push(`Cycle incarnation cross: ${c.cross.cycle}${c.key === 'chironReturn' ? '  <- THEIR SECOND-HALF-OF-LIFE PURPOSE' : ''}`);
     c.cross.gateKeys.forEach(g => g.geneKey && L.push(`  cross gate ${g.gate}: Shadow ${g.geneKey.shadow} / Gift ${g.geneKey.gift} / Siddhi ${g.geneKey.siddhi}`));

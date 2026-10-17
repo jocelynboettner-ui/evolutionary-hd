@@ -375,11 +375,11 @@ function followupPrompts(charts) {
     const chiron = en.find(e => e.key === "chironReturn");
     const saturn = en.find(e => e.key === "saturnReturn");
     const out = [];
-    if (current?.type?.shifted) out.push(`How do I live my ${current.label} ${current.type.cycle} energy through my ${natalType} design?`);
+    if (current?.type?.shifted) out.push(`How do I live my ${current.transit || current.label} ${current.type.cycle} energy through my ${natalType} design?`);
     if (chiron) out.push(`What is my Chiron incarnation cross${chiron.cross.cycle ? `, the ${chiron.cross.cycle.replace(/\s*\(.*\)$/, "")},` : ""} asking of me in the second half of life?`);
-    if (current) out.push(`How do I embody my ${current.label} ${current.profile.cycle} profile while honoring my natal ${prof(n.profile) || current.profile.natal} profile?`);
-    if (saturn) out.push(saturn.key === current?.key ? "What is my Saturn return asking me to build right now?" : "What did my Saturn return begin that is flowering now?");
-    out.push(current ? `What is my magic wand in the ${current.label} season, and how do I use it?` : "What is my magic wand in this season, and how do I use it?");
+    if (current) out.push(`How do I embody my ${current.transit || current.label} ${current.profile.cycle} profile while honoring my natal ${prof(n.profile) || current.profile.natal} profile?`);
+    if (saturn) out.push(saturn.key === current?.key ? "What is my First Saturn Return (The Maiden) asking me to build right now?" : "What did my First Saturn Return, The Maiden, begin that is flowering now?");
+    out.push(current ? `What is my magic wand in ${current.phase || current.label}, and how do I use it?` : "What is my magic wand in this season, and how do I use it?");
     out.push("Which Gene Keys gift is ripening in me now?");
     out.push("What practice would help me integrate this week?");
     return out;

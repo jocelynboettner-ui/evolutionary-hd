@@ -30,9 +30,16 @@ export function writer(doc) {
 }
 
 // One cycle's structured initiation summary (used in the reading PDF and the workbook).
+function actualWindowText(c) {
+  const pk = new Date(c.peakDate); if (isNaN(pk)) return "peak " + c.peakDate;
+  const d = y => new Date(pk.getTime() + y * 365.25 * 864e5).toISOString().slice(0, 7);
+  return c.key === "chironReturn" ? `opened ${d(-3.5)}, peak ${c.peakDate}, permanent overlay for life` : `${d(-3.5)} to ${d(3.5)}, peak ${c.peakDate}`;
+}
+
 export function renderCycleSummary(w, c) {
   w.h1(`${c.label} - The Initiation of This Season`);
-  w.text(`Peak ${c.peakDate}. Your natal design is who you are and never changes; these are the energies flowing through it in this season, and your natal authority still chooses.`, { style: "italic", color: muted });
+  w.text(`Your window (from your chart): ${actualWindowText(c)}.${c.window ? ` Typical window: ${c.window}.` : ""}`, { size: 11, color: muted, gap: 0.2 });
+  w.text(`Your natal design is who you are and never changes; these are the energies flowing through it in this season, and your natal authority still chooses.`, { style: "italic", color: muted });
   w.h2("PROFILE YOU ARE LEARNING");
   w.text(`${c.profile.cycle}   (home base ${c.profile.natal})`, { size: 14, style: "bold" });
   w.h2(c.key === "chironReturn" ? "YOUR SECOND-HALF-OF-LIFE PURPOSE" : "CROSS OF THIS SEASON");
@@ -103,7 +110,7 @@ export function buildWorkbookPdf({ name, birthdata, natal, enrichment = [], work
     const practices = [...(cw.practices || []), ...(c.key === "chironReturn" ? (wb.purpose?.practices || []) : [])];
     if (practices.length) { w.h2("INTEGRATION PRACTICES"); practices.forEach((p, i) => w.text(`${i + 1}.  ${p}`, { size: 12, gap: 0.3 })); w.text("Notes on practicing:", { size: 11, color: muted, gap: 0 }); w.lines(4); }
     const prompts = [...(cw.journalPrompts || []), ...(c.key === "chironReturn" ? (wb.purpose?.journalPrompts || []) : [])];
-    const fallback = [`What did the ${c.label} ask you to let go of?`, `Where are you practicing the ${c.profile.cycle} profile in your life now?`, `What gift came online during this season that you now trust?`];
+    const fallback = [`What did the ${c.transit || c.label} (${c.phase || ''}) ask you to let go of?`, `Where are you practicing the ${c.profile.cycle} profile in your life now?`, `What gift came online during this season that you now trust?`];
     w.page(); w.h1(`${c.label} - Journal`);
     (prompts.length ? prompts : fallback).forEach(p => { w.text(p, { style: "bolditalic", size: 12.5, gap: 0.2 }); w.lines(6); });
   });
