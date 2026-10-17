@@ -609,7 +609,7 @@ app.post("/api/chat", async (req, res) => {
               });
               let t = msg.content[0].text;
               // Safety net: never emit a section cut off mid-sentence.
-              if (msg.stop_reason === 'max_tokens') {
+              if (msg.stop_reason === 'max_tokens' && !t.includes('<<<WORKBOOK>>>')) {
                 const cut = Math.max(t.lastIndexOf('. '), t.lastIndexOf('.\n'), t.lastIndexOf('."'), t.lastIndexOf('? '), t.lastIndexOf('! '));
                 if (cut > 0) t = t.slice(0, cut + 1);
               }
@@ -650,7 +650,7 @@ ${c.key === 'chironReturn' ? '' : `THE CROSS OF THIS SEASON  (one paragraph: the
 ` : ''}THE GIFTS THAT CAME ONLINE  (the heart of this section: every newly defined center and every channel listed, each as a gift; name the planet carrying the new gate and what that planet means)
 GENE KEYS FOR YOUR NEW GATES  (choose the 3-5 most important new gates, prioritising channel and cross gates; for each, one line "Gate N: Shadow X → Gift Y → Siddhi Z" then one sentence of contemplation)
 INTEGRATION PRACTICES  (exactly 3 lines, each starting "• ")
-Frame the cycle profile, cross and type together as the initiation of this season. Length 550-800 words. ${RULES}
+Frame the cycle profile, cross and type together as the initiation of this season. Length 550-750 words; keep the JSON compact. ${RULES}
 After the section output a line exactly <<<WORKBOOK>>> and then ONE JSON object only: {"cycleReflection":"2-3 sentence intro for this cycle's workbook page","practices":["3 practices"],"journalPrompts":["3 journal prompts"],"geneKeyContemplations":[{"gate":N,"prompt":"..."}]} (3 contemplations).`;
             const chiron = enrichment.find(c => c.key === 'chironReturn');
             const purposePrompt = chiron && `Write ONLY the section "YOUR SECOND-HALF-OF-LIFE PURPOSE" for ${nm}. It is the Chiron Return incarnation cross: "${chiron.cross.cycle}" (gates ${chiron.cross.gates.join(', ')}). Home base stays the natal cross "${chiron.cross.natal}".
@@ -665,9 +665,9 @@ After the section output a line exactly <<<WORKBOOK>>> and then ONE JSON object 
               { role: 'user', content: arcChartText + '\n\nEach following request asks for ONE section. Follow that request\'s structure and length exactly; it overrides any earlier brevity or no-listing rule.' },
               { role: 'assistant', content: 'Understood. One section per request, following its structure exactly.' },
             ];
-            const wandJobs = enrichment.map(c => generateArcSection(wandPrompt(c), 2600, extraCtx).then(splitWb).catch(e => { console.error('Wand error', c.key, e.message); return null; }));
-            const purposeJob = chiron ? generateArcSection(purposePrompt, 2000, extraCtx).then(splitWb).catch(e => { console.error('Purpose error', e.message); return null; }) : Promise.resolve(null);
-            const themesJob = enrichment.length ? generateArcSection(themesPrompt, 1400, extraCtx).then(splitWb).catch(e => { console.error('Themes error', e.message); return null; }) : Promise.resolve(null);
+            const wandJobs = enrichment.map(c => generateArcSection(wandPrompt(c), 4000, extraCtx).then(splitWb).catch(e => { console.error('Wand error', c.key, e.message); return null; }));
+            const purposeJob = chiron ? generateArcSection(purposePrompt, 3200, extraCtx).then(splitWb).catch(e => { console.error('Purpose error', e.message); return null; }) : Promise.resolve(null);
+            const themesJob = enrichment.length ? generateArcSection(themesPrompt, 2000, extraCtx).then(splitWb).catch(e => { console.error('Themes error', e.message); return null; }) : Promise.resolve(null);
 
             const _nowMs = Date.now();
             const reached = (k) => { const c = cycles?.[k]; if (!c) return false; const pk = new Date(c.peak_datetime || c.peak).getTime(); return !isNaN(pk) && pk - 3.5 * 365.25 * 864e5 <= _nowMs; };
