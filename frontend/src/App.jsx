@@ -207,6 +207,26 @@ function Bodygraphs({ charts }) {
     );
 }
 
+// Main reading = assistant messages flagged main (auto part 1 + part 2). Everything after the
+// last main message is follow-up Q&A; the birth-data message and hidden "continue" are excluded.
+export function splitForPdf(messages) {
+    let last = -1;
+    messages.forEach((m, i) => { if (m.main) last = i; });
+    if (last < 0) {  // fallback: first assistant message (and one after a hidden continue) are the reading
+        const a = messages.findIndex(m => m.role === 'assistant');
+        last = a;
+        if (a >= 0 && messages[a + 1]?.hidden && messages[a + 2]?.role === 'assistant') last = a + 2;
+    }
+    const parts = messages.slice(0, last + 1).filter(m => m.role === 'assistant' && m.content).map(m => m.content);
+    const qa = [];
+    messages.slice(last + 1).forEach(m => {
+        if (m.hidden) return;
+        if (m.role === 'user') qa.push({ q: m.content, a: '' });
+        else if (m.role === 'assistant' && qa.length && !qa[qa.length - 1].a) qa[qa.length - 1].a = m.content;
+    });
+    return { parts, qa: qa.filter(x => x.a) };
+}
+
 async function handleDownloadPdf(birthdata, messages, charts) {
     let images = [];
     try { images = await Promise.all(bodygraphSvgs(charts).map(b => svgToPng(b.svg))); }
@@ -214,7 +234,7 @@ async function handleDownloadPdf(birthdata, messages, charts) {
     downloadReadingPdf({
         name: birthdata?.name,
         birthdata,
-        parts: messages.filter(m => m.role === 'assistant' && m.content).map(m => m.content),
+        ...splitForPdf(messages),
         images,
         planets: charts?.natal?.planets || [],
     });
@@ -392,12 +412,12 @@ export default function App() {
                           setMessages([...newMessages, { role: "assistant", content: "Something interrupted your reading. Please try again in a moment." + (r1.error ? "\n\n(" + r1.error + ")" : "") }]);
                           return;
                   }
-                  let final = [...newMessages, { role: "assistant", content: r1.text }];
+                  let final = [...newMessages, { role: "assistant", content: r1.text, main: full && !r1.notice }];
                   if (full && !r1.notice) {
                           const p1 = r1.text.split("\n").filter(l => !/type\s+["']?continue/i.test(l)).join("\n").trim();
-                          const withCont = [...newMessages, { role: "assistant", content: p1 }, { role: "user", content: "continue", hidden: true }];
+                          const withCont = [...newMessages, { role: "assistant", content: p1, main: true }, { role: "user", content: "continue", hidden: true }];
                           const r2 = await streamChat(withCont, bd);
-                          final = r2.text && !r2.error ? [...withCont, { role: "assistant", content: r2.text }] : [...newMessages, { role: "assistant", content: p1 }];
+                          final = r2.text && !r2.error ? [...withCont, { role: "assistant", content: r2.text, main: true }] : [...newMessages, { role: "assistant", content: p1, main: true }];
                   }
                   setMessages(final);
           } catch (err) {
@@ -503,7 +523,7 @@ export default function App() {
                                     marginTop: '2rem'
                       }}>
                                   <button className="pdf-btn" onClick={() => handleDownloadPdf(birthdata, messages, charts)}>
-                                      ⬇ Download PDF
+                                      ⬇ Download PDF{splitForPdf(messages).qa.length ? " (includes your questions)" : ""}
                                   </button>
                                   <p style={{
                                       fontSize: '0.8rem',

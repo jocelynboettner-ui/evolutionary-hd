@@ -24,7 +24,7 @@ function headingOf(line) {
  * @param {{ name?: string, birthdata?: {birthdate?:string,birthtime?:string,location?:string}, parts: string[], generatedAt?: Date }} opts
  * @returns {jsPDF}
  */
-export function buildReadingPdf({ name, birthdata, parts, images = [], planets = [], generatedAt = new Date() }) {
+export function buildReadingPdf({ name, birthdata, parts, qa = [], images = [], planets = [], generatedAt = new Date() }) {
   const doc = new jsPDF({ unit: "pt", format: "letter" });
   const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight();
   const M = 72, maxW = W - 2 * M;               // 1" margins -> ~70-75 characters per line at 12pt
@@ -94,18 +94,16 @@ export function buildReadingPdf({ name, birthdata, parts, images = [], planets =
     doc.addPage(); y = M;
   }
 
-  parts.filter(Boolean).forEach((part, pi) => {
-    if (pi > 0) { doc.addPage(); y = M; }
+  const renderText = (part) => {
     const paras = clean(part).split(/\n\s*\n/);
     paras.forEach((para) => {
       const lines = para.split("\n").map(l => l.trim()).filter(Boolean);
       if (!lines.length) return;
-      // a paragraph may start with a heading line
       let body = lines;
       const h = headingOf(lines[0]);
       if (h) {
         body = lines.slice(1);
-        ensure(BODY * 1.6 * 4);                   // keep heading with at least 2 body lines
+        ensure(BODY * 1.6 * 4);
         y += 8;
         doc.setFont("times", "bold"); doc.setFontSize(15); doc.setTextColor(...gold);
         doc.splitTextToSize(h, maxW).forEach(l => { doc.text(l, M, y); y += 20; });
@@ -116,13 +114,33 @@ export function buildReadingPdf({ name, birthdata, parts, images = [], planets =
       doc.setFont("times", "normal"); doc.setFontSize(BODY); doc.setTextColor(...ink);
       const wrapped = doc.splitTextToSize(body.join(" "), maxW);
       wrapped.forEach((l, i) => {
-        // avoid a single orphan line at the bottom of a page
         if (i === 0 && wrapped.length > 1) ensure(LH * 2); else ensure(LH);
         doc.text(l, M, y); y += LH;
       });
       y += LH * 0.6;
     });
+  };
+  parts.filter(Boolean).forEach((part, pi) => {
+    if (pi > 0) { doc.addPage(); y = M; }
+    renderText(part);
   });
+  const pairs = qa.filter(x => x && x.q && x.a);
+  if (pairs.length) {
+    doc.addPage(); y = M;
+    doc.setFont("times", "bold"); doc.setFontSize(20); doc.setTextColor(...gold);
+    doc.text("Your Questions", M, y); y += 30;
+    pairs.forEach((x, i) => {
+      if (i > 0) { ensure(40); doc.setDrawColor(...gold); doc.setLineWidth(0.5); doc.line(M, y, W - M, y); y += 22; }
+      const qLines = doc.splitTextToSize(clean(x.q), maxW - 26);
+      ensure(LH * (qLines.length + 3));
+      doc.setFont("times", "bold"); doc.setFontSize(BODY + 1); doc.setTextColor(...gold); doc.text("Q:", M, y);
+      doc.setFont("times", "bolditalic"); doc.setTextColor(...ink);
+      qLines.forEach(l => { doc.text(l, M + 26, y); y += LH; });
+      y += LH * 0.5;
+      renderText(x.a);
+      y += LH * 0.5;
+    });
+  }
   footer();
   return doc;
 }
