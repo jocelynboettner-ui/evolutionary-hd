@@ -300,13 +300,26 @@ function GeneratingScreen() {
     );
 }
 
-const FOLLOWUP_PROMPTS = [
-    "What are the locks and keys I carry in my Chiron overlay — and what do they mean for my role in the great transition?",
-    "What are my greatest gifts to embody right now — the capacities that are fully online and ready to be lived?",
-    "Tell me more about what I am learning in the cycle I am currently navigating.",
-    "What is the wound that is becoming my medicine — and how do I know when it has fully turned?",
-    "What does my design say about how I am meant to serve in the season I am in now?"
-  ];
+// Follow-up questions aligned to the cycle framing, personalized from the computed cycle data.
+function followupPrompts(charts) {
+    const n = charts?.natal || {};
+    const en = charts?.enrichment || [];
+    const pretty = t => String(t || "").replace(/_+/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+    const prof = p => { const m = String(p || "").match(/(\d)\D+(\d)/); return m ? `${m[1]}/${m[2]}` : ""; };
+    const natalType = pretty(n.type) || "natal";
+    const current = (charts?.status?.active || []).map(a => en.find(e => e.key === a.key)).filter(Boolean).pop() || en[en.length - 1];
+    const chiron = en.find(e => e.key === "chironReturn");
+    const saturn = en.find(e => e.key === "saturnReturn");
+    const out = [];
+    if (current?.type?.shifted) out.push(`How do I live my ${current.label} ${current.type.cycle} energy through my ${natalType} design?`);
+    if (chiron) out.push(`What is my Chiron incarnation cross${chiron.cross.cycle ? `, the ${chiron.cross.cycle.replace(/\s*\(.*\)$/, "")},` : ""} asking of me in the second half of life?`);
+    if (current) out.push(`How do I embody my ${current.label} ${current.profile.cycle} profile while honoring my natal ${prof(n.profile) || current.profile.natal} profile?`);
+    if (saturn) out.push(saturn.key === current?.key ? "What is my Saturn return asking me to build right now?" : "What did my Saturn return begin that is flowering now?");
+    out.push(current ? `What is my magic wand in the ${current.label} season, and how do I use it?` : "What is my magic wand in this season, and how do I use it?");
+    out.push("Which Gene Keys gift is ripening in me now?");
+    out.push("What practice would help me integrate this week?");
+    return out;
+}
 
 export default function App() {
     const [messages, setMessages] = useState([]);
@@ -550,7 +563,7 @@ export default function App() {
                                                 ✦ &nbsp; Continue your reading &nbsp; ✦
                                   </p>
                                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                    {FOLLOWUP_PROMPTS.map((prompt, i) => (
+                                    {followupPrompts(charts).map((prompt, i) => (
                                         <button
                                                             key={i}
                                                             onClick={() => sendMessage(prompt)}

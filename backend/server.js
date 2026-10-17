@@ -25,10 +25,28 @@ const SACRED_CYCLES_URL = process.env.SACRED_CYCLES_URL || "http://localhost:800
 // ============================================================
 // SYSTEM PROMPT
 // ============================================================
+const FOLLOW_UP_RULE = `
+
+FOLLOW-UP MODE (overrides the section structure above): The full reading has already been delivered and is in this conversation. The person is now asking a specific follow-up question.
+- Answer ONLY the question asked, directly, in 150-400 words. Open with the direct answer in the first sentence.
+- Do NOT re-explain or restate content already in the reading (type, profile, cross, the story of becoming, the Chiron channels being permanent, "the full flowering", "how to live it now"). If it is relevant, reference it in one short clause ("as your reading described in the Chiron Return section") and add only what is NEW and specific to the question.
+- Do NOT reuse the reading's section names, do not write a multi-section essay, and use at most one or two short ALL-CAPS sub-headings only if truly needed.
+- Do not repeat phrases you have already used in earlier answers in this conversation.
+- No "type continue", no invitations to the next section, no future cycles.
+- Follow the CYCLE FRAMING RULE.`;
+
 const SYSTEM_PROMPT = `
 TIME SCOPE RULE (overrides everything below): Only write about the cycle the person is in now and cycles they have already lived through. NEVER describe, chart, date, forecast, or tease future cycles (including a Second Saturn Return that has not begun, or any cycle not yet reached). NEVER mention the 2027 era shift, "the new era", or invite them to type "new era". No "looking ahead" or "what's coming next" content. Keep the tone integrative: help them understand and integrate what is here now and what they have been through. Ignore any later instruction that conflicts with this rule.
 
-OUTPUT RULE: You have NO tools. Never write tool calls, XML/HTML-style tags (e.g. <get_bodygraph>), JSON, or "processing"/"calculating" steps. All chart data is already provided in the user message. Never invent chart data or dates; if a value is missing, say it is unavailable.
+ANTI-REPETITION RULE (applies to the whole reading and every section call): State each idea ONCE, in the one section whose purpose it serves. Never restate an earlier section's point in different words. Phrases such as "permanently yours", "the full flowering", "earned wisdom", "how to live it now" may appear at most ONCE in the entire reading. Do not end sections by summarizing what was already said. Each section must add something new.
+
+READING OUTLINE (each section has ONE distinct purpose; stay inside it):
+Part 1 — YOUR NATAL BLUEPRINT: type, strategy, authority, profile, natal cross, definition (who they are; never changes). YOUR SUPERPOWERS AND SUPERHIGHWAYS: natal channels only. YOUR ACTIVE GATES — WHERE THE PLANETS LIVE: every planet's gate.line, 1-2 sentences each. YOUR CURRENT CHAPTER: which cycle they are in and its single core lesson (no gate/channel lists; the cycle sections cover those). LIVING IT NOW: practical, everyday decision-making with their natal authority. THE INVITATION FORWARD: one short integrative close.
+Part 2 — YOUR STORY OF BECOMING: the lived narrative of each reached threshold (what happened and changed; no lists). YOUR [CYCLE] MAGIC WAND (one per reached cycle): the specific energies that cycle overlays (profile, cross, type, centers, channels, planets, Gene Keys) and its practices; do not retell the story. YOUR SECOND-HALF-OF-LIFE PURPOSE: the Chiron cross only. THEMES ACROSS YOUR CYCLES: only the thread connecting the cycles; do not re-list gifts.
+
+CYCLE FRAMING RULE (applies to ALL cycle content — reading sections, cycle sections, follow-up answers, workbook text): The natal design is who the person is and it never changes (e.g. a Generator with a 4/6 profile and Sacral authority stays exactly that for life). A cycle overlay — including the Chiron Return, the full flowering — is NOT a new identity. The cycle type, profile and cross are energies flowing THROUGH the natal design in that season, and the natal authority still chooses which of them to follow. Never write "you are now a ___", "you became a ___", or "your new type/profile". Write in this spirit: "You are still a Generator who responds. In this season life is also asking you to initiate like a Manifestor, to inform, to trust your hermit 2 to be called out, in service of your new purpose." (Use the person's actual natal and cycle values from the data; that sentence is a model of tone, not data.)
+
+OUTPUT RULE: You have NO tools. Never write tool calls, XML/HTML-style tags (e.g. <get_bodygraph>), JSON (except a <<<WORKBOOK>>> JSON block when a request explicitly asks for one), or "processing"/"calculating" steps. All chart data is already provided in the user message. Never invent chart data or dates; if a value is missing, say it is unavailable.
 
 ABSOLUTE RULE: The user message begins with === CRITICAL CHART FACTS ===. Read the TYPE, AUTHORITY, PROFILE, and INCARNATION CROSS listed there. Write EXACTLY those values — no substitutions, no supplementing from training data. If TYPE says Generator, write Generator. If PROFILE says 4/6, write 4/6. If CROSS says Right Angle Cross of Service, write that. Your Human Design training knowledge is irrelevant — the chart facts are the only truth.
 
@@ -639,7 +657,7 @@ app.post("/api/chat", async (req, res) => {
               return { text: t.slice(0, i).trim(), wb };
             };
             const nm = birthdata.name || 'them';
-            const RULES = `Plain text only: no markdown, no #, no **, no bullet symbols except "• " where asked. Sub-headings are ALL-CAPS lines on their own. Only this cycle; never mention or forecast any future cycle. Natal profile, cross, type and authority are HOME BASE; the cycle adds what ${nm} is LEARNING TO EMBODY (never "you became"). Use exact names and numbers from CYCLE EMBODIMENT DATA. When naming a planet carrying a gate, use its given meaning.`;
+            const RULES = `ANTI-REPETITION: other sections already cover the narrative story of each threshold (YOUR STORY OF BECOMING), the Chiron cross purpose (YOUR SECOND-HALF-OF-LIFE PURPOSE) and the thread across cycles (THEMES ACROSS YOUR CYCLES); cover only this section's purpose, state each idea once, and avoid "permanently yours" / "full flowering" unless this is the only place it appears. Plain text only: no markdown, no #, no **, no bullet symbols except "• " where asked. Sub-headings are ALL-CAPS lines on their own. Only this cycle; never mention or forecast any future cycle. Follow the CYCLE FRAMING RULE: natal design is who ${nm} is and never changes; the cycle type, profile and cross are energies flowing THROUGH it in this season, and natal authority still chooses which to follow (never "you became" / "you are now"). Use exact names and numbers from CYCLE EMBODIMENT DATA. When naming a planet carrying a gate, use its given meaning.`;
             const wandPrompt = (c) => `Write ONLY the section "YOUR ${c.label.toUpperCase()} MAGIC WAND" for ${nm}. This cycle is ${activeKeys.has(c.key) ? 'CURRENT (present tense)' : 'COMPLETED (past tense, integrated now)'}. Use the ${c.label.toUpperCase()} block of CYCLE EMBODIMENT DATA.
 First line exactly: YOUR ${c.label.toUpperCase()} MAGIC WAND
 Then these sub-headings in order:
@@ -796,10 +814,12 @@ Begin with the threshold dateline. End with one integrative sentence.`,
       fullText = '(The natal reading above has been delivered. Continuing with the Story of Becoming.)';
       await runArcPhase();
     } else {
+      // Follow-up question after the reading: answer just that question, concisely.
+      const isFollowUp = messages.some(m => m?.role === 'assistant' && typeof m.content === 'string' && m.content.length > 500);
       const stream = anthropic.messages.stream({
         model: "claude-sonnet-4-5",
-        max_tokens: 16000,
-        system: SYSTEM_PROMPT,
+        max_tokens: isFollowUp ? 1500 : 16000,
+        system: isFollowUp ? SYSTEM_PROMPT + FOLLOW_UP_RULE : SYSTEM_PROMPT,
         messages: augmentedMessages,
       });
       stream.on('text', (text) => {

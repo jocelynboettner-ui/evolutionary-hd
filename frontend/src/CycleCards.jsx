@@ -10,7 +10,7 @@ export function CycleCards({ enrichment }) {
     return (
         <div className="cycle-cards">
             <div className="cc-title">✦ The Initiations of Your Cycles ✦</div>
-            <p className="cc-intro">Your natal design is always home base. Each cycle overlays a profile, a cross and sometimes a type you are learning to embody in that season.</p>
+            <p className="cc-intro">Your natal design is who you are, and it never changes. Each cycle adds energies that flow through your design in that season: a profile, a cross and sometimes a type. Your natal authority still chooses which to follow.</p>
             {enrichment.map(c => (
                 <div key={c.key} className="cc-card">
                     <div className="cc-cycle">{c.label}<span className="cc-date"> · peak {c.peakDate}</span></div>

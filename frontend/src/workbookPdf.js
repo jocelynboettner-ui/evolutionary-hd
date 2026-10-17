@@ -32,7 +32,7 @@ export function writer(doc) {
 // One cycle's structured initiation summary (used in the reading PDF and the workbook).
 export function renderCycleSummary(w, c) {
   w.h1(`${c.label} - The Initiation of This Season`);
-  w.text(`Peak ${c.peakDate}. Your natal design is home base; this is what you are learning to embody.`, { style: "italic", color: muted });
+  w.text(`Peak ${c.peakDate}. Your natal design is who you are and never changes; these are the energies flowing through it in this season, and your natal authority still chooses.`, { style: "italic", color: muted });
   w.h2("PROFILE YOU ARE LEARNING");
   w.text(`${c.profile.cycle}   (home base ${c.profile.natal})`, { size: 14, style: "bold" });
   w.h2(c.key === "chironReturn" ? "YOUR SECOND-HALF-OF-LIFE PURPOSE" : "CROSS OF THIS SEASON");
@@ -74,7 +74,7 @@ export function buildWorkbookPdf({ name, birthdata, natal, enrichment = [], work
   w.text("Prepared " + generatedAt.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }), { font: "helvetica", size: 11, color: muted, align: "center" });
   // Intro
   w.page(); w.h1("Welcome");
-  w.text(wb.themes?.intro || `${name ? nm + ", this" : "This"} workbook accompanies your Evolutionary Human Design reading. Move through it slowly. Your natal design is home base; each cycle you have lived added something you are learning to embody. Use these pages to notice, practice and integrate.`);
+  w.text(wb.themes?.intro || `${name ? nm + ", this" : "This"} workbook accompanies your Evolutionary Human Design reading. Move through it slowly. Your natal design is who you are and it never changes; each cycle you have lived added energies that flow through that design, and your natal authority still chooses which to follow. Use these pages to notice, practice and integrate.`);
   w.text("How to use this workbook: read one page at a time, try the practices for a week, and write freely in the space provided. There are no wrong answers.", { style: "italic", color: muted });
   // Natal home base
   w.page(); w.h1("Your Home Base - Natal Design");

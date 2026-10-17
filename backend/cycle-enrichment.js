@@ -142,7 +142,7 @@ export function buildEnrichment(natal, overlays, cycles, now = new Date()) {
 export function formatEnrichmentForPrompt(list, natal) {
   if (!list?.length) return '';
   const L = ['=== CYCLE EMBODIMENT DATA (authoritative; computed from each cycle-peak chart) ===',
-    'FRAMING: The natal profile, cross, type and authority are ALWAYS home base. A cycle chart shows what the person is LEARNING TO EMBODY in that season — never "you became" or "you are now". Natal authority is never replaced; a different cycle authority is something they are practicing.',
+    'FRAMING: The natal design is who the person is and never changes. A cycle chart (even Chiron, the full flowering) is not a new identity: its type, profile and cross are energies flowing THROUGH the natal design in that season, and natal authority still chooses which to follow. Never "you became" or "you are now".',
     `NATAL HOME BASE: ${pretty(natal.type)}, ${profileLabel(natal.profile)} profile, ${authLabel(natal.authority)} authority, ${natal.incarnation_cross || ''}`];
   for (const c of list) {
     L.push('', `--- ${c.label.toUpperCase()} (peak ${c.peakDate}) ---`);
