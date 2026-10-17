@@ -52,8 +52,10 @@ const PlanetaryKey = [
   { planet: "Mercury", meaning: "your mind and your communication" },
   ];
 
-function ReadingTableOfContents({ visible, birthdata, planets }) {
+function ReadingTableOfContents({ visible, birthdata, planets, cycles = [], part = "all" }) {
     if (!visible) return null;
+    const showContents = part !== "key", showKey = part !== "contents";
+    const cycleItems = cycles.map(c => c.label + (c.key === "chironReturn" ? " — story, Magic Wand, Gene Keys, practices, Second-Half-of-Life Purpose" : " — story, Magic Wand, Gene Keys, practices"));
     return (
           <div style={{
                   background: "rgba(184,134,11,0.04)",
@@ -63,6 +65,7 @@ function ReadingTableOfContents({ visible, birthdata, planets }) {
                   margin: "24px 0",
                   fontFamily: "var(--reading-font)",
           }}>
+                {showContents && <>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "16px", marginBottom: "28px" }}>
                         <span style={{ color: "#b8860b", fontSize: "14px", opacity: 0.7 }}>✦</span>
                         <h2 style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: "14px", letterSpacing: "0.2em", textTransform: "uppercase", color: "rgba(240,234,216,0.7)", margin: 0, fontWeight: 400 }}>
@@ -72,13 +75,9 @@ function ReadingTableOfContents({ visible, birthdata, planets }) {
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginBottom: "24px" }}>
                   {[
-            { title: "PART ONE — WHO YOU ARE", items: ["Type & Strategy", "Inner Authority", "Profile", "Incarnation Cross", "Definition"] },
-            { title: "PART TWO — YOUR SUPERPOWERS AND SUPERHIGHWAYS", items: ["Your Channels", "Your Active Gates with Planetary Placements"] },
-            { title: "PART THREE — YOUR CURRENT CHAPTER", items: ["Your Current Chapter", "Living It Now", "Decision-Making In This Cycle"] },
-            { title: "PART FOUR — YOUR STORY OF BECOMING", items: ["Saturn Return", "Uranus Opposition", "Chiron Return"] },
-            { title: "PART FIVE — THE INITIATIONS OF YOUR CYCLES", items: ["The Profile, Cross & Type You Are Learning", "Your Magic Wand: Gifts That Came Online", "Gene Keys for Your New Gates", "Your Second-Half-of-Life Purpose", "Themes Across Your Cycles", "Integration Practices"] },
-            { title: "PART SIX — WHAT IS MOST ALIVE RIGHT NOW", items: ["Today's Transit Activations", "What You Are Learning", "Who You Are Becoming"] },
-            { title: "PART SEVEN — THE INVITATION FORWARD", items: [] },
+            { title: "PART ONE — YOUR NATAL DESIGN", items: ["Your Bodygraph & Planetary Key", "Type, Strategy & Authority", "Profile", "Centers & Definition", "Incarnation Cross", "Your Channels — Superpowers and Superhighways", "Your Active Gates — Planet by Planet"] },
+            ...(cycleItems.length ? [{ title: "PART TWO — YOUR CYCLES, IN THE ORDER YOU LIVED THEM", items: cycleItems }] : []),
+            { title: (cycleItems.length ? "PART THREE" : "PART TWO") + " — THEMES ACROSS YOUR CYCLES & THE INVITATION FORWARD", items: [] },
                     ].map(({ title, items }) => (
                                 <div key={title} style={{ borderLeft: "1px solid rgba(184,134,11,0.2)", paddingLeft: "16px" }}>
                                             <div style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: "14px", letterSpacing: "0.15em", textTransform: "uppercase", color: "#b8860b", marginBottom: "8px" }}>{title}</div>
@@ -92,7 +91,9 @@ function ReadingTableOfContents({ visible, birthdata, planets }) {
                                 </div>
                               ))}
                 </div>
-                <div style={{ textAlign: "center", color: "rgba(184,134,11,0.3)", margin: "24px 0", letterSpacing: "0.3em" }}>—</div>
+                </>}
+                {showKey && <>
+                {showContents && <div style={{ textAlign: "center", color: "rgba(184,134,11,0.3)", margin: "24px 0", letterSpacing: "0.3em" }}>—</div>}
                 <div style={{ marginBottom: "8px" }}>
                         <div style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: "10px", letterSpacing: "0.15em", textTransform: "uppercase", color: "#b8860b", marginBottom: "8px" }}>PLANETARY KEY — How To Read Your Gates</div>
                         <div style={{ fontSize: "16px", color: "rgba(240,234,216,0.85)", fontStyle: "italic", marginBottom: "16px", lineHeight: "1.6" }}>
@@ -134,6 +135,7 @@ function ReadingTableOfContents({ visible, birthdata, planets }) {
                                   Your <strong style={{ color: "rgba(240,234,216,0.8)", fontWeight: 600 }}>undefined or open centers</strong> are places you are still exploring — like visiting a new city where you might take a taxi or ask a local for directions. You are learning here, not leading. These are also the places where you are most receptive, most flexible, and most wise about the experiences of others.
                         </p>
                 </div>
+                </>}
           </div>
         );
 }
@@ -173,27 +175,32 @@ function Message({ role, content }) {
         );
 }
 
-// Bodygraph SVGs: natal + each currently-active cycle overlay (natal + cycle activations)
+// Bodygraph SVGs: natal + every reached cycle overlay (natal + that cycle's activations), chronological.
 function bodygraphSvgs(charts) {
     if (!charts?.natal) return [];
     const n = charts.natal;
     const list = [{ key: 'natal', svg: renderBodygraphSVG({ natal: n, title: 'Natal Bodygraph', subtitle: [n.type, n.profile, n.authority].filter(Boolean).join(' · ') }) }];
-    (charts.cycles || []).forEach(c => {
+    const active = new Map((charts.status?.active || []).map(c => [c.key, c]));
+    const src = charts.cycleCharts?.length ? charts.cycleCharts : (charts.cycles || []);
+    src.forEach(c => {
         if (!c.chart) return;
-        const recent = charts.status?.between;
-        const sub = c.key === 'chironReturn' && c.permanent ? 'Permanent overlay since ' + c.peak : (recent ? 'Completed · window ' : 'Window ') + c.start + ' to ' + c.end;
-        list.push({ key: c.key, svg: renderBodygraphSVG({ natal: n, overlay: c.chart, title: (recent ? 'Most recently completed: ' : 'Current cycle: ') + c.label, subtitle: sub }) });
+        const a = active.get(c.key) || (charts.cycles || []).find(x => x.key === c.key);
+        const isCurrent = active.has(c.key);
+        const sub = c.key === 'chironReturn' && a?.permanent ? 'Permanent overlay since ' + (a.peak || c.peak)
+            : a?.start ? (isCurrent ? 'Window ' : 'Completed · window ') + a.start + ' to ' + a.end
+            : 'Peak ' + c.peak + ' · completed';
+        list.push({ key: c.key, svg: renderBodygraphSVG({ natal: n, overlay: c.chart, title: (isCurrent ? 'Current cycle: ' : '') + c.label, subtitle: sub }) });
     });
     return list;
 }
 
-function Bodygraphs({ charts }) {
-    const list = bodygraphSvgs(charts);
+function Bodygraphs({ charts, only, status = false }) {
+    const list = bodygraphSvgs(charts).filter(b => !only || b.key === only);
     if (!list.length) return null;
     const st = charts.status;
     return (
         <div style={{ background: "rgba(14,8,26,0.92)", border: "1px solid rgba(201,168,76,0.3)", borderRadius: "16px", padding: "20px", marginBottom: "20px" }}>
-            {st && (
+            {status && st && (
                 <p style={{ margin: "0 0 14px", color: "#f5f1e8", fontSize: "17px", lineHeight: 1.6, textAlign: "center" }}>
                     {st.active.length
                         ? <>You are in: <strong style={{ color: "#e0c068" }}>{st.active.map(c => c.label).join(" + ")}</strong></>
@@ -208,6 +215,56 @@ function Bodygraphs({ charts }) {
             </div>
         </div>
     );
+}
+
+// On-screen reading in the canonical order: natal (bodygraph, planetary key, natal text) ->
+// each reached cycle chronologically (bodygraph, initiation card, story + Magic Wand) -> themes & closing -> follow-ups.
+function ReadingView({ messages, charts, birthdata }) {
+    const visible = messages.filter(m => !m.hidden);
+    const lastMain = messages.reduce((a, m, i) => (m.main ? i : a), -1);
+    if (lastMain < 0) return <>
+        {charts && <Bodygraphs charts={charts} status />}
+        {visible.map((m, i) => <Message key={i} role={m.role} content={stripMarkers(m.content)} />)}
+    </>;
+    const firstMain = messages.findIndex(m => m.main);
+    const before = messages.slice(0, firstMain).filter(m => !m.hidden);
+    const after = messages.slice(lastMain + 1).filter(m => !m.hidden);
+    const seg = splitReading(messages.slice(0, lastMain + 1).filter(m => m.role === 'assistant' && m.main).map(m => m.content));
+    const en = charts?.enrichment || [];
+    const order = ['saturnReturn', 'uranusOpposition', 'chironReturn', 'secondSaturnReturn'];
+    const keys = order.filter(k => seg.cycles.some(c => c.key === k) || en.some(e => e.key === k));
+    return <>
+        {before.map((m, i) => <Message key={'b' + i} role={m.role} content={m.content} />)}
+        {charts && <Bodygraphs charts={charts} only="natal" status />}
+        <ReadingTableOfContents visible={true} birthdata={birthdata} planets={charts?.natal?.planets} part="key" />
+        <Message role="assistant" content={seg.natal} />
+        {keys.map(k => {
+            const e = en.find(x => x.key === k); const t = seg.cycles.find(c => c.key === k)?.text;
+            return <div key={k} className="cycle-section" data-cycle={k}>
+                {charts && <Bodygraphs charts={charts} only={k} />}
+                {e && <CycleCards enrichment={[e]} compact />}
+                {t && <Message role="assistant" content={t} />}
+            </div>;
+        })}
+        {seg.closing && <Message role="assistant" content={seg.closing} />}
+        {after.map((m, i) => <Message key={'a' + i} role={m.role} content={stripMarkers(m.content)} />)}
+    </>;
+}
+
+// Split the main reading into natal / per-cycle / closing segments using the server's markers.
+const MARK = /^\[\[(CYCLE:[a-zA-Z]+|CLOSING)\]\]\s*$/m;
+export function stripMarkers(t) { return String(t || '').replace(/^\[\[(CYCLE:[a-zA-Z]+|CLOSING)\]\]\s*\n?/gm, '').replace(/\n{3,}/g, '\n\n'); }
+export function splitReading(parts) {
+    const natal = stripMarkers(parts[0] || '').trim();
+    const rest = parts.slice(1).join('\n\n');
+    const cycles = []; let closing = '';
+    if (!MARK.test(rest)) return { natal, cycles, closing: stripMarkers(rest).trim() };
+    const chunks = rest.split(/^\[\[(CYCLE:[a-zA-Z]+|CLOSING)\]\]\s*$/m);
+    for (let i = 1; i < chunks.length; i += 2) {
+        const tag = chunks[i], body = (chunks[i + 1] || '').trim();
+        if (tag === 'CLOSING') closing = body; else cycles.push({ key: tag.slice(6), text: body });
+    }
+    return { natal, cycles, closing };
 }
 
 // Main reading = assistant messages flagged main (auto part 1 + part 2). Everything after the
@@ -231,22 +288,29 @@ export function splitForPdf(messages) {
 }
 
 async function handleDownloadPdf(birthdata, messages, charts) {
-    let images = [];
-    try { images = await Promise.all(bodygraphSvgs(charts).map(b => svgToPng(b.svg))); }
-    catch (e) { console.error('Bodygraph image error:', e); }
+    const svgs = bodygraphSvgs(charts);
+    const imgs = {};
+    await Promise.all(svgs.map(b => svgToPng(b.svg).then(im => { imgs[b.key] = im; }).catch(e => console.error('Bodygraph image error:', e))));
+    const { parts, qa } = splitForPdf(messages);
+    const seg = splitReading(parts);
+    const en = charts?.enrichment || [];
+    const order = ['saturnReturn', 'uranusOpposition', 'chironReturn', 'secondSaturnReturn'];
+    const keys = order.filter(k => seg.cycles.some(c => c.key === k) || en.some(e => e.key === k));
     downloadReadingPdf({
         name: birthdata?.name,
         birthdata,
-        ...splitForPdf(messages),
-        images,
+        natal: seg.natal,
+        natalImage: imgs.natal || null,
         planets: charts?.natal?.planets || [],
-        enrichment: charts?.enrichment || [],
+        cycles: keys.map(k => ({ key: k, image: imgs[k] || null, enrichment: en.find(e => e.key === k) || null, text: seg.cycles.find(c => c.key === k)?.text || '' })),
+        closing: seg.closing,
+        qa,
     });
 }
 
 // Read one /api/chat SSE response fully (buffered; nothing is shown while it streams).
 async function streamChat(messages, birthdata) {
-    const body = { messages: messages.map(m => ({ role: m.role, content: m.content })), ...getAccess() };
+    const body = { messages: messages.map(m => ({ role: m.role, content: stripMarkers(m.content) })), ...getAccess() };
     if (birthdata) body.birthdata = birthdata;
     const out = { text: "", charts: null, error: null, notice: null };
     try {
@@ -516,7 +580,7 @@ export default function App() {
           }}>
                         <div ref={topRef} />
                   {chartDetected && !loading && (
-                      <ReadingTableOfContents visible={true} birthdata={birthdata} planets={charts?.natal?.planets} />
+                      <ReadingTableOfContents visible={true} birthdata={birthdata} planets={charts?.natal?.planets} cycles={charts?.enrichment || []} part={messages.some(m => m.main) ? "contents" : "all"} />
                     )}
                   {isEmpty && (
                       <div style={{ textAlign: "center", padding: "60px 20px", color: "rgba(255,255,255,0.45)" }}>
@@ -534,9 +598,7 @@ export default function App() {
                       </div>
                         )}
                   {loading && <GeneratingScreen />}
-                  {!loading && charts && <Bodygraphs charts={charts} />}
-                  {!loading && charts?.enrichment?.length > 0 && <CycleCards enrichment={charts.enrichment} />}
-                  {!loading && messages.filter(m => !m.hidden).map((m, i) => <Message key={i} role={m.role} content={m.content} />)}
+                  {!loading && <ReadingView messages={messages} charts={charts} birthdata={birthdata} />}
 
                   {chartDetected && streamingDone && !loading && messages.length > 0 && messages[messages.length - 1].role === 'assistant' && (
                       <div style={{

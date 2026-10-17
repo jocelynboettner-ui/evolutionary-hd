@@ -5,12 +5,12 @@ import React from "react";
 const gold = "#e0c068";
 const H = ({ children }) => <div className="cc-h">{children}</div>;
 
-export function CycleCards({ enrichment }) {
+export function CycleCards({ enrichment, compact = false }) {
     if (!enrichment?.length) return null;
     return (
         <div className="cycle-cards">
-            <div className="cc-title">✦ The Initiations of Your Cycles ✦</div>
-            <p className="cc-intro">Your natal design is who you are, and it never changes. Each cycle adds energies that flow through your design in that season: a profile, a cross and sometimes a type. Your natal authority still chooses which to follow.</p>
+            {!compact && <div className="cc-title">✦ The Initiations of Your Cycles ✦</div>}
+            {!compact && <p className="cc-intro">Your natal design is who you are, and it never changes. Each cycle adds energies that flow through your design in that season: a profile, a cross and sometimes a type. Your natal authority still chooses which to follow.</p>}
             {enrichment.map(c => (
                 <div key={c.key} className="cc-card">
                     <div className="cc-cycle">{c.label}<span className="cc-date"> · peak {c.peakDate}</span></div>
@@ -61,6 +61,7 @@ export const cycleCardsCss = `
 .cc-title { font-family: 'Cinzel', Georgia, serif; color: ${gold}; text-align: center; letter-spacing: 0.12em; text-transform: uppercase; font-size: 15px; margin-bottom: 8px; }
 .cc-intro { text-align: center; font-family: var(--reading-font); font-style: italic; color: rgba(240,234,216,0.88); font-size: 16px; line-height: 1.6; margin: 0 0 16px; }
 .cc-card { border-top: 1px solid rgba(201,168,76,0.25); padding-top: 16px; margin-top: 16px; }
+.cycle-cards .cc-card:first-of-type { border-top: none; margin-top: 0; padding-top: 0; }
 .cc-cycle { font-family: 'Cinzel', Georgia, serif; font-size: 20px; color: ${gold}; margin-bottom: 10px; }
 .cc-date { font-size: 13px; color: rgba(240,234,216,0.6); font-family: var(--ui-font); }
 .cc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }

@@ -41,9 +41,16 @@ TIME SCOPE RULE (overrides everything below): Only write about the cycle the per
 
 ANTI-REPETITION RULE (applies to the whole reading and every section call): State each idea ONCE, in the one section whose purpose it serves. Never restate an earlier section's point in different words. Phrases such as "permanently yours", "the full flowering", "earned wisdom", "how to live it now" may appear at most ONCE in the entire reading. Do not end sections by summarizing what was already said. Each section must add something new.
 
-READING OUTLINE (each section has ONE distinct purpose; stay inside it):
-Part 1 — YOUR NATAL BLUEPRINT: type, strategy, authority, profile, natal cross, definition (who they are; never changes). YOUR SUPERPOWERS AND SUPERHIGHWAYS: natal channels only. YOUR ACTIVE GATES — WHERE THE PLANETS LIVE: every planet's gate.line, 1-2 sentences each. YOUR CURRENT CHAPTER: which cycle they are in and its single core lesson (no gate/channel lists; the cycle sections cover those). LIVING IT NOW: practical, everyday decision-making with their natal authority. THE INVITATION FORWARD: one short integrative close.
-Part 2 — YOUR STORY OF BECOMING: the lived narrative of each reached threshold (what happened and changed; no lists). YOUR [CYCLE] MAGIC WAND (one per reached cycle): the specific energies that cycle overlays (profile, cross, type, centers, channels, planets, Gene Keys) and its practices; do not retell the story. YOUR SECOND-HALF-OF-LIFE PURPOSE: the Chiron cross only. THEMES ACROSS YOUR CYCLES: only the thread connecting the cycles; do not re-list gifts.
+READING OUTLINE — the reading is in this exact order; each section has ONE distinct purpose; stay inside it; natal and cycle content are never interleaved:
+Part 1 (THE NATAL READING — who they are; never changes; NO cycle content here):
+  YOUR NATAL BLUEPRINT: type, strategy, signature/not-self, authority, profile, defined and open centers (definition), and natal incarnation cross.
+  YOUR SUPERPOWERS AND SUPERHIGHWAYS: natal channels only.
+  YOUR ACTIVE GATES — WHERE THE PLANETS LIVE: every planet's gate.line, 1-2 sentences each.
+Part 2 (THE CYCLES — only cycles already reached, in chronological order: Saturn Return, Uranus Opposition, Chiron Return, Second Saturn Return). For each cycle, in this order:
+  YOUR [CYCLE]: the lived story of that threshold (what happened and changed; no lists).
+  YOUR [CYCLE] MAGIC WAND: the energies that cycle overlays (profile, cross, type, centers, channels, planets, Gene Keys) and its practices; for the current cycle also LIVING IT NOW.
+  (Chiron Return only) YOUR SECOND-HALF-OF-LIFE PURPOSE: the Chiron cross.
+Then THEMES ACROSS YOUR CYCLES (only the thread connecting the cycles) and THE INVITATION FORWARD (a short integrative close).
 
 CYCLE FRAMING RULE (applies to ALL cycle content — reading sections, cycle sections, follow-up answers, workbook text): The natal design is who the person is and it never changes (e.g. a Generator with a 4/6 profile and Sacral authority stays exactly that for life). A cycle overlay — including the Chiron Return, the full flowering — is NOT a new identity. The cycle type, profile and cross are energies flowing THROUGH the natal design in that season, and the natal authority still chooses which of them to follow. Never write "you are now a ___", "you became a ___", or "your new type/profile". Write in this spirit: "You are still a Generator who responds. In this season life is also asking you to initiate like a Manifestor, to inform, to trust your hermit 2 to be called out, in service of your new purpose." (Use the person's actual natal and cycle values from the data; that sentence is a model of tone, not data.)
 
@@ -89,13 +96,11 @@ LANGUAGE — always use embodied language:
 - Incarnation Cross: "Your life's central theme — the specific medicine you came to offer the world."
 - Not-self theme: "The feeling that tells you you've drifted from yourself."
 
-SECTION NAMES — use these exactly, in this order:
-YOUR NATAL BLUEPRINT
-YOUR SUPERPOWERS AND SUPERHIGHWAYS
-YOUR ACTIVE GATES — WHERE THE PLANETS LIVE
-YOUR CURRENT CHAPTER
-LIVING IT NOW
-THE INVITATION FORWARD
+SECTION NAMES FOR THE INITIAL (NATAL) READING — use these exactly, in this order, and write nothing about cycles in them:
+YOUR NATAL BLUEPRINT  (type, strategy, signature and not-self, authority, profile, defined and open centers, natal incarnation cross)
+YOUR SUPERPOWERS AND SUPERHIGHWAYS  (natal channels)
+YOUR ACTIVE GATES — WHERE THE PLANETS LIVE  (every planet)
+The cycle sections, themes and THE INVITATION FORWARD are written later, one call at a time.
 
 GATE SECTION — YOUR ACTIVE GATES — WHERE THE PLANETS LIVE:
 Open with exactly: "Each gate in your chart sits in a planetary position. The planet tells you HOW that gate expresses in your life."
@@ -156,27 +161,27 @@ STEP 3 — ERA SUPERPOWERS:
                                  "Your design has been building toward this moment your entire life. Every threshold was preparation. Every activation was a layer of the medicine you came to offer. If you would like to explore how to live this activation now — how to embody what came online and offer it to the world — reply with your specific question and I am here."
                                  */
 RESPONSE LENGTH:
-Initial reading — write all six sections in full, flowing prose.
+Initial reading — write the three natal sections in full, flowing prose.
 Follow-up questions — 400-600 words maximum.
 
 THE MOST IMPORTANT INSTRUCTION:
 Write as if you are the wise woman who has watched this soul across fifty years and can finally tell them what you have witnessed. Every sentence should make the person think: Yes. That's exactly it. I never had words for it before, but that's exactly it.
 
 CRITICAL — STOP AFTER EACH SECTION:
-The reading is delivered in layers. You MUST stop completely after THE INVITATION FORWARD and wait for the user to respond.
+The reading is delivered in layers. You MUST stop completely after YOUR ACTIVE GATES — WHERE THE PLANETS LIVE and wait for the user to respond.
 Do NOT continue into YOUR STORY OF BECOMING automatically.
 Do NOT generate the arc unless the user types "continue."
 Never generate a New Era section.
 Do NOT generate the activation section unless the user types "activation."
 
-After THE INVITATION FORWARD, write the closing line and then STOP. Generate nothing else. Wait for input.
+After YOUR ACTIVE GATES — WHERE THE PLANETS LIVE, write the closing line and then STOP. Generate nothing else. Wait for input.
 
-The closing line after THE INVITATION FORWARD is:
+The closing line after the natal reading is:
 "You have seen your blueprint. If you are ready to understand where you are in the erotic arc of your life — the initiation you are currently inside — type continue."
 
 Then stop completely.
 
-CLOSING PROMPT: After THE INVITATION FORWARD section, always end with this exact line:
+CLOSING PROMPT: After the natal reading, always end with this exact line:
 "If you would like to explore the cycle you are currently in and your story of becoming, type continue."
 
 /* CYCLE RESPONSE INSTRUCTIONS:
@@ -241,7 +246,7 @@ STEP 5 — CLOSE WITH THE CURRENT SEASON: End with 2-3 sentences about what this
 
 TONE THROUGHOUT: Warm, wise, personal. Write as if you have watched this person's life unfold across decades and can finally name what it all meant. Past tense for completed thresholds. Present tense for current window. Future-present for the Second Saturn Return — "already encoded, already walking toward you."
 
-AGE CALCULATION — CRITICAL: Today is April 5, 2026. Calculate the person's current age from their birth year. State all ages accurately before writing anything about timing.
+AGE CALCULATION — CRITICAL: Use today's date and the age given in CRITICAL CHART FACTS. State all ages accurately before writing anything about timing.
 
 Approximate threshold windows:
 
@@ -535,7 +540,8 @@ app.post("/api/chat", async (req, res) => {
         const ov = overlaysForClient?.[c.key];
         return ov ? { ...c, chart: bodygraphData(ov) } : null;
       }).filter(Boolean);
-      res.write('data: ' + JSON.stringify({ charts: { natal: natalBg, cycles: activeOverlays, status: cycleStatus, enrichment } }) + '\n\n');
+      const cycleCharts = enrichment.map(c => ({ key: c.key, label: c.label, peak: c.peakDate, chart: bodygraphData(overlaysForClient?.[c.key]) })).filter(c => c.chart);
+      res.write('data: ' + JSON.stringify({ charts: { natal: natalBg, cycles: activeOverlays, status: cycleStatus, enrichment, cycleCharts } }) + '\n\n');
     }
 
         // ── GROUP 2: Start slow fetches in background ──
@@ -658,7 +664,7 @@ app.post("/api/chat", async (req, res) => {
               return { text: t.slice(0, i).trim(), wb };
             };
             const nm = birthdata.name || 'them';
-            const RULES = `ANTI-REPETITION: other sections already cover the narrative story of each threshold (YOUR STORY OF BECOMING), the Chiron cross purpose (YOUR SECOND-HALF-OF-LIFE PURPOSE) and the thread across cycles (THEMES ACROSS YOUR CYCLES); cover only this section's purpose, state each idea once, and avoid "permanently yours" / "full flowering" unless this is the only place it appears. Plain text only: no markdown, no #, no **, no bullet symbols except "• " where asked. Sub-headings are ALL-CAPS lines on their own. Only this cycle; never mention or forecast any future cycle. Follow the CYCLE FRAMING RULE: natal design is who ${nm} is and never changes; the cycle type, profile and cross are energies flowing THROUGH it in this season, and natal authority still chooses which to follow (never "you became" / "you are now"). Use exact names and numbers from CYCLE EMBODIMENT DATA. When naming a planet carrying a gate, use its given meaning.`;
+            const RULES = `ANTI-REPETITION: other sections already cover the natal design (Part 1), the narrative story of each threshold (the YOUR [CYCLE] story section), the Chiron cross purpose (YOUR SECOND-HALF-OF-LIFE PURPOSE) and the thread across cycles (THEMES ACROSS YOUR CYCLES); cover only this section's purpose, state each idea once, and avoid "permanently yours" / "full flowering" unless this is the only place it appears. Plain text only: no markdown, no #, no **, no bullet symbols except "• " where asked. Sub-headings are ALL-CAPS lines on their own. Only this cycle; never mention or forecast any future cycle. Follow the CYCLE FRAMING RULE: natal design is who ${nm} is and never changes; the cycle type, profile and cross are energies flowing THROUGH it in this season, and natal authority still chooses which to follow (never "you became" / "you are now"). Use exact names and numbers from CYCLE EMBODIMENT DATA. When naming a planet carrying a gate, use its given meaning.`;
             const wandPrompt = (c) => `Write ONLY the section "YOUR ${c.label.toUpperCase()} MAGIC WAND" for ${nm}. This cycle is ${activeKeys.has(c.key) ? 'CURRENT (present tense)' : 'COMPLETED (past tense, integrated now)'}. Use the ${c.label.toUpperCase()} block of CYCLE EMBODIMENT DATA.
 First line exactly: YOUR ${c.label.toUpperCase()} MAGIC WAND
 Then these sub-headings in order:
@@ -668,7 +674,8 @@ ${c.key === 'chironReturn' ? '' : `THE CROSS OF THIS SEASON  (one paragraph: the
 ` : ''}${c.authority.shifted ? `THE AWARENESS YOU ARE PRACTICING: ${c.authority.cycle}  (one short paragraph: practicing this awareness; natal ${c.authority.natal} authority remains the decision-maker, never replaced)
 ` : ''}THE GIFTS THAT CAME ONLINE  (the heart of this section: every newly defined center and every channel listed, each as a gift; name the planet carrying the new gate and what that planet means)
 GENE KEYS FOR YOUR NEW GATES  (choose the 3-5 most important new gates, prioritising channel and cross gates; for each, one line "Gate N: Shadow X → Gift Y → Siddhi Z" then one sentence of contemplation)
-INTEGRATION PRACTICES  (exactly 3 lines, each starting "• ")
+${activeKeys.has(c.key) ? `LIVING IT NOW  (1-2 paragraphs: practical, everyday decision-making in this season with natal ${c.authority.natal} authority)
+` : ''}INTEGRATION PRACTICES  (exactly 3 lines, each starting "• ")
 Frame the cycle profile, cross and type together as the initiation of this season. Length 550-750 words; keep the JSON compact. ${RULES}
 After the section output a line exactly <<<WORKBOOK>>> and then ONE JSON object only: {"cycleReflection":"2-3 sentence intro for this cycle's workbook page","practices":["3 practices"],"journalPrompts":["3 journal prompts"],"geneKeyContemplations":[{"gate":N,"prompt":"..."}]} (3 contemplations).`;
             const chiron = enrichment.find(c => c.key === 'chironReturn');
@@ -676,8 +683,12 @@ After the section output a line exactly <<<WORKBOOK>>> and then ONE JSON object 
 First line exactly: YOUR SECOND-HALF-OF-LIFE PURPOSE
 Write a rich, specific section (500-700 words): what this cross is and the purpose it carries; each of its four gates with its Gene Key Shadow → Gift → Siddhi as given; how the natal cross (home base) and this Chiron cross work together; how the wound becomes medicine through this purpose; what living this purpose looks like now. End with sub-heading INTEGRATION PRACTICES and exactly 3 lines starting "• ". ${RULES}
 After the section output a line exactly <<<WORKBOOK>>> and then ONE JSON object only: {"purposeReflection":"2-3 sentence intro","practices":["3 practices"],"journalPrompts":["3 journal prompts"]}.`;
-            const themesPrompt = `Write ONLY the section "THEMES ACROSS YOUR CYCLES" for ${nm}. Thread how ${enrichment.map(c => c.label).join(' → ')} built on one another: what each began, how the next deepened it, using each cycle's profile, cross and magic wand gifts. Only these cycles; nothing in the future. First line exactly: THEMES ACROSS YOUR CYCLES. 250-380 words. ${RULES}
-After the section output a line exactly <<<WORKBOOK>>> and then ONE JSON object only: {"intro":"warm 3-4 sentence workbook introduction addressed to ${nm}","homeBase":"2-3 sentences summarising natal home base","themesPrompts":["3 reflection prompts about the thread across cycles"],"closing":"warm 3-4 sentence closing blessing"}.`;
+            const themesPrompt = enrichment.length ? `Write ONLY the closing of the reading for ${nm}: first the section "THEMES ACROSS YOUR CYCLES", then the section "THE INVITATION FORWARD".
+THEMES ACROSS YOUR CYCLES (250-350 words): thread how ${enrichment.map(c => c.label).join(' → ')} built on one another: what each began and how the next deepened it. Only these cycles; nothing in the future; do not re-list gifts already given in the cycle sections.
+THE INVITATION FORWARD (one short paragraph, 80-130 words): an integrative close returning to the natal design as home, with natal authority choosing. No new information, no future cycles, no "type" instructions.
+Each heading on its own line exactly as written. ${RULES}
+After both sections output a line exactly <<<WORKBOOK>>> and then ONE JSON object only: {"intro":"warm 3-4 sentence workbook introduction addressed to ${nm}","homeBase":"2-3 sentences summarising natal home base","themesPrompts":["3 reflection prompts about the thread across cycles"],"closing":"warm 3-4 sentence closing blessing"}.`
+              : `Write ONLY the section "THE INVITATION FORWARD" for ${nm} (one paragraph, 100-150 words): an integrative close returning to the natal design, with natal authority choosing. No cycles, nothing in the future. Heading on its own line exactly. ${RULES}`;
             const extraCtx = [
               ...augmentedMessages,
               { role: 'assistant', content: fullText },
@@ -686,7 +697,7 @@ After the section output a line exactly <<<WORKBOOK>>> and then ONE JSON object 
             ];
             const wandJobs = enrichment.map(c => generateArcSection(wandPrompt(c), 4000, extraCtx).then(splitWb).catch(e => { console.error('Wand error', c.key, e.message); return null; }));
             const purposeJob = chiron ? generateArcSection(purposePrompt, 3200, extraCtx).then(splitWb).catch(e => { console.error('Purpose error', e.message); return null; }) : Promise.resolve(null);
-            const themesJob = enrichment.length ? generateArcSection(themesPrompt, 2000, extraCtx).then(splitWb).catch(e => { console.error('Themes error', e.message); return null; }) : Promise.resolve(null);
+            const themesJob = generateArcSection(themesPrompt, 2200, extraCtx).then(splitWb).catch(e => { console.error('Themes error', e.message); return null; });
 
             const _nowMs = Date.now();
             const reached = (k) => { const c = cycles?.[k]; if (!c) return false; const pk = new Date(c.peak_datetime || c.peak).getTime(); return !isNaN(pk) && pk - 3.5 * 365.25 * 864e5 <= _nowMs; };
@@ -713,8 +724,6 @@ End with one integrative sentence about what this threshold left them with.`,
                 arcContext
               );
 
-              res.write('data: ' + JSON.stringify({ text: 'YOUR STORY OF BECOMING\n\n' }) + '\n\n');
-              res.write('data: ' + JSON.stringify({ text: saturnText.replace(/^\s*YOUR STORY OF BECOMING\s*/i, '') + '\n\n' }) + '\n\n');
 
               if (reached('uranusOpposition')) uranusText = await generateArcSection(
                 `Write ONLY the URANUS OPPOSITION section of YOUR STORY OF BECOMING.
@@ -737,7 +746,6 @@ End with one integrative sentence about what this threshold left them with.`,
                 [...arcContext, { role: 'assistant', content: saturnText }]
               );
 
-              if (uranusText) res.write('data: ' + JSON.stringify({ text: uranusText + '\n\n' }) + '\n\n');
 
               if (reached('chironReturn')) chironText = await generateArcSection(
                 `Write ONLY the CHIRON RETURN section of YOUR STORY OF BECOMING.
@@ -761,10 +769,10 @@ End with one sentence about how this is integrating in their life now. Do not me
                 [...arcContext, { role: 'assistant', content: saturnText + '\n\n' + uranusText }]
               );
 
-              if (chironText) res.write('data: ' + JSON.stringify({ text: chironText + '\n\n' }) + '\n\n');
 
+              let s2 = '';
               if (reached('secondSaturnReturn')) {
-                const s2 = await generateArcSection(
+                s2 = await generateArcSection(
                   `Write ONLY the SECOND SATURN RETURN section of YOUR STORY OF BECOMING (this person is in or past it).
 
 HARD LIMITS: 3 paragraphs, 150 words maximum.
@@ -773,23 +781,30 @@ Begin with the threshold dateline. End with one integrative sentence.`,
                   700,
                   [...arcContext, { role: 'assistant', content: [saturnText, uranusText, chironText].filter(Boolean).join('\n\n') }]
                 );
-                if (s2) res.write('data: ' + JSON.stringify({ text: s2 + '\n\n' }) + '\n\n');
               }
 
 
               // (New Era section removed: readings do not forecast future eras or cycles.)
 
-              // Emit the embodiment sections in order, then the workbook data.
+              // Emit cycles in chronological order — story, Magic Wand, (Chiron) purpose — then themes + closing.
               const wands = await Promise.all(wandJobs);
               const [purpose, themes] = await Promise.all([purposeJob, themesJob]);
               const workbook = { cycles: {}, purpose: purpose?.wb || null, themes: themes?.wb || null };
-              enrichment.forEach((c, i) => {
-                const w = wands[i];
-                if (w?.text) res.write('data: ' + JSON.stringify({ text: stripToolTags(w.text) + '\n\n' }) + '\n\n');
-                if (w?.wb) workbook.cycles[c.key] = w.wb;
-                if (c.key === 'chironReturn' && purpose?.text) res.write('data: ' + JSON.stringify({ text: stripToolTags(purpose.text) + '\n\n' }) + '\n\n');
-              });
-              if (themes?.text) res.write('data: ' + JSON.stringify({ text: stripToolTags(themes.text) + '\n\n' }) + '\n\n');
+              const stories = { saturnReturn: saturnText, uranusOpposition: uranusText, chironReturn: chironText, secondSaturnReturn: s2 };
+              const LABEL = { saturnReturn: 'SATURN RETURN', uranusOpposition: 'URANUS OPPOSITION', chironReturn: 'CHIRON RETURN', secondSaturnReturn: 'SECOND SATURN RETURN' };
+              const emit = t => res.write('data: ' + JSON.stringify({ text: stripToolTags(t) }) + '\n\n');
+              const cleanStory = t => String(t || '').replace(/^\s*YOUR STORY OF BECOMING\s*/i, '').replace(new RegExp('^\\s*(YOUR\\s+)?(THE\\s+)?(1ST\\s+|FIRST\\s+)?(SATURN RETURN|URANUS OPPOSITION|CHIRON RETURN|SECOND SATURN RETURN|2ND SATURN RETURN)[^\\n]{0,40}\\n'), '').trim();
+              for (const key of ['saturnReturn', 'uranusOpposition', 'chironReturn', 'secondSaturnReturn']) {
+                const ei = enrichment.findIndex(c => c.key === key);
+                const story = cleanStory(stories[key]);
+                const w = ei >= 0 ? wands[ei] : null;
+                if (!story && !w?.text) continue;
+                emit(`[[CYCLE:${key}]]\n\nYOUR ${LABEL[key]}\n\n` + (story ? story + '\n\n' : ''));
+                if (w?.text) emit(w.text + '\n\n');
+                if (w?.wb) workbook.cycles[key] = w.wb;
+                if (key === 'chironReturn' && purpose?.text) emit(purpose.text + '\n\n');
+              }
+              emit('[[CLOSING]]\n\n' + (themes?.text ? themes.text + '\n\n' : ''));
               res.write('data: ' + JSON.stringify({ workbook }) + '\n\n');
 
             } catch (err) {
