@@ -14,12 +14,20 @@ import { formatPlanets } from './reading-context.js';
 import { buildFactsBlock, attributeChannels, formatAttribution, channelList, currentCycleStatus, formatCycleStatus, bodygraphData, CYCLE_LABELS } from './reading-context.js';
 import Stripe from 'stripe';
 import { buildEnrichment, formatEnrichmentForPrompt } from './cycle-enrichment.js';
+import { deliveryConfig, createReadingStore, validSessionId, isNewReadingRequest, readingAccess, readingState, sessionBirthdata, decodePdf, sendReadingEmail, maskEmail, MAX_RESENDS } from './delivery.js';
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+// The finished-PDF upload is larger than the default 100kb JSON limit; every other route keeps the default.
+const jsonDefault = express.json();
+const jsonPdf = express.json({ limit: '20mb' });
+app.use((req, res, next) => (req.path === '/api/reading/deliver' ? jsonPdf : jsonDefault)(req, res, next));
+// Optional email delivery (off unless RESEND_API_KEY + READING_FROM_EMAIL are set).
+const DELIVERY = deliveryConfig();
+const readingStore = createReadingStore(DELIVERY.storeDir);
+console.log('Reading email delivery:', DELIVERY.enabled ? 'enabled' : 'disabled');
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const HD_AI_API_KEY = process.env.HD_AI_API_KEY;
 const SACRED_CYCLES_URL = process.env.SACRED_CYCLES_URL || "http://localhost:8000";
@@ -431,11 +439,43 @@ async function isPaidSession(sessionId) {
     return false;
   }
 }
+// Paid session with its PaymentIntent (whose metadata holds the reading state), or null.
+async function getPaidSession(sessionId) {
+  if (!validSessionId(sessionId)) return null;
+  try {
+    const session = await stripe.checkout.sessions.retrieve(sessionId, { expand: ['payment_intent'] });
+    return session.payment_status === 'paid' ? session : null;
+  } catch (err) {
+    console.error('Stripe session check error:', err.message);
+    return null;
+  }
+}
+async function setReadingState(session, fields) {
+  const pi = session?.payment_intent;
+  if (!pi || typeof pi !== 'object') return;
+  const metadata = Object.fromEntries(Object.entries(fields).map(([k, v]) => ['ehd_' + k, String(v)]));
+  const updated = await stripe.paymentIntents.update(pi.id, { metadata });
+  session.payment_intent = updated;
+}
 
 app.post("/api/chat", async (req, res) => {
   const { sessionId, previewCode } = req.body || {};
   if (!isOwnerCode(previewCode) && !(await isPaidSession(sessionId))) {
     return res.status(402).json({ error: "Payment required" });
+  }
+  // With email delivery on: one reading per payment, bound to the birth details entered at checkout.
+  if (DELIVERY.enabled && !isOwnerCode(previewCode)) {
+    const session = await getPaidSession(sessionId);
+    if (!session) return res.status(402).json({ error: "Payment required" });
+    const bound = sessionBirthdata(session);
+    if (bound) req.body.birthdata = bound;
+    const isNew = isNewReadingRequest(req.body.messages);
+    const access = readingAccess(session, isNew);
+    if (!access.allow) return res.status(409).json({ error: "This purchase's reading has already been created.", code: access.code });
+    if (isNew) {
+      try { await setReadingState(session, { status: 'generating', attempts: readingState(session).attempts + 1 }); }
+      catch (err) { console.error('Reading state update error:', err.message); }
+    }
   }
   // Full readings (natal + multi-section arc) can take several minutes; allow 5 min.
   req.setTimeout(300000);
@@ -915,8 +955,15 @@ app.get('/api/verify-session/:sessionId', async (req, res) => {
                   req.params.sessionId
                 );
           if (session.payment_status === 'paid') {
+                  let delivered = false;
+                  if (DELIVERY.enabled) {
+                            const s = await getPaidSession(req.params.sessionId);
+                            delivered = !!s && readingState(s).status === 'delivered';
+                  }
                   res.json({
                             paid: true,
+                            delivery: DELIVERY.enabled,
+                            delivered,
                             birthdate: session.metadata.birthdate,
                             birthtime: session.metadata.birthtime,
                             location: session.metadata.location,
@@ -932,6 +979,70 @@ app.get('/api/verify-session/:sessionId', async (req, res) => {
 });
 
 // ── END STRIPE ───────────────────────────────────────────────
+
+// ── READING DELIVERY (email + re-download; inert unless DELIVERY.enabled) ──
+async function emailStoredReading(session, pdf) {
+  const to = session.customer_details?.email;
+  if (!to) return { emailed: false, reason: 'no_email' };
+  const downloadUrl = process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}?reading=${session.id}` : '';
+  await sendReadingEmail(DELIVERY, { to, name: session.metadata?.name, pdf, downloadUrl });
+  return { emailed: true, to: maskEmail(to) };
+}
+
+// Browser uploads the PDF it built once the reading finished; we store it and email it once.
+app.post('/api/reading/deliver', async (req, res) => {
+  if (!DELIVERY.enabled) return res.json({ enabled: false, emailed: false });
+  const { sessionId, pdf } = req.body || {};
+  const session = await getPaidSession(sessionId);
+  if (!session) return res.status(402).json({ error: 'Payment required' });
+  const st = readingState(session);
+  if (st.status === 'delivered' && readingStore.load(session.id)) {
+    return res.json({ enabled: true, emailed: true, already: true });
+  }
+  const buf = decodePdf(pdf);
+  if (!buf) return res.status(400).json({ error: 'Invalid PDF' });
+  try {
+    readingStore.save(session.id, buf, { email: session.customer_details?.email || '' });
+  } catch (err) { console.error('Reading store error:', err.message); }
+  try {
+    const out = await emailStoredReading(session, buf);
+    await setReadingState(session, { status: 'delivered', delivered_at: new Date().toISOString() });
+    res.json({ enabled: true, ...out });
+  } catch (err) {
+    console.error('Reading delivery error:', err.message);
+    res.status(502).json({ enabled: true, emailed: false, error: 'Email could not be sent' });
+  }
+});
+
+app.post('/api/reading/resend', async (req, res) => {
+  if (!DELIVERY.enabled) return res.status(404).json({ error: 'Not found' });
+  const session = await getPaidSession(req.body?.sessionId);
+  if (!session) return res.status(402).json({ error: 'Payment required' });
+  const st = readingState(session);
+  if (st.status !== 'delivered') return res.status(409).json({ error: 'Reading not delivered yet' });
+  if (st.resends >= MAX_RESENDS) return res.status(429).json({ error: 'Resend limit reached' });
+  const pdf = readingStore.load(session.id);
+  if (!pdf) return res.status(410).json({ error: 'Stored copy unavailable' });
+  try {
+    const out = await emailStoredReading(session, pdf);
+    await setReadingState(session, { resends: st.resends + 1 });
+    res.json(out);
+  } catch (err) {
+    console.error('Reading resend error:', err.message);
+    res.status(502).json({ emailed: false, error: 'Email could not be sent' });
+  }
+});
+
+app.get('/api/reading/pdf/:sessionId', async (req, res) => {
+  if (!DELIVERY.enabled) return res.status(404).json({ error: 'Not found' });
+  const session = await getPaidSession(req.params.sessionId);
+  if (!session) return res.status(402).json({ error: 'Payment required' });
+  const pdf = readingStore.load(session.id);
+  if (!pdf) return res.status(404).json({ error: 'Stored copy unavailable' });
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', 'attachment; filename="evolutionary-hd-reading.pdf"');
+  res.send(pdf);
+});
 
 
 app.get("/health", (_req, res) => res.json({ ok: true }));

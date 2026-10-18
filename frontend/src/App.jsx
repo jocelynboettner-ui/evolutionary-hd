@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { CycleCards, cycleCardsCss } from "./CycleCards.jsx";
 import { downloadWorkbookPdf } from "./workbookPdf.js";
-import { downloadReadingPdf } from "./readingPdf.js";
+import { buildReadingPdf } from "./readingPdf.js";
 import { parseBirthText } from "../../backend/birth-parse.js";
 import { PLANET_ORDER, planetMeaning } from "../../backend/reading-context.js";
 import { renderBodygraphSVG, svgToPng } from "./bodygraph.js";
@@ -288,7 +288,7 @@ export function splitForPdf(messages) {
     return { parts, qa: qa.filter(x => x.a) };
 }
 
-async function handleDownloadPdf(birthdata, messages, charts) {
+async function buildPdfDoc(birthdata, messages, charts) {
     const svgs = bodygraphSvgs(charts);
     const imgs = {};
     await Promise.all(svgs.map(b => svgToPng(b.svg).then(im => { imgs[b.key] = im; }).catch(e => console.error('Bodygraph image error:', e))));
@@ -297,7 +297,7 @@ async function handleDownloadPdf(birthdata, messages, charts) {
     const en = charts?.enrichment || [];
     const order = ['saturnReturn', 'uranusOpposition', 'chironReturn', 'secondSaturnReturn'];
     const keys = order.filter(k => seg.cycles.some(c => c.key === k) || en.some(e => e.key === k));
-    downloadReadingPdf({
+    return buildReadingPdf({
         name: birthdata?.name,
         birthdata,
         natal: seg.natal,
@@ -309,6 +309,21 @@ async function handleDownloadPdf(birthdata, messages, charts) {
     });
 }
 
+const pdfName = (name) => `evolutionary-hd-reading-${(name || "reading").toString().trim().replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.pdf`;
+
+async function handleDownloadPdf(birthdata, messages, charts) {
+    const doc = await buildPdfDoc(birthdata, messages, charts);
+    doc.save(pdfName(birthdata?.name));
+}
+
+// Email delivery (only when the server reports it is enabled): upload the finished PDF once.
+async function deliverReading(sessionId, birthdata, messages, charts) {
+    const doc = await buildPdfDoc(birthdata, messages, charts);
+    const pdf = doc.output("datauristring").split(",")[1];
+    const res = await fetch(API_URL + "/api/reading/deliver", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sessionId, pdf }) });
+    return res.ok ? res.json() : { emailed: false };
+}
+
 // Read one /api/chat SSE response fully (buffered; nothing is shown while it streams).
 async function streamChat(messages, birthdata) {
     const body = { messages: messages.map(m => ({ role: m.role, content: stripMarkers(m.content) })), ...getAccess() };
@@ -317,6 +332,7 @@ async function streamChat(messages, birthdata) {
     try {
         const res = await fetch(API_URL + "/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
         if (res.status === 402) { out.error = "Payment is required to generate a reading."; return out; }
+        if (res.status === 409) { const j = await res.json().catch(() => ({})); out.error = j.error || "This purchase's reading has already been created."; out.code = j.code || "already_delivered"; return out; }
         if (!res.ok || !res.body) { out.error = "Server error " + res.status; return out; }
         const reader = res.body.getReader(); const decoder = new TextDecoder(); let buf = "";
         outer: while (true) {
@@ -386,6 +402,27 @@ function followupPrompts(charts) {
     return out;
 }
 
+function DeliveryNotice({ delivery, setDelivery }) {
+    const box = { position: "relative", zIndex: 1, maxWidth: 720, margin: "0 auto 1.5rem", padding: "1rem 1.25rem", border: "1px solid rgba(201,168,76,0.35)", color: "rgba(255,255,255,0.85)", textAlign: "center", lineHeight: 1.6 };
+    const { sessionId, status, to, note } = delivery;
+    async function resend() {
+        setDelivery({ ...delivery, note: "Sending…" });
+        const r = await fetch(API_URL + "/api/reading/resend", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sessionId }) }).then(x => x.json()).catch(() => ({}));
+        setDelivery({ ...delivery, note: r.emailed ? `Sent to ${r.to}.` : (r.error || "Could not resend right now.") });
+    }
+    if (status === "sending") return <div style={box}>✉ Emailing a copy of your reading…</div>;
+    if (status === "sent") return <div style={box}>✉ A copy of your reading has been emailed{to ? ` to ${to}` : ""}.</div>;
+    if (status === "failed") return <div style={box}>We couldn't email your reading just now. Please use the Download PDF button below to save it.</div>;
+    return (
+        <div style={box}>
+            <p style={{ margin: "0 0 0.75rem" }}>Your reading for this purchase has already been created and emailed to you.</p>
+            <a className="pdf-btn" href={`${API_URL}/api/reading/pdf/${encodeURIComponent(sessionId)}`}>⬇ Download your reading</a>
+            <button className="pdf-btn wb-btn" onClick={resend}>✉ Resend email</button>
+            {note && <p style={{ margin: "0.75rem 0 0", fontSize: "0.9rem" }}>{note}</p>}
+        </div>
+    );
+}
+
 export default function App() {
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState("");
@@ -395,6 +432,7 @@ export default function App() {
     const [charts, setCharts] = useState(null);
     const [chartDetected, setChartDetected] = useState(false);
     const [workbook, setWorkbook] = useState(null);
+    const [delivery, setDelivery] = useState(null); // { sessionId, status: sending|sent|failed|already, to, note }
     const bottomRef = useRef(null);
     const topRef = useRef(null);
   
@@ -412,12 +450,21 @@ export default function App() {
                   sessionStorage.setItem('ehd_preview_code', preview);
                   window.history.replaceState({}, '', '/');
           }
+          const readingLink = params.get('reading');
+          if (readingLink) {
+                  window.history.replaceState({}, '', '/');
+                  setDelivery({ sessionId: readingLink, status: 'already' });
+          }
           if (sessionId) sessionStorage.setItem('ehd_session_id', sessionId);
           if (sessionId) {
                   window.history.replaceState({}, '', '/');
                   fetch(`${API_URL}/api/verify-session/${sessionId}`)
                             .then(r => r.json())
-                            .then(({ paid, birthdate, birthtime, location, name }) => {
+                            .then(({ paid, delivery: deliveryOn, delivered, birthdate, birthtime, location, name }) => {
+                                        if (paid && deliveryOn && delivered) {
+                                                      setDelivery({ sessionId, status: 'already' });
+                                                      return;
+                                        }
                                         if (paid) {
                                                       const syntheticText = `${name ? name + ' ' : ''}${birthdate} ${birthtime} ${location}`.trim();
                                                       const parsed = { birthdate, birthtime, location, name };
@@ -425,7 +472,7 @@ export default function App() {
                                                       setChartDetected(true);
                                                       setStreamingDone(false);
                                                       const userMsg = { role: 'user', content: syntheticText };
-                                                      runReading([userMsg], parsed, true);
+                                                      runReading([userMsg], parsed, true, deliveryOn ? sessionId : null);
                                         }
                             })
                             .catch(err => console.error('Session verify error:', err));
@@ -485,13 +532,14 @@ export default function App() {
 
     // Generate (buffered) and reveal everything at once. For a new reading, part 2 ("continue")
     // is generated automatically so the complete reading appears together.
-    async function runReading(newMessages, bd, full) {
+    async function runReading(newMessages, bd, full, deliverSessionId = null) {
           setMessages(newMessages);
           setLoading(true);
           setStreamingDone(false);
           try {
                   const r1 = await streamChat(newMessages, bd);
                   if (r1.charts) setCharts(r1.charts);
+                  if (r1.code && deliverSessionId) { setMessages([]); setDelivery({ sessionId: deliverSessionId, status: 'already' }); return; }
                   if (r1.error || !r1.text) {
                           setMessages([...newMessages, { role: "assistant", content: "Something interrupted your reading. Please try again in a moment." + (r1.error ? "\n\n(" + r1.error + ")" : "") }]);
                           return;
@@ -505,6 +553,12 @@ export default function App() {
                           final = r2.text && !r2.error ? [...withCont, { role: "assistant", content: r2.text, main: true }] : [...newMessages, { role: "assistant", content: p1, main: true }];
                   }
                   setMessages(final);
+                  if (deliverSessionId && final[final.length - 1]?.main) {
+                          setDelivery({ sessionId: deliverSessionId, status: 'sending' });
+                          deliverReading(deliverSessionId, bd, final, r1.charts)
+                                  .then(d => setDelivery({ sessionId: deliverSessionId, status: d.emailed ? 'sent' : 'failed', to: d.to }))
+                                  .catch(() => setDelivery({ sessionId: deliverSessionId, status: 'failed' }));
+                  }
           } catch (err) {
                   setMessages([...newMessages, { role: "assistant", content: "Something interrupted your reading. Please try again in a moment." }]);
           } finally {
@@ -598,6 +652,7 @@ export default function App() {
                                   </div>
                       </div>
                         )}
+                  {delivery && <DeliveryNotice delivery={delivery} setDelivery={setDelivery} />}
                   {loading && <GeneratingScreen />}
                   {!loading && <ReadingView messages={messages} charts={charts} birthdata={birthdata} />}
 
