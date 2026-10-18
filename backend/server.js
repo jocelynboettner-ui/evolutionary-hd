@@ -872,58 +872,6 @@ Begin with the threshold dateline (actual dates from the data), naming its EROS 
   }
 });
 
-app.post("/api/debug-hd", async (req, res) => {
-  const { birthdate, birthtime, location } = req.body;
-  try {
-    const chart = await fetchHumanDesign(birthdate || '1973-09-30', birthtime || '05:07', location || 'Reading, PA');
-    const cycles = null;
-    res.json({ ok: true, chart, cycles });
-  } catch (err) {
-    res.json({ error: err.message });
-  }
-});
-
-
-app.post("/api/debug-raw", async (req, res) => {
-  const { birthdate, birthtime, location } = req.body;
-  try {
-    const _loc2 = String(location || '').toLowerCase();
-    let timezone = 'America/New_York';
-    if (_loc2.includes('los angeles') || _loc2.includes('pacific')) timezone = 'America/Los_Angeles';
-    else if (_loc2.includes('chicago') || _loc2.includes('central')) timezone = 'America/Chicago';
-    else if (_loc2.includes('london') || _loc2.includes('uk')) timezone = 'Europe/London';
-    { const _tzx = tzForLocation(location || ''); if (_tzx) timezone = _tzx; }
-    const iso2 = String(birthdate).match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    const mdy2 = String(birthdate).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-    let year, month, day;
-    if (iso2) { year = iso2[1]; month = iso2[2]; day = iso2[3]; }
-    else if (mdy2) { year = mdy2[3]; month = String(+mdy2[1]).padStart(2,'0'); day = String(+mdy2[2]).padStart(2,'0'); }
-    else { [year, month, day] = String(birthdate).split('-'); }
-    const timeParts = (birthtime || '05:07').match(/^(\d{1,2}):(\d{2})/);
-    const hour = String(timeParts ? +timeParts[1] : 5).padStart(2, '0');
-    const minute = String(timeParts ? +timeParts[2] : 0).padStart(2, '0');
-    const isoDate = year + '-' + String(month).padStart(2,'0') + '-' + String(day).padStart(2,'0') + 'T' + hour + ':' + minute + ':00';
-    const params = new URLSearchParams({ date: resolveLocalTime(isoDate, timezone).utc, timezone: 'UTC', api_key: HD_AI_API_KEY });
-    const url = 'https://api.humandesign.ai/v3/hd-data?' + params.toString();
-    const response = await fetch(url, { headers: { 'X-Api-Key': HD_AI_API_KEY } });
-    const raw = await response.json();
-    // Return just the channels-related fields from the raw v3 response
-  const P = raw?.Properties || {};
-    res.json({
-      ok: true,
-      channels_raw: P?.Channels,
-      defined_centers_raw: P?.DefinedCenters,
-      type_raw: P?.Type,
-      profile_raw: P?.Profile,
-      cross_raw: raw?.IncarnationCross || P?.IncarnationCross,
-      isoDate,
-      full_raw: raw
-    });
-  } catch (err) {
-    res.json({ error: err.message });
-  }
-});
-
 // ── STRIPE CHECKOUT ──────────────────────────────────────────
 
 app.post('/api/create-checkout-session', async (req, res) => {
