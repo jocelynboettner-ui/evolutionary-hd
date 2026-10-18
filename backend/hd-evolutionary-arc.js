@@ -4,6 +4,7 @@
 // Each chart is cast using: date=exact peak, time=birth time, timezone=birth timezone
 
 import { transformV3Response } from './hd-v3-parser.js';
+import { overlayQuery } from './overlay-time.js';
 import { channelLabel, channelList, attributeChannels, formatAttribution } from './reading-context.js';
 
 const HD_API_BASE = 'https://api.humandesign.ai';
@@ -35,19 +36,8 @@ async function fetchOverlayChart(peakDate, birthtime, timezone, apiKey) {
   if (!peakDate) return null;
   if (new Date(peakDate).getTime() > Date.now()) return null; // never chart future cycles
 
-  // Use full datetime directly if available (peak_datetime from Python service)
-  // Fall back to date + birth time if only a date string (e.g. from humandesign.ai exactDate)
-  let isoDate, tz = timezone;
-  if (String(peakDate).includes('T')) {
-    // peak_datetime from sacred-cycles-api (or an ISO string) is UTC; cast the return chart in UTC.
-    isoDate = String(peakDate).replace(/Z$/, '').replace(/\.\d+$/, '').slice(0, 19);
-    tz = 'UTC';
-  } else {
-    const tp = (birthtime || '12:00').match(/^(\d{1,2}):(\d{2})/);
-    const hh = String(tp ? +tp[1] : 12).padStart(2, '0');
-    const mm = String(tp ? +tp[2] : 0).padStart(2, '0');
-    isoDate = String(peakDate).split('T')[0] + 'T' + hh + ':' + mm + ':00';
-  }
+  // peak_datetime (UTC) is cast in UTC; a date-only peak falls back to birth time in the birth zone.
+  const { date: isoDate, timezone: tz } = overlayQuery(peakDate, birthtime, timezone);
 
   console.log('Fetching overlay chart for: ' + isoDate);
   const url = HD_API_BASE + '/v3/hd-data?date=' + encodeURIComponent(isoDate)
