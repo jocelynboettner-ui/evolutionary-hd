@@ -395,8 +395,17 @@ def parse_hd_response(data):
 
 
 def parse_birth_utc(date_str, time_str, timezone_str):
+    """Local birth time -> naive UTC, using the same convention as backend/birth-time.js:
+    a repeated (fall-back) hour takes the FIRST occurrence (daylight time); a skipped
+    (spring-forward) hour is shifted FORWARD by the gap. Ordinary times are unaffected."""
     tz = pytz.timezone(timezone_str)
-    birth_local = tz.localize(dateparser.parse(f"{date_str} {time_str or '12:00'}"))
+    naive = dateparser.parse(f"{date_str} {time_str or '12:00'}")
+    try:
+        birth_local = tz.localize(naive, is_dst=None)
+    except pytz.exceptions.AmbiguousTimeError:
+        birth_local = tz.localize(naive, is_dst=True)   # first occurrence
+    except pytz.exceptions.NonExistentTimeError:
+        birth_local = tz.localize(naive, is_dst=False)  # pre-transition offset -> forward
     return birth_local.astimezone(pytz.utc).replace(tzinfo=None)
 
 

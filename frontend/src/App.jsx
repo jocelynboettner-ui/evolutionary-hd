@@ -236,6 +236,7 @@ function ReadingView({ messages, charts, birthdata }) {
     return <>
         {before.map((m, i) => <Message key={'b' + i} role={m.role} content={m.content} />)}
         {charts && <Bodygraphs charts={charts} only="natal" status />}
+        {charts?.natal?.birthTimeNote && <p className="birth-note" style={{ fontSize: 13, opacity: 0.8, textAlign: 'center', margin: '0 auto 1rem', maxWidth: 560 }}>Birth time note: {charts.natal.birthTimeNote}</p>}
         <ReadingTableOfContents visible={true} birthdata={birthdata} planets={charts?.natal?.planets} part="key" />
         <Message role="assistant" content={seg.natal} />
         {keys.map(k => {

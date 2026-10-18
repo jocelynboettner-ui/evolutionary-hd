@@ -4,6 +4,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { transformV3Response, formatV3HDChart } from "./hd-v3-parser.js";
 import { fetchEvolutionaryArc, formatEvolutionaryArcForPrompt } from "./hd-evolutionary-arc.js";
 import { overlayQuery } from "./overlay-time.js";
+import { resolveLocalTime } from "./birth-time.js";
 import { fileURLToPath } from 'url';
 import path from 'path';
 import crypto from 'crypto';
@@ -292,12 +293,18 @@ async function fetchHumanDesign(birthdate, birthtime, location) {
   else if (loc.includes('toronto') || loc.includes('montreal') || loc.includes('new york') || loc.includes('boston') || loc.includes('miami') || loc.includes('atlanta') || loc.includes('philadelphia') || loc.includes('reading') || loc.includes('eastern')) timezone = 'America/New_York';
   { const _tzx = tzForLocation(location || ''); if (_tzx) timezone = _tzx; }
 
-  const params = new URLSearchParams({ date: isoDate, timezone });
+  // Send the birth as a resolved UTC moment: humandesign.ai rejects local times that occur twice
+  // or not at all around DST changes (see birth-time.js). Ordinary times resolve identically.
+  const resolved = resolveLocalTime(isoDate, timezone);
+  if (resolved.note) console.log('Birth time resolution:', resolved.note);
+  const params = new URLSearchParams({ date: resolved.utc, timezone: 'UTC' });
   const url = 'https://api.humandesign.ai/v3/hd-data?' + params.toString() + '&api_key=' + encodeURIComponent(HD_AI_API_KEY);
   const response = await fetch(url, { method: 'GET', headers: { 'X-Api-Key': HD_AI_API_KEY } });
   const responseText = await response.text();
   if (!response.ok) throw new Error('humandesign.ai error ' + response.status + ': ' + responseText.slice(0,200));
-  return transformV3Response(JSON.parse(responseText));
+  const chart = transformV3Response(JSON.parse(responseText));
+  if (chart && resolved.note) chart.birthTimeNote = resolved.note;
+  return chart;
 }
 
 
@@ -502,6 +509,7 @@ app.post("/api/chat", async (req, res) => {
       }) : 'NULL');
 
       if (hdChart) chartText += formatHDChart(hdChart) + '\n' + formatPlanets(hdChart) + '\n';
+      if (hdChart?.birthTimeNote) chartText += `BIRTH TIME NOTE: ${hdChart.birthTimeNote} Mention this once, briefly and plainly, at the start of the natal section, and suggest checking the birth certificate if the other occurrence/time is possible.\n`;
 
       if (cycles && hdChart) {
         const overlayKeys = ['saturnReturn', 'uranusOpposition', 'chironReturn', 'secondSaturnReturn'];
@@ -536,6 +544,7 @@ app.post("/api/chat", async (req, res) => {
     if (cycleStatus) chartText = formatCycleStatus(cycleStatus) + '\n\n' + chartText;
     if (hdChart) {
       const natalBg = bodygraphData(hdChart);
+      if (natalBg && hdChart?.birthTimeNote) natalBg.birthTimeNote = hdChart.birthTimeNote;
       const shownCycles = cycleStatus?.between ? (cycleStatus.recent ? [cycleStatus.recent] : []) : (cycleStatus?.active || []);
       const activeOverlays = shownCycles.map(c => {
         const ov = overlaysForClient?.[c.key];
@@ -894,7 +903,7 @@ app.post("/api/debug-raw", async (req, res) => {
     const hour = String(timeParts ? +timeParts[1] : 5).padStart(2, '0');
     const minute = String(timeParts ? +timeParts[2] : 0).padStart(2, '0');
     const isoDate = year + '-' + String(month).padStart(2,'0') + '-' + String(day).padStart(2,'0') + 'T' + hour + ':' + minute + ':00';
-    const params = new URLSearchParams({ date: isoDate, timezone, api_key: HD_AI_API_KEY });
+    const params = new URLSearchParams({ date: resolveLocalTime(isoDate, timezone).utc, timezone: 'UTC', api_key: HD_AI_API_KEY });
     const url = 'https://api.humandesign.ai/v3/hd-data?' + params.toString();
     const response = await fetch(url, { headers: { 'X-Api-Key': HD_AI_API_KEY } });
     const raw = await response.json();
