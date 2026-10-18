@@ -27,8 +27,9 @@ export const isNewReadingRequest = (messages) =>
 
 // State lives on the PaymentIntent metadata (durable, no database needed).
 export function readingState(session) {
+  // PaymentIntent metadata; a $0 gift-code checkout has no PaymentIntent, so its state lives on the session.
   const md = (session && session.payment_intent && typeof session.payment_intent === 'object'
-    && session.payment_intent.metadata) || {};
+    && session.payment_intent.metadata) || (session && !session.payment_intent && session.metadata) || {};
   return {
     status: md.ehd_status || 'new',
     attempts: parseInt(md.ehd_attempts || '0', 10) || 0,

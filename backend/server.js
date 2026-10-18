@@ -14,6 +14,7 @@ import { formatPlanets } from './reading-context.js';
 import { buildFactsBlock, attributeChannels, formatAttribution, channelList, currentCycleStatus, formatCycleStatus, bodygraphData, CYCLE_LABELS } from './reading-context.js';
 import Stripe from 'stripe';
 import { buildEnrichment, formatEnrichmentForPrompt } from './cycle-enrichment.js';
+import { isPaidCheckout, createGiftCodes } from './gift.js';
 import { normalizeArc, arcText, applyArc, arcPromptNote } from './arc.js';
 import { deliveryConfig, createReadingStore, validSessionId, isNewReadingRequest, readingAccess, readingState, sessionBirthdata, decodePdf, sendReadingEmail, maskEmail, MAX_RESENDS } from './delivery.js';
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -434,7 +435,7 @@ async function isPaidSession(sessionId) {
   if (typeof sessionId !== 'string' || !sessionId.startsWith('cs_')) return false;
   try {
     const session = await stripe.checkout.sessions.retrieve(sessionId);
-    return session.payment_status === 'paid';
+    return isPaidCheckout(session);
   } catch (err) {
     console.error('Stripe session check error:', err.message);
     return false;
@@ -445,7 +446,7 @@ async function getPaidSession(sessionId) {
   if (!validSessionId(sessionId)) return null;
   try {
     const session = await stripe.checkout.sessions.retrieve(sessionId, { expand: ['payment_intent'] });
-    return session.payment_status === 'paid' ? session : null;
+    return isPaidCheckout(session) ? session : null;
   } catch (err) {
     console.error('Stripe session check error:', err.message);
     return null;
@@ -453,8 +454,13 @@ async function getPaidSession(sessionId) {
 }
 async function setReadingState(session, fields) {
   const pi = session?.payment_intent;
-  if (!pi || typeof pi !== 'object') return;
   const metadata = Object.fromEntries(Object.entries(fields).map(([k, v]) => ['ehd_' + k, String(v)]));
+  if (!pi || typeof pi !== 'object') {
+    // $0 gift-code checkout: no PaymentIntent, so keep the state on the Checkout Session itself.
+    const updated = await stripe.checkout.sessions.update(session.id, { metadata: { ...(session.metadata || {}), ...metadata } });
+    session.metadata = updated.metadata;
+    return;
+  }
   const updated = await stripe.paymentIntents.update(pi.id, { metadata });
   session.payment_intent = updated;
 }
@@ -880,6 +886,20 @@ End with one integrative sentence about ${isFocus || isOverlay ? 'how this is al
   }
 });
 
+// ── ADMIN: gift codes (owner code required; never returns or logs the Stripe key) ──
+app.post('/api/admin/gift-codes', async (req, res) => {
+  const { ownerCode, count } = req.body || {};
+  if (!isOwnerCode(ownerCode)) return res.status(403).json({ error: 'Forbidden' });
+  try {
+    const out = await createGiftCodes(stripe, count ?? 5);
+    console.log('Gift codes created:', out.codes.length, 'livemode:', out.livemode);
+    res.json(out);
+  } catch (err) {
+    console.error('Gift code error:', err?.type || '', err?.code || '');
+    res.status(500).json({ error: 'Could not create gift codes', code: err?.code || null });
+  }
+});
+
 // ── STRIPE CHECKOUT ──────────────────────────────────────────
 
 app.post('/api/create-checkout-session', async (req, res) => {
@@ -900,6 +920,7 @@ app.post('/api/create-checkout-session', async (req, res) => {
                             quantity: 1,
                   }],
                   mode: 'payment',
+                  allow_promotion_codes: true,
                   success_url: `${process.env.FRONTEND_URL}?session_id={CHECKOUT_SESSION_ID}`,
                   cancel_url: `${process.env.FRONTEND_URL}`,
                   metadata: {
@@ -923,7 +944,7 @@ app.get('/api/verify-session/:sessionId', async (req, res) => {
           const session = await stripe.checkout.sessions.retrieve(
                   req.params.sessionId
                 );
-          if (session.payment_status === 'paid') {
+          if (isPaidCheckout(session)) {
                   let delivered = false;
                   if (DELIVERY.enabled) {
                             const s = await getPaidSession(req.params.sessionId);
