@@ -48,6 +48,8 @@ FOLLOW-UP MODE (overrides the section structure above): The full reading has alr
 - Follow the CYCLE FRAMING RULE.`;
 
 const SYSTEM_PROMPT = `
+NAME: This reading is called The Unwritten Map (Your personalized Human Design reading through your Saturn, Uranus and Chiron returns). When you refer to the reading by name, call it The Unwritten Map; its companion workbook is The Living Blueprint Workbook (the map, and then the workbook to live it). Never call the reading by any other product name.
+
 TIME SCOPE RULE (overrides everything below): Only write about the cycle the person is in now and cycles they have already lived through. NEVER describe, chart, date, forecast, or tease future cycles (including a Second Saturn Return that has not begun, or any cycle not yet reached). NEVER mention the 2027 era shift, "the new era", or invite them to type "new era". No "looking ahead" or "what's coming next" content. Keep the tone integrative: help them understand and integrate what is here now and what they have been through. Ignore any later instruction that conflicts with this rule.
 
 ANTI-REPETITION RULE (applies to the whole reading and every section call): State each idea ONCE, in the one section whose purpose it serves. Never restate an earlier section's point in different words. Phrases such as "permanently yours", "the full flowering", "earned wisdom", "how to live it now" may appear at most ONCE in the entire reading. Do not end sections by summarizing what was already said. Each section must add something new.
@@ -743,7 +745,7 @@ Write a rich, specific section (500-700 words): what this cross is and the purpo
 After the section output a line exactly <<<WORKBOOK>>> and then ONE JSON object only: {"purposeReflection":"2-3 sentence intro","practices":["3 practices"],"journalPrompts":["3 journal prompts"]}.`;
             const focusLabel = cycleStatus?.focus?.label;
             const themesPrompt = `Write ONLY the section "THE INVITATION FORWARD" for ${nm} (one short paragraph, 90-140 words): an integrative close that returns to ${focusLabel ? 'the season they are in now (' + focusLabel + ')' : 'their natal design'} and to the natal design as home, with natal authority choosing. No new information, no future cycles, no "type" instructions. Heading on its own line exactly. ${RULES}
-After the section output a line exactly <<<WORKBOOK>>> and then ONE JSON object only: {"intro":"warm 3-4 sentence workbook introduction addressed to ${nm}, centered on the season they are in now","homeBase":"2-3 sentences summarising natal home base","themesPrompts":["3 reflection prompts about how the cycles already walked feed the season they are in now"],"closing":"warm 3-4 sentence closing blessing"}.`;
+After the section output a line exactly <<<WORKBOOK>>> and then ONE JSON object only: {"intro":"warm 3-4 sentence introduction to The Living Blueprint Workbook (the companion to The Unwritten Map: the map, and then the workbook to live it) addressed to ${nm}, centered on the season they are in now","homeBase":"2-3 sentences summarising natal home base","themesPrompts":["3 reflection prompts about how the cycles already walked feed the season they are in now"],"closing":"warm 3-4 sentence closing blessing"}.`;
             const extraCtx = [
               ...augmentedMessages,
               { role: 'assistant', content: fullText },
@@ -890,8 +892,8 @@ app.post('/api/create-checkout-session', async (req, res) => {
                             price_data: {
                                         currency: 'usd',
                                         product_data: {
-                                                      name: 'The Evolutionary Human Design Reader',
-                                                      description: 'Your design. Your wound. Your major life transits. All of it rendered into a reading so precise it will feel like someone finally turned the lights on in a room you\'ve been navigating in the dark.',
+                                                      name: 'The Unwritten Map',
+                                                      description: 'Your personalized Human Design reading through your Saturn, Uranus and Chiron returns. Your design. Your wound. Your major life transits. All of it rendered into a reading so precise it will feel like someone finally turned the lights on in a room you\'ve been navigating in the dark.',
                                         },
                                         unit_amount: 3300,
                             },

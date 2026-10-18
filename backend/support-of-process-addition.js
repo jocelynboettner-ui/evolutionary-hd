@@ -272,7 +272,7 @@ and which initiations you've been pathologizing as breakdowns.
 
 The Eros ecosystem was built to take this further.
 
-The Evolutionary HD Reader — your personalized map of your design overlaid with your
+The Unwritten Map — your personalized map of your design overlaid with your
 
 major life transits. Where is your Chiron? What wound has powered your entire identity?
 

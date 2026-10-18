@@ -42,7 +42,7 @@ export function buildReadingPdf({ name, birthdata, natal = '', natalImage = null
     for (let i = 1; i <= n; i++) {
       doc.setPage(i);
       doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...muted);
-      doc.text("Lit by Design  -  Evolutionary Human Design Reading" + (name ? "  -  " + clean(name) : ""), M, H - 36);
+      doc.text("Lit by Design  -  The Unwritten Map" + (name ? "  -  " + clean(name) : ""), M, H - 36);
       doc.text(`Page ${i} of ${n}`, W - M, H - 36, { align: "right" });
     }
   };
@@ -52,7 +52,10 @@ export function buildReadingPdf({ name, birthdata, natal = '', natalImage = null
   doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(...gold);
   doc.text("LIT BY DESIGN", W / 2, y, { align: "center", charSpace: 2 }); y += 28;
   doc.setFont("times", "bold"); doc.setFontSize(24); doc.setTextColor(...ink);
-  doc.text("Evolutionary Human Design Reading", W / 2, y, { align: "center" }); y += 30;
+  doc.text("The Unwritten Map", W / 2, y, { align: "center" }); y += 22;
+  doc.setFont("times", "italic"); doc.setFontSize(12); doc.setTextColor(...muted);
+  doc.splitTextToSize("Your personalized Human Design reading through your Saturn, Uranus and Chiron returns.", maxW).forEach(l => { doc.text(l, W / 2, y, { align: "center" }); y += 16; });
+  y += 14; doc.setTextColor(...ink);
   if (name) { doc.setFont("times", "normal"); doc.setFontSize(18); doc.text(clean(name), W / 2, y, { align: "center" }); y += 24; }
   doc.setFont("helvetica", "normal"); doc.setFontSize(11); doc.setTextColor(...muted);
   const bd = birthdata || {};
@@ -135,6 +138,8 @@ export function buildReadingPdf({ name, birthdata, natal = '', natalImage = null
     if (c.text) { ensure(60); renderText(c.text); }
   });
   if (closing) { ensure(LH * 6); y += LH; renderText(closing); }
+  { ensure(LH * 3); doc.setFont("times", "italic"); doc.setFontSize(BODY); doc.setTextColor(...gold);
+    doc.splitTextToSize("This reading is your map. The Living Blueprint Workbook is the companion to live it, one page and one practice at a time.", maxW).forEach(l => { doc.text(l, M, y); y += LH; }); y += LH * 0.6; }
   if (past.length) {
     doc.addPage(); y = M;
     renderText(completedIntro || "YOUR COMPLETED CYCLES\n\nIf you'd like to recognize or witness the cycles you've already walked, here they are.");
@@ -170,5 +175,5 @@ export function buildReadingPdf({ name, birthdata, natal = '', natalImage = null
 export function downloadReadingPdf(opts) {
   const doc = buildReadingPdf(opts);
   const slug = (opts.name || "reading").toString().trim().replace(/[^a-z0-9]+/gi, "-").toLowerCase();
-  doc.save(`evolutionary-hd-reading-${slug}.pdf`);
+  doc.save(`the-unwritten-map-${slug}.pdf`);
 }

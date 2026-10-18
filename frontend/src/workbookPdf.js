@@ -74,14 +74,15 @@ export function buildWorkbookPdf({ name, birthdata, natal, enrichment = [], work
   // Cover
   w.y = 200;
   w.text("LIT BY DESIGN", { font: "helvetica", style: "bold", size: 11, color: gold, align: "center" });
-  w.text("Evolutionary Human Design Workbook", { style: "bold", size: 26, align: "center" });
+  w.text("The Living Blueprint Workbook", { style: "bold", size: 26, align: "center" });
+  w.text("A companion to The Unwritten Map: the map, and then the workbook to live it", { style: "italic", size: 13, color: muted, align: "center" });
   if (name) w.text(nm, { size: 20, align: "center" });
   const bd = birthdata || {};
   if (bd.birthdate) w.text(["Born " + bd.birthdate, bd.birthtime, bd.location].filter(Boolean).join("  -  "), { font: "helvetica", size: 11, color: muted, align: "center" });
   w.text("Prepared " + generatedAt.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }), { font: "helvetica", size: 11, color: muted, align: "center" });
   // Intro
   w.page(); w.h1("Welcome");
-  w.text(wb.themes?.intro || `${name ? nm + ", this" : "This"} workbook accompanies your Evolutionary Human Design reading. Move through it slowly. Your natal design is who you are and it never changes; each cycle you have lived added energies that flow through that design, and your natal authority still chooses which to follow. Use these pages to notice, practice and integrate.`);
+  w.text(wb.themes?.intro || `${name ? nm + ", this" : "This"} workbook accompanies The Unwritten Map, your Human Design reading. The reading is your map; this workbook is how you live it. Move through it slowly. Your natal design is who you are and it never changes; each cycle you have lived added energies that flow through that design, and your natal authority still chooses which to follow. Use these pages to notice, practice and integrate.`);
   w.text("How to use this workbook: read one page at a time, try the practices for a week, and write freely in the space provided. There are no wrong answers.", { style: "italic", color: muted });
   // Natal home base
   w.page(); w.h1("Your Home Base - Natal Design");
@@ -127,16 +128,16 @@ export function buildWorkbookPdf({ name, birthdata, natal, enrichment = [], work
   w.text(wb.themes?.closing || "May you keep returning to these pages as your design continues to unfold. You are home in yourself.", { style: "italic", size: 13, align: "center" });
   w.y += 30;
   w.text("LIT BY DESIGN", { font: "helvetica", style: "bold", size: 12, color: gold, align: "center" });
-  w.text("Evolutionary Human Design", { font: "helvetica", size: 10, color: muted, align: "center" });
+  w.text("The Unwritten Map  ·  The Living Blueprint Workbook", { font: "helvetica", size: 10, color: muted, align: "center" });
   // footer
   const n = doc.internal.getNumberOfPages();
   for (let i = 2; i <= n; i++) { doc.setPage(i); doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...muted);
-    doc.text("Lit by Design  -  Evolutionary Human Design Workbook" + (name ? "  -  " + nm : ""), w.M, w.H - 36); doc.text(`Page ${i} of ${n}`, w.W - w.M, w.H - 36, { align: "right" }); }
+    doc.text("Lit by Design  -  The Living Blueprint Workbook" + (name ? "  -  " + nm : ""), w.M, w.H - 36); doc.text(`Page ${i} of ${n}`, w.W - w.M, w.H - 36, { align: "right" }); }
   return doc;
 }
 
 export function downloadWorkbookPdf(opts) {
   const doc = buildWorkbookPdf(opts);
   const slug = (opts.name || "reading").toString().trim().replace(/[^a-z0-9]+/gi, "-").toLowerCase();
-  doc.save(`evolutionary-hd-workbook-${slug}.pdf`);
+  doc.save(`living-blueprint-workbook-${slug}.pdf`);
 }
