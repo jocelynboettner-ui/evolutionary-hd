@@ -5,7 +5,7 @@ import { buildEnrichment, formatEnrichmentForPrompt, geneKey, profileLabel } fro
 const load = f => transformV3Response(JSON.parse(fs.readFileSync(new URL(f, import.meta.url))).full_raw);
 const natal = load('./fixture-jocelyn-raw.json');
 const chiron = load('./fixture-jocelyn-chiron-raw.json');
-const cycles = { chironReturn: { peak_datetime: '2023-06-09T02:49:00' }, secondSaturnReturn: { peak_datetime: '2032-08-24T00:00:00' } };
+const cycles = { chironReturn: { peak_datetime: '2023-06-09T09:47:00' }, secondSaturnReturn: { peak_datetime: '2032-08-24T00:00:00' } };
 const e = buildEnrichment(natal, { chironReturn: chiron, secondSaturnReturn: chiron }, cycles, new Date('2026-10-16'));
 assert.equal(e.length, 1, 'future cycles excluded');
 const c = e[0];
@@ -14,7 +14,10 @@ assert.equal(c.profile.cycle, '2/4');
 assert.equal(c.cross.cycle, 'Right Angle Cross of Rulership (45/26 | 22/47)');
 assert.deepEqual(c.cross.gates, [45, 26, 22, 47]);
 assert.equal(c.type.natal, 'Generator');
-assert.equal(c.type.cycle, 'Manifesting Generator');
+assert.equal(c.type.cycle, 'Manifestor');
+assert.ok(!c.magicWand.newCenters.find(x => x.center === 'Sacral'), 'Sacral not defined in the pure return chart');
+assert.ok(!c.magicWand.channels.find(x => x.channel === '27-50' && x.kind === 'fully new'), '27-50 is not in the return chart itself (only completed with natal 50)');
+assert.equal(c.authority.cycle, 'Emotional Solar Plexus'); assert.equal(c.authority.natal, 'Sacral'); assert.match(c.type.info.strategy, /inform/i);
 assert.ok(c.type.info.strategy);
 assert.ok(c.magicWand.channels.find(x => x.channel === '21-45' && x.kind === 'fully new'));
 assert.ok(c.magicWand.newCenters.find(x => x.center === 'Heart'));
@@ -23,7 +26,7 @@ assert.equal(g45.planets[0].planet, 'Sun'); assert.equal(g45.geneKey.gift, 'Syne
 assert.deepEqual(geneKey(22), { shadow: 'Dishonour', gift: 'Graciousness', siddhi: 'Grace' });
 const txt = formatEnrichmentForPrompt(e, natal);
 assert.ok(!/2032|Second Saturn/i.test(txt));
-console.log('cycle enrichment tests passed (Chiron: 2/4, Rulership 45/26|22/47, Manifesting Generator)');
+console.log('cycle enrichment tests passed (Chiron: 2/4, Rulership 45/26|22/47, Manifestor)');
 // canonical EROS phase names + windows
 {
   const { CYCLE_LABELS, phaseFrameworkText, currentCycleStatus, formatCycleStatus } = await import('../reading-context.js');
@@ -33,7 +36,7 @@ console.log('cycle enrichment tests passed (Chiron: 2/4, Rulership 45/26|22/47, 
   assert.equal(CYCLE_LABELS.secondSaturnReturn, 'Second Saturn Return: Into the Sovereign');
   const f = phaseFrameworkText();
   assert.match(f, /about ages 24–33, peak 27–30/); assert.match(f, /about ages 35–47, peak 38–44/); assert.match(f, /Phoenix phase spans about 47–63/);
-  const st = formatCycleStatus(currentCycleStatus({ chironReturn: { peak_datetime: '2023-06-09T02:49:00' } }, new Date('2026-10-16')));
+  const st = formatCycleStatus(currentCycleStatus({ chironReturn: { peak_datetime: '2023-06-09T09:47:00' } }, new Date('2026-10-16')));
   assert.match(st, /Chiron Return: The Phoenix — window 2019-12-\d\d to for the rest of life/);
   assert.doesNotMatch((st + f).split('\n').filter(l => !l.startsWith('Never use')).join('\n'), /Great Disruption|Deep Healing|Legacy Catalyst|Integration season/);
   console.log('EROS phase naming tests passed');

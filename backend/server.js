@@ -350,7 +350,11 @@ async function fetchTransitCycles(birthdate, birthtime, timezone) {
 async function fetchOverlayChart(peakDatetime, timezone) {
   const [datePart, timePart] = peakDatetime.split('T');
   const timeShort = (timePart || '12:00').slice(0, 5);
-  const params = new URLSearchParams({ date: `${datePart}T${timeShort}:00`, timezone });
+  // peak_datetime from sacred-cycles-api is a naive UTC timestamp (swe.calc_ut), so the
+  // return chart must be cast in UTC, not in the birth timezone (which shifted it by the
+  // birth-zone offset, e.g. +4h for Eastern daylight time).
+  void timezone;
+  const params = new URLSearchParams({ date: `${datePart}T${timeShort}:00`, timezone: 'UTC' });
   const url = 'https://api.humandesign.ai/v3/hd-data?' + params.toString() + '&api_key=' + encodeURIComponent(HD_AI_API_KEY);
   const response = await fetch(url, { method: 'GET', headers: { 'X-Api-Key': HD_AI_API_KEY } });
   if (!response.ok) throw new Error('humandesign.ai overlay error ' + response.status);

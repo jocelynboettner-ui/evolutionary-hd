@@ -183,13 +183,16 @@ def find_exact_peak(planet, natal_deg, search_start, search_end, is_opposition=F
     for _ in range(60):
         mid = lo + (hi - lo) / 2
         dist = angular_distance(get_lon(mid), target)
+        # Converged: return the sample that met the tolerance. (Previously this broke out
+        # after narrowing and returned the midpoint of the remaining bracket, which could be
+        # hours away from the exact moment for slow planets: Chiron came out ~7h early.)
+        if abs(dist) < 1e-6:
+            return mid
         dist_lo = angular_distance(get_lon(lo), target)
         if (dist_lo < 0) == (dist < 0):
             lo = mid
         else:
             hi = mid
-        if abs(dist) < 0.001:
-            break
     return lo + (hi - lo) / 2
 
 

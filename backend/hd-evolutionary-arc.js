@@ -37,9 +37,11 @@ async function fetchOverlayChart(peakDate, birthtime, timezone, apiKey) {
 
   // Use full datetime directly if available (peak_datetime from Python service)
   // Fall back to date + birth time if only a date string (e.g. from humandesign.ai exactDate)
-  let isoDate;
+  let isoDate, tz = timezone;
   if (String(peakDate).includes('T')) {
-    isoDate = peakDate; // Already has time component
+    // peak_datetime from sacred-cycles-api (or an ISO string) is UTC; cast the return chart in UTC.
+    isoDate = String(peakDate).replace(/Z$/, '').replace(/\.\d+$/, '').slice(0, 19);
+    tz = 'UTC';
   } else {
     const tp = (birthtime || '12:00').match(/^(\d{1,2}):(\d{2})/);
     const hh = String(tp ? +tp[1] : 12).padStart(2, '0');
@@ -49,7 +51,7 @@ async function fetchOverlayChart(peakDate, birthtime, timezone, apiKey) {
 
   console.log('Fetching overlay chart for: ' + isoDate);
   const url = HD_API_BASE + '/v3/hd-data?date=' + encodeURIComponent(isoDate)
-    + '&timezone=' + encodeURIComponent(timezone)
+    + '&timezone=' + encodeURIComponent(tz)
     + '&api_key=' + apiKey;
 
   const res = await fetch(url);
@@ -159,10 +161,10 @@ function compareToNatal(natal, overlay) {
 export async function fetchEvolutionaryArc(birthtime, timezone, natalChart, pythonCycles, hdaiSaturnReturns) {
   const apiKey = process.env.HD_AI_API_KEY;
 
-  const pythonSaturnPeak = pythonCycles?.saturnReturn?.peak || null;
+  const pythonSaturnPeak = pythonCycles?.saturnReturn?.peak_datetime || pythonCycles?.saturnReturn?.peak || null;
   const pythonUranusP = pythonCycles?.uranusOpposition?.peak || null;
   const pythonChironP = pythonCycles?.chironReturn?.peak || null;
-  const pythonSaturn2Peak = pythonCycles?.secondSaturnReturn?.peak || null;
+  const pythonSaturn2Peak = pythonCycles?.secondSaturnReturn?.peak_datetime || pythonCycles?.secondSaturnReturn?.peak || null;
 
   // Prefer humandesign.ai ExactDate for saturn returns if available
   let saturn1Peak = pythonSaturnPeak;
