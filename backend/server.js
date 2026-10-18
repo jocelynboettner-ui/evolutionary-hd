@@ -14,7 +14,7 @@ import { formatPlanets } from './reading-context.js';
 import { buildFactsBlock, attributeChannels, formatAttribution, channelList, currentCycleStatus, formatCycleStatus, bodygraphData, CYCLE_LABELS } from './reading-context.js';
 import Stripe from 'stripe';
 import { buildEnrichment, formatEnrichmentForPrompt } from './cycle-enrichment.js';
-import { isPaidCheckout, createGiftCodes } from './gift.js';
+import { isPaidCheckout, createGiftCodes, listGiftCodes } from './gift.js';
 import { normalizeArc, arcText, applyArc, arcPromptNote } from './arc.js';
 import { deliveryConfig, createReadingStore, validSessionId, isNewReadingRequest, readingAccess, readingState, sessionBirthdata, decodePdf, sendReadingEmail, maskEmail, MAX_RESENDS } from './delivery.js';
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -898,6 +898,12 @@ app.post('/api/admin/gift-codes', async (req, res) => {
     console.error('Gift code error:', err?.type || '', err?.code || '');
     res.status(500).json({ error: 'Could not create gift codes', code: err?.code || null });
   }
+});
+
+app.post('/api/admin/gift-codes/status', async (req, res) => {
+  if (!isOwnerCode((req.body || {}).ownerCode)) return res.status(403).json({ error: 'Forbidden' });
+  try { res.json({ codes: await listGiftCodes(stripe) }); }
+  catch (err) { console.error('Gift code status error:', err?.type || '', err?.code || ''); res.status(500).json({ error: 'Could not list gift codes', code: err?.code || null }); }
 });
 
 // ── STRIPE CHECKOUT ──────────────────────────────────────────

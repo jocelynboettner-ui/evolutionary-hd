@@ -48,3 +48,10 @@ export async function createGiftCodes(stripe, count, { makeCode = readableGiftCo
   }
   return { livemode: coupon.livemode, coupon: { id: coupon.id, name: coupon.name, percent_off: coupon.percent_off, duration: coupon.duration, livemode: coupon.livemode }, codes };
 }
+
+// Read-only status of the gift codes (owner-gated in server.js): active / times_redeemed / restrictions.
+export async function listGiftCodes(stripe) {
+  const list = await stripe.promotionCodes.list({ coupon: GIFT_COUPON_ID, limit: 100 });
+  return list.data.map(p => ({ code: p.code, active: p.active, times_redeemed: p.times_redeemed, max_redemptions: p.max_redemptions,
+    expires_at: p.expires_at, restrictions: p.restrictions, customer: p.customer || null, coupon_valid: p.coupon?.valid, livemode: p.livemode }));
+}
