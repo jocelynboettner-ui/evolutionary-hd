@@ -36,7 +36,8 @@ assert.equal(readingState({ payment_intent: 'pi_unexpanded' }).status, 'new');
 
 // Birth details are bound to what was entered at checkout.
 assert.deepEqual(sessionBirthdata({ metadata: { birthdate: '1973-09-30', birthtime: '05:07', location: 'Reading, PA', name: 'Jo' } }),
-  { birthdate: '1973-09-30', birthtime: '05:07', location: 'Reading, PA', name: 'Jo' });
+  { birthdate: '1973-09-30', birthtime: '05:07', location: 'Reading, PA', name: 'Jo', arc: 'feminine' });
+assert.equal(sessionBirthdata({ metadata: { birthdate: '1980-01-01', arc: 'masculine' } }).arc, 'masculine');
 assert.equal(sessionBirthdata({ metadata: {} }), null);
 
 // PDF validation.

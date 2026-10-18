@@ -14,6 +14,7 @@ import { formatPlanets } from './reading-context.js';
 import { buildFactsBlock, attributeChannels, formatAttribution, channelList, currentCycleStatus, formatCycleStatus, bodygraphData, CYCLE_LABELS } from './reading-context.js';
 import Stripe from 'stripe';
 import { buildEnrichment, formatEnrichmentForPrompt } from './cycle-enrichment.js';
+import { normalizeArc, arcText, applyArc, arcPromptNote } from './arc.js';
 import { deliveryConfig, createReadingStore, validSessionId, isNewReadingRequest, readingAccess, readingState, sessionBirthdata, decodePdf, sendReadingEmail, maskEmail, MAX_RESENDS } from './delivery.js';
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -498,6 +499,9 @@ app.post("/api/chat", async (req, res) => {
   if (!messages || !Array.isArray(messages)) {
     return res.status(400).json({ error: "messages array required" });
   }
+  // Arc chosen at intake (feminine default; never inferred). Masculine swaps phase names everywhere.
+  const readingArc = normalizeArc(birthdata?.arc);
+  const SYS = arcText(SYSTEM_PROMPT, readingArc) + (arcPromptNote(readingArc) ? '\n\n' + arcPromptNote(readingArc) : '');
 
   let augmentedMessages = [...messages];
 
@@ -561,7 +565,7 @@ app.post("/api/chat", async (req, res) => {
         );
         const overlays = Object.fromEntries(overlayKeys.map((k, i) => [k, overlayCharts[i]]));
         overlaysForClient = overlays;
-        try { enrichment = buildEnrichment(hdChart, overlays, cycles, now); } catch (e) { console.error('Enrichment error:', e.message); }
+        try { enrichment = applyArc(buildEnrichment(hdChart, overlays, cycles, now), readingArc); } catch (e) { console.error('Enrichment error:', e.message); }
         console.log('Overlays fetched:', overlayKeys.map((k,i) => k + '=' + (overlayCharts[i] ? overlayCharts[i].incarnation_cross : 'null')).join(', '));
         const overlayText = formatOverlayData(cycles, overlays, hdChart);
         if (overlayText) chartText += overlayText;
@@ -578,7 +582,7 @@ app.post("/api/chat", async (req, res) => {
     }
 
     // ── Current cycle (7-yr windows; Chiron permanent after return) + bodygraph data for the client ──
-    const cycleStatus = currentCycleStatus(cycles, now);
+    const cycleStatus = applyArc(currentCycleStatus(cycles, now), readingArc);
     if (cycleStatus) chartText = formatCycleStatus(cycleStatus) + '\n\n' + chartText;
     if (hdChart) {
       const natalBg = bodygraphData(hdChart);
@@ -623,6 +627,7 @@ app.post("/api/chat", async (req, res) => {
                 chartText = `The person's name is ${birthdata.name}. Address them by name throughout the reading — warmly, naturally, the way a wise friend would.\n\n` + chartText;
         }
     // ── Inject natal chart into message ──
+    chartText = arcText(chartText, readingArc);
     if (chartText) {
       const lastMsg = augmentedMessages[augmentedMessages.length - 1];
       if (lastMsg?.role === 'user') {
@@ -663,6 +668,7 @@ app.post("/api/chat", async (req, res) => {
           if (activationText) arcChartText += '\n' + activationText;
           if (enrichment.length) arcChartText += '\n' + formatEnrichmentForPrompt(enrichment, hdChart);
 
+          arcChartText = arcText(arcChartText, readingArc);
           if (arcChartText) {
             // Helper — non-streaming, constrained, one section at a time
             const generateArcSection = async (sectionPrompt, maxTokens, priorMessages) => {
@@ -674,10 +680,10 @@ app.post("/api/chat", async (req, res) => {
               const msg = await create({
                 model: "claude-sonnet-4-5",
                 max_tokens: maxTokens,
-                system: SYSTEM_PROMPT,
+                system: SYS,
                 messages: [
                   ...priorMessages,
-                  { role: 'user', content: sectionPrompt },
+                  { role: 'user', content: arcText(sectionPrompt, readingArc) },
                 ],
               });
               let t = msg.content[0].text;
@@ -796,7 +802,7 @@ End with one integrative sentence about ${isFocus || isOverlay ? 'how this is al
               const [purpose, themes] = await Promise.all([purposeJob, themesJob]);
               const workbook = { cycles: {}, purpose: purpose?.wb || null, themes: themes?.wb || null };
               const LABEL = { saturnReturn: 'FIRST SATURN RETURN: THE MAIDEN', uranusOpposition: 'URANUS OPPOSITION: CLOSING THE MOTHER', chironReturn: 'CHIRON RETURN: THE PHOENIX', secondSaturnReturn: 'SECOND SATURN RETURN: INTO THE SOVEREIGN' };
-              const emit = t => res.write('data: ' + JSON.stringify({ text: stripToolTags(t) }) + '\n\n');
+              const emit = t => res.write('data: ' + JSON.stringify({ text: arcText(stripToolTags(t), readingArc) }) + '\n\n');
               const cleanStory = t => String(t || '').replace(/^\s*YOUR STORY OF BECOMING\s*/i, '').replace(new RegExp('^\\s*(YOUR\\s+)?(THE\\s+)?(1ST\\s+|FIRST\\s+)?(SATURN RETURN|URANUS OPPOSITION|CHIRON RETURN|SECOND SATURN RETURN|2ND SATURN RETURN)[^\\n]{0,40}\\n'), '').trim();
               for (const key of currentKeys) {
                 const ei = currentEn.findIndex(c => c.key === key);
@@ -849,7 +855,7 @@ End with one integrative sentence about ${isFocus || isOverlay ? 'how this is al
       const stream = anthropic.messages.stream({
         model: "claude-sonnet-4-5",
         max_tokens: isFollowUp ? 900 : 16000,
-        system: isFollowUp ? SYSTEM_PROMPT + FOLLOW_UP_RULE : SYSTEM_PROMPT,
+        system: isFollowUp ? SYS + FOLLOW_UP_RULE : SYS,
         messages: augmentedMessages,
       });
       stream.on('text', (text) => {
@@ -876,7 +882,7 @@ End with one integrative sentence about ${isFocus || isOverlay ? 'how this is al
 
 app.post('/api/create-checkout-session', async (req, res) => {
     try {
-          const { birthdate, birthtime, location, name } = req.body;
+          const { birthdate, birthtime, location, name, arc } = req.body;
 
           const session = await stripe.checkout.sessions.create({
                   payment_method_types: ['card'],
@@ -898,7 +904,8 @@ app.post('/api/create-checkout-session', async (req, res) => {
                             birthdate: birthdate || '',
                             birthtime: birthtime || '',
                             location: location || '',
-                            name: name || ''
+                            name: name || '',
+                            arc: normalizeArc(arc)
                   }
           });
 
@@ -927,7 +934,8 @@ app.get('/api/verify-session/:sessionId', async (req, res) => {
                             birthdate: session.metadata.birthdate,
                             birthtime: session.metadata.birthtime,
                             location: session.metadata.location,
-                            name: session.metadata.name
+                            name: session.metadata.name,
+                            arc: normalizeArc(session.metadata.arc)
                   });
           } else {
                   res.json({ paid: false });

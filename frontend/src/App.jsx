@@ -430,7 +430,7 @@ function followupPrompts(charts) {
     if (current?.type?.shifted) out.push(`How do I live my ${current.transit || current.label} ${current.type.cycle} energy through my ${natalType} design?`);
     if (chiron) out.push(`What is my Chiron incarnation cross${chiron.cross.cycle ? `, the ${chiron.cross.cycle.replace(/\s*\(.*\)$/, "")},` : ""} asking of me in the second half of life?`);
     if (current) out.push(`How do I embody my ${current.transit || current.label} ${current.profile.cycle} profile while honoring my natal ${prof(n.profile) || current.profile.natal} profile?`);
-    if (saturn) out.push(saturn.key === current?.key ? "What is my First Saturn Return (The Maiden) asking me to build right now?" : "What did my First Saturn Return, The Maiden, begin that is flowering now?");
+    if (saturn) out.push(saturn.key === current?.key ? `What is my First Saturn Return (${saturn.phase || "The Maiden"}) asking me to build right now?` : `What did my First Saturn Return, ${saturn.phase || "The Maiden"}, begin that is flowering now?`);
     out.push(current ? `What is my magic wand in ${current.phase || current.label}, and how do I use it?` : "What is my magic wand in this season, and how do I use it?");
     out.push("Which Gene Keys gift is ripening in me now?");
     out.push("What practice would help me integrate this week?");
@@ -464,6 +464,7 @@ export default function App() {
     const [loading, setLoading] = useState(false);
     const [streamingDone, setStreamingDone] = useState(false);
     const [birthdata, setBirthdata] = useState(null);
+    const [arc, setArc] = useState('feminine');  // owner's arcs: feminine (default) or masculine; chosen, never inferred
     const [charts, setCharts] = useState(null);
     const [chartDetected, setChartDetected] = useState(false);
     const [workbook, setWorkbook] = useState(null);
@@ -495,14 +496,14 @@ export default function App() {
                   window.history.replaceState({}, '', '/');
                   fetch(`${API_URL}/api/verify-session/${sessionId}`)
                             .then(r => r.json())
-                            .then(({ paid, delivery: deliveryOn, delivered, birthdate, birthtime, location, name }) => {
+                            .then(({ paid, delivery: deliveryOn, delivered, birthdate, birthtime, location, name, arc: paidArc }) => {
                                         if (paid && deliveryOn && delivered) {
                                                       setDelivery({ sessionId, status: 'already' });
                                                       return;
                                         }
                                         if (paid) {
                                                       const syntheticText = `${name ? name + ' ' : ''}${birthdate} ${birthtime} ${location}`.trim();
-                                                      const parsed = { birthdate, birthtime, location, name };
+                                                      const parsed = { birthdate, birthtime, location, name, arc: paidArc === 'masculine' ? 'masculine' : 'feminine' };
                                                       setBirthdata(parsed);
                                                       setChartDetected(true);
                                                       setStreamingDone(false);
@@ -525,7 +526,7 @@ export default function App() {
           let newMessages;
           if (parsed && getAccess().previewCode) {
                   // Owner preview: skip Stripe, run the reading directly (server verifies the code)
-                  currentBirthdata = { birthdate: parsed.birthdate, birthtime: parsed.birthtime, location: parsed.location, name: parsed.name };
+                  currentBirthdata = { birthdate: parsed.birthdate, birthtime: parsed.birthtime, location: parsed.location, name: parsed.name, arc };
                   setBirthdata(currentBirthdata);
                   setChartDetected(true);
                   setStreamingDone(false);
@@ -548,6 +549,7 @@ export default function App() {
                               birthtime: parsed.birthtime,
                               location: parsed.location,
                               name: parsed.name,
+                              arc,
                           }),
                       });
                       const { url } = await res.json();
@@ -758,6 +760,17 @@ export default function App() {
                     background: "rgba(10,1,24,0.8)",
                     padding: "16px",
           }}>
+                        {!chartDetected && (
+                          <div className="arc-choice" role="radiogroup" aria-label="Which arc speaks to you?" style={{ maxWidth: "760px", margin: "0 auto 10px", display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px", color: "rgba(240,234,216,0.85)", fontSize: "14px" }}>
+                            <span style={{ fontStyle: "italic" }}>Which arc speaks to you?</span>
+                            {[["feminine", "Feminine", "Maiden · Mother · Phoenix · Sovereign"], ["masculine", "Masculine", "Apprentice · Builder · Crucible · Sovereign"]].map(([v, t, d]) => (
+                              <button key={v} type="button" role="radio" aria-checked={arc === v} data-arc={v} onClick={() => setArc(v)}
+                                style={{ background: arc === v ? "rgba(184,134,11,0.25)" : "transparent", border: "1px solid " + (arc === v ? "#b8860b" : "rgba(167,139,250,0.4)"), color: "inherit", borderRadius: "999px", padding: "5px 12px", cursor: "pointer", fontSize: "13px", fontFamily: "inherit" }}>
+                                <strong>{t}</strong> <span style={{ opacity: 0.8 }}>({d})</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
                         <div style={{
                       display: "flex",
                       gap: "10px",

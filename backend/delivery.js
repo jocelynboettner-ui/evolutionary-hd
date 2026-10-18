@@ -48,7 +48,7 @@ export function readingAccess(session, isNew) {
 export function sessionBirthdata(session) {
   const md = (session && session.metadata) || {};
   if (!md.birthdate) return null;
-  return { birthdate: md.birthdate, birthtime: md.birthtime || '', location: md.location || '', name: md.name || '' };
+  return { birthdate: md.birthdate, birthtime: md.birthtime || '', location: md.location || '', name: md.name || '', arc: md.arc === 'masculine' ? 'masculine' : 'feminine' };
 }
 
 export function createReadingStore(dir) {
