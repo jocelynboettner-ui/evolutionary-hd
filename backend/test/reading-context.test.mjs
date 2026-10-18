@@ -66,13 +66,15 @@ assert.deepEqual(st.active.map(c => c.key), ['chironReturn']);         // past C
 assert.equal(st.active[0].permanent, true);
 assert.equal(st.active[0].end, 'for the rest of life');
 assert.equal(st.next, null);
-st = currentCycleStatus(cyc, new Date('2030-01-01'));                  // Chiron + 2nd Saturn window
-assert.deepEqual(st.active.map(c => c.key), ['chironReturn', 'secondSaturnReturn']);
+st = currentCycleStatus(cyc, new Date('2030-01-01'));                  // 2nd Saturn window (most active) + Chiron overlay
+assert.deepEqual(st.active.map(c => c.key), ['secondSaturnReturn', 'chironReturn']);
+assert.equal(st.focus.key, 'secondSaturnReturn');
+assert.deepEqual(st.overlays.map(c => c.key), ['chironReturn']);
 st = currentCycleStatus(cyc, new Date('2010-01-01'));                  // between Saturn1 (ends 2007) and Uranus (opens 2012)
 assert.equal(st.between, true); assert.equal(st.next, null);
 st = currentCycleStatus(cyc, new Date('2005-01-01'));
 assert.deepEqual(st.active.map(c => c.key), ['saturnReturn']);
-assert.match(formatCycleStatus(currentCycleStatus(cyc, new Date('2026-10-16'))), /PRIMARY: Chiron Return.*permanent overlay/);
+assert.match(formatCycleStatus(currentCycleStatus(cyc, new Date('2026-10-16'))), /FOCUS \(the cycle they are in now\): Chiron Return.*permanent overlay/);
 
 // bodygraph data from real v3 fixture
 const natalChart = transformV3Response(JSON.parse(fs.readFileSync(new URL('./fixture-jocelyn-raw.json', import.meta.url))).full_raw);
@@ -83,7 +85,8 @@ assert.ok(bg.personalityGates.length > 5 && bg.designGates.length > 5);
 console.log('cycle model + bodygraph data tests passed');
 st = currentCycleStatus(cyc, new Date('2010-01-01'));
 assert.equal(st.recent.key, 'saturnReturn');
-assert.match(formatCycleStatus(st), /BETWEEN CYCLES[\s\S]*FOCUS ON MOST RECENTLY COMPLETED CYCLE: First Saturn Return/);
+assert.equal(st.focus.key, 'saturnReturn');
+assert.match(formatCycleStatus(st), /FOCUS \(the cycle they are in now\): First Saturn Return[\s\S]*BETWEEN WINDOWS/);
 console.log('between-cycles tests passed');
 assert.doesNotMatch(formatCycleStatus(currentCycleStatus(cyc, new Date('2026-10-16'))), /NEXT CYCLE|Second Saturn/);
 console.log('no-future tests passed');

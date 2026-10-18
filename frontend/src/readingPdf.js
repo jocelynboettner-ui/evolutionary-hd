@@ -25,9 +25,10 @@ function headingOf(line) {
  * @param {{ name?: string, birthdata?: {birthdate?:string,birthtime?:string,location?:string}, parts: string[], generatedAt?: Date }} opts
  * @returns {jsPDF}
  */
-export function buildReadingPdf({ name, birthdata, natal = '', natalImage = null, planets = [], cycles = [], closing = '', parts = null, qa = [], generatedAt = new Date() }) {
-  // Order: natal (bodygraph, planets, natal text) -> each reached cycle chronologically
-  // (cycle bodygraph, initiation summary, story + Magic Wand text) -> themes & closing -> Your Questions.
+export function buildReadingPdf({ name, birthdata, natal = '', natalImage = null, planets = [], cycles = [], closing = '', completedIntro = '', past = [], parts = null, qa = [], generatedAt = new Date() }) {
+  // Current-cycle-first order: natal + current-cycle bodygraphs -> where you are now + home base text ->
+  // current cycle(s) (initiation summary, story + Magic Wand) -> invitation forward -> completed cycles
+  // (smaller bodygraph, summary, brief story) -> planetary placements (reference) -> Your Questions.
   if (parts && !natal) natal = parts.join('\n\n');
   const doc = new jsPDF({ unit: "pt", format: "letter" });
   const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight();
@@ -67,10 +68,20 @@ export function buildReadingPdf({ name, birthdata, natal = '', natalImage = null
     if (y + h > H - M) { doc.addPage(); y = M; }
     doc.addImage(im.dataUrl, "PNG", (W - w) / 2, y, w, h); y += h + 14;
   };
-  if (natalImage) { drawImage(natalImage, 330); doc.addPage(); y = M; }
+  const topImgs = [natalImage, ...cycles.map(c => c.image)].filter(Boolean);
+  if (topImgs.length === 1) drawImage(topImgs[0], 330);
+  else for (let i = 0; i < topImgs.length; i += 2) {
+    const row = topImgs.slice(i, i + 2), w = (maxW - 14) / 2;
+    const h = Math.max(...row.map(im => w * (im.h / im.w)));
+    if (y + h > H - M) { doc.addPage(); y = M; }
+    row.forEach((im, j) => doc.addImage(im.dataUrl, "PNG", row.length === 1 ? (W - w) / 2 : M + j * (w + 14), y, w, w * (im.h / im.w)));
+    y += h + 14;
+  }
+  if (topImgs.length) { doc.addPage(); y = M; }
 
-  // Planetary placements: stacked, one planet per block (Conscious / Unconscious gate.line)
-  if (planets.length) {
+  // Planetary placements (reference appendix): stacked, one planet per block (Conscious / Unconscious gate.line)
+  const renderPlanets = () => {
+    doc.addPage(); y = M;
     doc.setFont("times", "bold"); doc.setFontSize(15); doc.setTextColor(...gold);
     doc.text("Your Planetary Placements", M, y); y += 20;
     doc.setFont("times", "italic"); doc.setFontSize(BODY); doc.setTextColor(...ink);
@@ -87,8 +98,7 @@ export function buildReadingPdf({ name, birthdata, natal = '', natalImage = null
       doc.text("Conscious:  " + fmt(r.conscious), M + 100, y); y += 14;
       doc.setTextColor(170, 50, 40); doc.text("Unconscious:  " + fmt(r.unconscious), M + 100, y); y += 18;
     });
-    doc.addPage(); y = M;
-  }
+  };
 
 
 
@@ -121,11 +131,21 @@ export function buildReadingPdf({ name, birthdata, natal = '', natalImage = null
   renderText(natal);
   cycles.forEach(c => {
     doc.addPage(); y = M;
-    if (c.image) drawImage(c.image, 300);
     if (c.enrichment) { const w = writer(doc); w.y = y; renderCycleSummary(w, c.enrichment); y = w.y + 10; }
     if (c.text) { ensure(60); renderText(c.text); }
   });
-  if (closing) { doc.addPage(); y = M; renderText(closing); }
+  if (closing) { ensure(LH * 6); y += LH; renderText(closing); }
+  if (past.length) {
+    doc.addPage(); y = M;
+    renderText(completedIntro || "YOUR COMPLETED CYCLES\n\nIf you'd like to recognize or witness the cycles you've already walked, here they are.");
+    past.forEach(c => {
+      ensure(260); y += LH * 0.5;
+      if (c.image) drawImage(c.image, 220);
+      if (c.enrichment) { const w = writer(doc); w.y = y; renderCycleSummary(w, c.enrichment); y = w.y + 10; }
+      if (c.text) { ensure(60); renderText(c.text); }
+    });
+  }
+  if (planets.length) renderPlanets();
   const pairs = qa.filter(x => x && x.q && x.a);
   if (pairs.length) {
     doc.addPage(); y = M;

@@ -52,10 +52,13 @@ const PlanetaryKey = [
   { planet: "Mercury", meaning: "your mind and your communication" },
   ];
 
-function ReadingTableOfContents({ visible, birthdata, planets, cycles = [], part = "all" }) {
+function ReadingTableOfContents({ visible, birthdata, planets, cycles = [], status = null, part = "all" }) {
     if (!visible) return null;
     const showContents = part !== "key", showKey = part !== "contents";
-    const cycleItems = cycles.map(c => c.label + (c.key === "chironReturn" ? " — story, Magic Wand, Gene Keys, practices, Second-Half-of-Life Purpose" : " — story, Magic Wand, Gene Keys, practices"));
+    const curKeys = status ? [status.focus?.key, ...(status.overlays || []).map(o => o.key)].filter(Boolean) : cycles.map(c => c.key);
+    const doneKeys = status ? (status.completed || []).map(c => c.key) : [];
+    const cycleItems = cycles.filter(c => curKeys.includes(c.key)).map(c => c.label + (c.key === status?.focus?.key ? "" : " (overlay)") + (c.key === "chironReturn" ? " — story, Magic Wand, Gene Keys, practices, Second-Half-of-Life Purpose" : " — story, Magic Wand, Gene Keys, practices"));
+    const doneItems = cycles.filter(c => doneKeys.includes(c.key)).map(c => c.label);
     return (
           <div style={{
                   background: "rgba(184,134,11,0.04)",
@@ -75,9 +78,12 @@ function ReadingTableOfContents({ visible, birthdata, planets, cycles = [], part
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginBottom: "24px" }}>
                   {[
-            { title: "PART ONE — YOUR NATAL DESIGN", items: ["Your Bodygraph & Planetary Key", "Type, Strategy & Authority", "Profile", "Centers & Definition", "Incarnation Cross", "Your Channels — Superpowers and Superhighways", "Your Active Gates — Planet by Planet"] },
-            ...(cycleItems.length ? [{ title: "PART TWO — YOUR CYCLES, IN THE ORDER YOU LIVED THEM", items: cycleItems }] : []),
-            { title: (cycleItems.length ? "PART THREE" : "PART TWO") + " — THEMES ACROSS YOUR CYCLES & THE INVITATION FORWARD", items: [] },
+            { title: "WHERE YOU ARE NOW", items: [] },
+            { title: "YOUR HOME BASE — YOUR NATAL DESIGN", items: ["Type, Strategy & Authority", "Profile", "Centers & Definition", "Incarnation Cross", "Your Channels — Superpowers and Superhighways"] },
+            ...(cycleItems.length ? [{ title: "THE SEASON YOU ARE IN", items: cycleItems }] : []),
+            { title: "THE INVITATION FORWARD", items: [] },
+            ...(doneItems.length ? [{ title: "YOUR COMPLETED CYCLES", items: doneItems }] : []),
+            { title: "REFERENCE — PLANETARY KEY & HOW TO READ YOUR DEFINITION", items: [] },
                     ].map(({ title, items }) => (
                                 <div key={title} style={{ borderLeft: "1px solid rgba(184,134,11,0.2)", paddingLeft: "16px" }}>
                                             <div style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: "14px", letterSpacing: "0.15em", textTransform: "uppercase", color: "#b8860b", marginBottom: "8px" }}>{title}</div>
@@ -175,36 +181,40 @@ function Message({ role, content }) {
         );
 }
 
-// Bodygraph SVGs: natal + every reached cycle overlay (natal + that cycle's activations), chronological.
+// Bodygraph SVGs: natal + every reached cycle overlay (natal + that cycle's activations), labelled now / overlay / completed.
 function bodygraphSvgs(charts) {
     if (!charts?.natal) return [];
     const n = charts.natal;
     const list = [{ key: 'natal', svg: renderBodygraphSVG({ natal: n, title: 'Natal Bodygraph', subtitle: [n.type, n.profile, n.authority].filter(Boolean).join(' · ') }) }];
-    const active = new Map((charts.status?.active || []).map(c => [c.key, c]));
+    const st = charts.status || {};
+    const active = new Map([st.focus, ...(st.overlays || [])].filter(Boolean).map(c => [c.key, c]));
     const src = charts.cycleCharts?.length ? charts.cycleCharts : (charts.cycles || []);
     src.forEach(c => {
         if (!c.chart) return;
         const a = active.get(c.key) || (charts.cycles || []).find(x => x.key === c.key);
-        const isCurrent = active.has(c.key);
+        const isCurrent = active.has(c.key), isFocus = st.focus?.key === c.key;
         const sub = c.key === 'chironReturn' && a?.permanent ? 'Permanent overlay since ' + (a.peak || c.peak)
-            : a?.start ? (isCurrent ? 'Window ' : 'Completed · window ') + a.start + ' to ' + a.end
+            : a?.start ? (isCurrent && a.inWindow !== false ? 'Window ' : 'Completed · window ') + a.start + ' to ' + a.end
             : 'Peak ' + c.peak + ' · completed';
-        list.push({ key: c.key, svg: renderBodygraphSVG({ natal: n, overlay: c.chart, title: (isCurrent ? 'Current cycle: ' : '') + c.label, subtitle: sub }) });
+        const pre = isFocus ? (a?.inWindow === false ? 'Most recent cycle: ' : 'Current cycle: ') : isCurrent ? 'Overlay: ' : '';
+        list.push({ key: c.key, svg: renderBodygraphSVG({ natal: n, overlay: c.chart, title: pre + c.label, subtitle: sub }) });
     });
     return list;
 }
 
 function Bodygraphs({ charts, only, status = false }) {
-    const list = bodygraphSvgs(charts).filter(b => !only || b.key === only);
+    const list = bodygraphSvgs(charts).filter(b => !only || (Array.isArray(only) ? only.includes(b.key) : b.key === only));
     if (!list.length) return null;
     const st = charts.status;
     return (
         <div style={{ background: "rgba(14,8,26,0.92)", border: "1px solid rgba(201,168,76,0.3)", borderRadius: "16px", padding: "20px", marginBottom: "20px" }}>
             {status && st && (
                 <p style={{ margin: "0 0 14px", color: "#f5f1e8", fontSize: "17px", lineHeight: 1.6, textAlign: "center" }}>
-                    {st.active.length
-                        ? <>You are in: <strong style={{ color: "#e0c068" }}>{st.active.map(c => c.label).join(" + ")}</strong></>
-                        : <>Between cycles{st.recent ? <> · most recently completed: <strong style={{ color: "#e0c068" }}>{st.recent.label}</strong></> : null}</>}
+                    {st.focus && st.focus.inWindow !== false
+                        ? <>You are in: <strong style={{ color: "#e0c068" }}>{st.focus.label}</strong>{st.overlays?.length ? <> · also active: <strong style={{ color: "#e0c068" }}>{st.overlays.map(c => c.label).join(" + ")}</strong></> : null}</>
+                        : st.focus
+                        ? <>Between windows · integrating your most recent cycle: <strong style={{ color: "#e0c068" }}>{st.focus.label}</strong>{st.overlays?.length ? <> · also active: <strong style={{ color: "#e0c068" }}>{st.overlays.map(c => c.label).join(" + ")}</strong></> : null}</>
+                        : <>No cycle window has opened yet · this reading is your natal design</>}
                 </p>
             )}
             <div style={{ display: "flex", flexWrap: "wrap", gap: "16px", justifyContent: "center" }}>
@@ -217,8 +227,19 @@ function Bodygraphs({ charts, only, status = false }) {
     );
 }
 
-// On-screen reading in the canonical order: natal (bodygraph, planetary key, natal text) ->
-// each reached cycle chronologically (bodygraph, initiation card, story + Magic Wand) -> themes & closing -> follow-ups.
+// On-screen reading, current-cycle-first: status + natal & current bodygraphs -> where you are now + home base
+// -> current cycle(s) in depth -> invitation forward -> completed cycles (brief) -> planetary key reference -> follow-ups.
+export function readingKeys(seg, charts) {
+    const en = charts?.enrichment || [], st = charts?.status || {};
+    const cur = [st.focus?.key, ...(st.overlays || []).map(o => o.key)].filter(Boolean);
+    const current = cur.filter(k => seg.cycles.some(c => c.key === k) || en.some(e => e.key === k));
+    seg.cycles.forEach(c => { if (!current.includes(c.key)) current.push(c.key); });
+    const order = ['saturnReturn', 'uranusOpposition', 'chironReturn', 'secondSaturnReturn'];
+    const done = (st.completed || []).map(c => c.key);
+    const past = order.filter(k => !current.includes(k) && (seg.past.some(p => p.key === k) || (done.includes(k) && en.some(e => e.key === k))));
+    return { current, past };
+}
+
 function ReadingView({ messages, charts, birthdata }) {
     const visible = messages.filter(m => !m.hidden);
     const lastMain = messages.reduce((a, m, i) => (m.main ? i : a), -1);
@@ -231,41 +252,54 @@ function ReadingView({ messages, charts, birthdata }) {
     const after = messages.slice(lastMain + 1).filter(m => !m.hidden);
     const seg = splitReading(messages.slice(0, lastMain + 1).filter(m => m.role === 'assistant' && m.main).map(m => m.content));
     const en = charts?.enrichment || [];
-    const order = ['saturnReturn', 'uranusOpposition', 'chironReturn', 'secondSaturnReturn'];
-    const keys = order.filter(k => seg.cycles.some(c => c.key === k) || en.some(e => e.key === k));
+    const { current, past } = readingKeys(seg, charts);
     return <>
         {before.map((m, i) => <Message key={'b' + i} role={m.role} content={m.content} />)}
-        {charts && <Bodygraphs charts={charts} only="natal" status />}
+        {charts && <Bodygraphs charts={charts} only={['natal', ...current]} status />}
         {charts?.natal?.birthTimeNote && <p className="birth-note" style={{ fontSize: 13, color: '#e8dcc0', textAlign: 'center', margin: '0 auto 1rem', maxWidth: 560 }}>Birth time note: {charts.natal.birthTimeNote}</p>}
-        <ReadingTableOfContents visible={true} birthdata={birthdata} planets={charts?.natal?.planets} part="key" />
         <Message role="assistant" content={seg.natal} />
-        {keys.map(k => {
+        {current.map(k => {
             const e = en.find(x => x.key === k); const t = seg.cycles.find(c => c.key === k)?.text;
             return <div key={k} className="cycle-section" data-cycle={k}>
-                {charts && <Bodygraphs charts={charts} only={k} />}
                 {e && <CycleCards enrichment={[e]} compact />}
                 {t && <Message role="assistant" content={t} />}
             </div>;
         })}
         {seg.closing && <Message role="assistant" content={seg.closing} />}
+        {past.length > 0 && <div className="completed-cycles">
+            <Message role="assistant" content={seg.completed || "YOUR COMPLETED CYCLES\n\nIf you'd like to recognize or witness the cycles you've already walked, here they are."} />
+            {past.map(k => {
+                const e = en.find(x => x.key === k); const t = seg.past.find(c => c.key === k)?.text;
+                return <div key={k} className="cycle-section past-cycle" data-cycle={k} style={{ maxWidth: 560, margin: '0 auto' }}>
+                    {charts && <Bodygraphs charts={charts} only={k} />}
+                    {e && <CycleCards enrichment={[e]} compact />}
+                    {t && <Message role="assistant" content={t} />}
+                </div>;
+            })}
+        </div>}
+        <ReadingTableOfContents visible={true} birthdata={birthdata} planets={charts?.natal?.planets} part="key" />
         {after.map((m, i) => <Message key={'a' + i} role={m.role} content={stripMarkers(m.content)} />)}
     </>;
 }
 
-// Split the main reading into natal / per-cycle / closing segments using the server's markers.
-const MARK = /^\[\[(CYCLE:[a-zA-Z]+|CLOSING)\]\]\s*$/m;
-export function stripMarkers(t) { return String(t || '').replace(/^\[\[(CYCLE:[a-zA-Z]+|CLOSING)\]\]\s*\n?/gm, '').replace(/\n{3,}/g, '\n\n'); }
+// Split the main reading into opening+natal / current cycle(s) / closing / completed cycles using the server's markers.
+const MARK_RE = '^\\[\\[(CYCLE:[a-zA-Z]+|PAST:[a-zA-Z]+|CLOSING|COMPLETED)\\]\\]';
+const MARK = new RegExp(MARK_RE + '\\s*$', 'm');
+export function stripMarkers(t) { return String(t || '').replace(new RegExp(MARK_RE + '\\s*\\n?', 'gm'), '').replace(/\n{3,}/g, '\n\n'); }
 export function splitReading(parts) {
     const natal = stripMarkers(parts[0] || '').trim();
     const rest = parts.slice(1).join('\n\n');
-    const cycles = []; let closing = '';
-    if (!MARK.test(rest)) return { natal, cycles, closing: stripMarkers(rest).trim() };
-    const chunks = rest.split(/^\[\[(CYCLE:[a-zA-Z]+|CLOSING)\]\]\s*$/m);
+    const cycles = [], past = []; let closing = '', completed = '';
+    if (!MARK.test(rest)) return { natal, cycles, closing: stripMarkers(rest).trim(), completed, past };
+    const chunks = rest.split(new RegExp(MARK_RE + '\\s*$', 'm'));
     for (let i = 1; i < chunks.length; i += 2) {
         const tag = chunks[i], body = (chunks[i + 1] || '').trim();
-        if (tag === 'CLOSING') closing = body; else cycles.push({ key: tag.slice(6), text: body });
+        if (tag === 'CLOSING') closing = body;
+        else if (tag === 'COMPLETED') completed = body;
+        else if (tag.startsWith('PAST:')) past.push({ key: tag.slice(5), text: body });
+        else cycles.push({ key: tag.slice(6), text: body });
     }
-    return { natal, cycles, closing };
+    return { natal, cycles, closing, completed, past };
 }
 
 // Main reading = assistant messages flagged main (auto part 1 + part 2). Everything after the
@@ -295,16 +329,17 @@ async function buildPdfDoc(birthdata, messages, charts) {
     const { parts, qa } = splitForPdf(messages);
     const seg = splitReading(parts);
     const en = charts?.enrichment || [];
-    const order = ['saturnReturn', 'uranusOpposition', 'chironReturn', 'secondSaturnReturn'];
-    const keys = order.filter(k => seg.cycles.some(c => c.key === k) || en.some(e => e.key === k));
+    const { current, past } = readingKeys(seg, charts);
     return buildReadingPdf({
         name: birthdata?.name,
         birthdata,
         natal: seg.natal,
         natalImage: imgs.natal || null,
         planets: charts?.natal?.planets || [],
-        cycles: keys.map(k => ({ key: k, image: imgs[k] || null, enrichment: en.find(e => e.key === k) || null, text: seg.cycles.find(c => c.key === k)?.text || '' })),
+        cycles: current.map(k => ({ key: k, image: imgs[k] || null, enrichment: en.find(e => e.key === k) || null, text: seg.cycles.find(c => c.key === k)?.text || '' })),
         closing: seg.closing,
+        completedIntro: past.length ? (seg.completed || "YOUR COMPLETED CYCLES\n\nIf you'd like to recognize or witness the cycles you've already walked, here they are.") : '',
+        past: past.map(k => ({ key: k, image: imgs[k] || null, enrichment: en.find(e => e.key === k) || null, text: seg.past.find(c => c.key === k)?.text || '' })),
         qa,
     });
 }
@@ -388,7 +423,7 @@ function followupPrompts(charts) {
     const pretty = t => String(t || "").replace(/_+/g, " ").replace(/\b\w/g, c => c.toUpperCase());
     const prof = p => { const m = String(p || "").match(/(\d)\D+(\d)/); return m ? `${m[1]}/${m[2]}` : ""; };
     const natalType = pretty(n.type) || "natal";
-    const current = (charts?.status?.active || []).map(a => en.find(e => e.key === a.key)).filter(Boolean).pop() || en[en.length - 1];
+    const current = en.find(e => e.key === charts?.status?.focus?.key) || en[en.length - 1];
     const chiron = en.find(e => e.key === "chironReturn");
     const saturn = en.find(e => e.key === "saturnReturn");
     const out = [];
@@ -635,7 +670,7 @@ export default function App() {
           }}>
                         <div ref={topRef} />
                   {chartDetected && !loading && (
-                      <ReadingTableOfContents visible={true} birthdata={birthdata} planets={charts?.natal?.planets} cycles={charts?.enrichment || []} part={messages.some(m => m.main) ? "contents" : "all"} />
+                      <ReadingTableOfContents visible={true} birthdata={birthdata} planets={charts?.natal?.planets} cycles={charts?.enrichment || []} status={charts?.status} part={messages.some(m => m.main) ? "contents" : "all"} />
                     )}
                   {isEmpty && (
                       <div style={{ textAlign: "center", padding: "60px 20px", color: "rgba(255,255,255,0.45)" }}>

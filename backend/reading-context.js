@@ -157,6 +157,11 @@ export function phaseFrameworkText(keys = Object.keys(CYCLE_PHASES)) {
 }
 const YEAR_MS = 365.25 * 864e5;
 
+// Current-first model (owner's direction): lead with the cycle the person is in NOW.
+// FOCUS = the most recently entered cycle (latest window start <= today). If its window is still open it is
+// the most active cycle; if it has closed (between windows, e.g. ~34, or ~45-46) it is still the most relevant
+// one, integrating now. OVERLAYS = any other cycle whose window also contains today (the Chiron overlay is
+// permanent after its return). COMPLETED = every other cycle already entered; shown only at the end.
 export function currentCycleStatus(cycles, now = new Date()) {
   if (!cycles) return null;
   const t = now.getTime();
@@ -165,36 +170,51 @@ export function currentCycleStatus(cycles, now = new Date()) {
     const peak = new Date(c.peak_datetime || c.peak).getTime();
     const start = peak - 3.5 * YEAR_MS, end = k === 'chironReturn' ? Infinity : peak + 3.5 * YEAR_MS;
     return { key: k, label: CYCLE_LABELS[k], peak, start, end };
-  }).filter(c => !isNaN(c.peak)).sort((a, b) => a.peak - b.peak);
+  }).filter(c => !isNaN(c.peak)).sort((a, b) => a.start - b.start);
   const iso = ms => (ms === Infinity ? 'for the rest of life' : new Date(ms).toISOString().slice(0, 10));
+  const inWindow = c => t >= c.start && t <= c.end;
+  const where = c => !inWindow(c) ? 'window completed; most recently entered cycle, integrating now'
+    : t < c.peak ? 'in its window, approaching the peak'
+    : (c.key === 'chironReturn' ? 'past peak: permanent overlay (the full flowering)' : 'in its window, past the peak, integrating');
   const fmt = c => ({ key: c.key, label: c.label, start: iso(c.start), peak: iso(c.peak), end: iso(c.end),
-    permanent: c.key === 'chironReturn' && t >= c.peak,
-    phase: t < c.peak ? 'approaching peak' : (c.key === 'chironReturn' ? 'past peak: permanent overlay (the full flowering)' : 'past peak, integrating') });
-  const active = list.filter(c => t >= c.start && t <= c.end)
-    // Chiron (permanent) first, then by most recent peak
-    .sort((a, b) => (b.key === 'chironReturn') - (a.key === 'chironReturn') || b.peak - a.peak).map(fmt);
-  const next = list.find(c => c.start > t);
-  const between = active.length === 0;
-  const done = list.filter(c => c.end < t);
-  const recent = between && done.length ? { ...fmt(done[done.length - 1]), phase: 'most recently completed' } : null;
-  const reached = list.filter(c => c.start <= t).map(c => ({ key: c.key }));
-  return { today: iso(t), active, between, recent, reached, next: null }; // future cycles are never surfaced
+    permanent: c.key === 'chironReturn' && t >= c.peak, inWindow: inWindow(c), phase: where(c) });
+  const reachedL = list.filter(c => c.start <= t);
+  const focusC = reachedL[reachedL.length - 1] || null;
+  const overlayC = reachedL.filter(c => c !== focusC && inWindow(c)).sort((a, b) => b.start - a.start);
+  const completedC = reachedL.filter(c => c !== focusC && !overlayC.includes(c));
+  const activeC = [...(focusC && inWindow(focusC) ? [focusC] : []), ...overlayC];   // most active first
+  const between = activeC.length === 0 || !(focusC && inWindow(focusC));
+  const doneC = list.filter(c => c.end < t);
+  const recent = activeC.length === 0 && doneC.length ? { ...fmt(doneC[doneC.length - 1]), phase: 'most recently completed' } : null;
+  return {
+    today: iso(t),
+    focus: focusC ? fmt(focusC) : null,
+    overlays: overlayC.map(fmt),
+    completed: completedC.map(fmt),
+    active: activeC.map(fmt),
+    between, recent,
+    reached: reachedL.map(c => ({ key: c.key })),
+    next: null, // future cycles are never surfaced
+  };
 }
 
 export function formatCycleStatus(st) {
   if (!st) return '';
-  const L = ['=== CURRENT CYCLE (computed; LEAD THE READING WITH THIS) ==='];
-  if (st.active.length) {
-    st.active.forEach((c, i) => L.push(`${i === 0 ? 'PRIMARY' : 'ALSO ACTIVE'}: ${c.label} — window ${c.start} to ${c.end}, peak ${c.peak} (${c.phase})`));
-    if (st.active.some(c => c.key === 'chironReturn' && c.permanent))
+  const L = ['=== CURRENT CYCLE (computed; LEAD THE READING WITH THIS AND CARRY IT THROUGH) ==='];
+  if (st.focus) {
+    const f = st.focus;
+    L.push(`FOCUS (the cycle they are in now): ${f.label} — window ${f.start} to ${f.end}, peak ${f.peak} (${f.phase})`);
+    if (!f.inWindow) L.push('BETWEEN WINDOWS: no new cycle window has opened since this one; it is the most recently entered cycle and is integrating now. Say so plainly in the opening.');
+    st.overlays.forEach(c => L.push(`OVERLAY (also active; note it, but lead with the focus): ${c.label} — window ${c.start} to ${c.end}, peak ${c.peak} (${c.phase})`));
+    if ([f, ...st.overlays].some(c => c.key === 'chironReturn' && c.permanent))
       L.push('Chiron overlay is PERMANENT from the Chiron return onward: describe its channels/gates as integrated, lifelong capacities, not a passing transit.');
+    if (st.completed.length) L.push(`COMPLETED CYCLES (mention only at the very end, briefly): ${st.completed.map(c => c.label).join('; ')}`);
   } else {
-    L.push('BETWEEN CYCLES: no 7-year cycle window contains today. Say so plainly near the start of the reading.');
-    if (st.recent) L.push(`FOCUS ON MOST RECENTLY COMPLETED CYCLE: ${st.recent.label} — window ${st.recent.start} to ${st.recent.end}, peak ${st.recent.peak}. Describe what it activated and how those capacities are integrating now.`);
+    L.push('NO CYCLE WINDOW HAS OPENED YET: the natal design is the whole focus of this reading. Say so plainly and do not mention any future cycle.');
   }
   L.push('Do NOT mention, date, or forecast any future cycle.');
   L.push('Rule: every cycle is a 7-year window (±3.5 years around the actual peak date in this chart), except Chiron, which stays on permanently after its return. Only past and current cycles are discussed.');
-  L.push(phaseFrameworkText([...st.active, ...(st.recent ? [st.recent] : []), ...(st.reached || [])].map(c => c.key).filter((k, i, a) => a.indexOf(k) === i)));
+  L.push(phaseFrameworkText([...(st.focus ? [st.focus] : []), ...st.overlays, ...(st.reached || [])].map(c => c.key).filter((k, i, a) => a.indexOf(k) === i)));
   L.push('=== END CURRENT CYCLE ===');
   return L.join('\n');
 }
