@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { CycleCards, cycleCardsCss } from "./CycleCards.jsx";
 import { downloadWorkbookPdf } from "./workbookPdf.js";
-import { buildReadingPdf } from "./readingPdf.js";
+import { buildReadingPdf, SESSION_URL, SESSION_INVITE, SESSION_CTA } from "./readingPdf.js";
 import { parseBirthText } from "../../backend/birth-parse.js";
 import { PLANET_ORDER, planetMeaning } from "../../backend/reading-context.js";
 import { renderBodygraphSVG, svgToPng } from "./bodygraph.js";
@@ -277,6 +277,10 @@ function ReadingView({ messages, charts, birthdata }) {
                 </div>;
             })}
         </div>}
+        <div className="session-invite" style={{ textAlign: "center", margin: "2rem auto", padding: "24px", maxWidth: 560, border: "1px solid rgba(184,134,11,0.4)", borderRadius: 12, background: "rgba(184,134,11,0.06)" }}>
+            <p style={{ margin: "0 0 16px", fontSize: 19, fontStyle: "italic", color: "#f5f1e8", lineHeight: 1.5 }}>{SESSION_INVITE}</p>
+            <a href={SESSION_URL} target="_blank" rel="noopener noreferrer" className="pdf-btn" style={{ display: "inline-block", textDecoration: "none" }}>{SESSION_CTA}</a>
+        </div>
         <ReadingTableOfContents visible={true} birthdata={birthdata} planets={charts?.natal?.planets} part="key" />
         {after.map((m, i) => <Message key={'a' + i} role={m.role} content={stripMarkers(m.content)} />)}
     </>;

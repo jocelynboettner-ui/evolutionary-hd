@@ -14,3 +14,11 @@ assert.ok(rd('../../frontend/index.html').includes('<title>The Unwritten Map</ti
 assert.ok(rd('../../frontend/src/readingPdf.js').includes('"The Unwritten Map"'));
 assert.ok(rd('../../frontend/src/workbookPdf.js').includes('"The Living Blueprint Workbook"'));
 console.log('branding tests passed');
+
+// 1:1 session invitation (UI + clickable PDF link).
+const pdfSrc = rd('../../frontend/src/readingPdf.js'), appSrc = rd('../../frontend/src/App.jsx');
+assert.ok(pdfSrc.includes('https://app.acuityscheduling.com/schedule.php?owner=40622879'));
+assert.ok(pdfSrc.includes("Want a reading that's fully yours? Sit with me 1:1 and we'll read your map together."));
+assert.ok(pdfSrc.includes('Book a session · $222') && /textWithLink\(SESSION_CTA/.test(pdfSrc));
+assert.ok(appSrc.includes('href={SESSION_URL}') && appSrc.includes('{SESSION_INVITE}'));
+console.log('session invite tests passed');

@@ -1,3 +1,6 @@
+export const SESSION_URL = "https://app.acuityscheduling.com/schedule.php?owner=40622879";
+export const SESSION_INVITE = "Want a reading that's fully yours? Sit with me 1:1 and we'll read your map together.";
+export const SESSION_CTA = "Book a session · $222";
 // readingPdf.js — client-side PDF export of a finished reading (no server cost).
 import { jsPDF } from "jspdf";
 import { PLANET_INTRO, planetMeaning } from "../../backend/reading-context.js";
@@ -149,6 +152,17 @@ export function buildReadingPdf({ name, birthdata, natal = '', natalImage = null
       if (c.enrichment) { const w = writer(doc); w.y = y; renderCycleSummary(w, c.enrichment); y = w.y + 10; }
       if (c.text) { ensure(60); renderText(c.text); }
     });
+  }
+  // 1:1 session invitation (clickable link), after the completed cycles and before the reference appendix.
+  {
+    ensure(110); y += LH;
+    doc.setDrawColor(...gold); doc.setLineWidth(0.5); doc.line(W / 2 - 60, y, W / 2 + 60, y); y += 26;
+    doc.setFont("times", "italic"); doc.setFontSize(14); doc.setTextColor(...ink);
+    doc.splitTextToSize(SESSION_INVITE, maxW).forEach(l => { doc.text(l, W / 2, y, { align: "center" }); y += 20; });
+    y += 6; doc.setFont("helvetica", "bold"); doc.setFontSize(13); doc.setTextColor(...gold);
+    doc.textWithLink(SESSION_CTA, W / 2 - doc.getTextWidth(SESSION_CTA) / 2, y, { url: SESSION_URL }); y += 16;
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...muted);
+    doc.textWithLink(SESSION_URL, W / 2 - doc.getTextWidth(SESSION_URL) / 2, y, { url: SESSION_URL }); y += 24;
   }
   if (planets.length) renderPlanets();
   const pairs = qa.filter(x => x && x.q && x.a);
