@@ -66,11 +66,38 @@ export function renderCycleSummary(w, c) {
 
 const keyRank = (c, g) => (c.magicWand.channels.some(ch => ch.newGates.includes(g)) ? 2 : 0) + ((c.cross.gates || []).includes(g) ? 1 : 0);
 
-export function buildWorkbookPdf({ name, birthdata, natal, enrichment = [], workbook, generatedAt = new Date() }) {
+// The workbook goes deep on ONE cycle (owner's direction): the cycle the person is in now (an open window),
+// otherwise the most recently completed one. Uses the server's cycle status when given; otherwise computes it
+// from each cycle's peak date (7-year window, Chiron permanent after it opens).
+const YEAR_MS = 365.25 * 864e5;
+const cycleWindow = (c) => {
+  const pk = new Date(c.peakDate).getTime();
+  return { start: pk - 3.5 * YEAR_MS, end: c.key === "chironReturn" ? Infinity : pk + 3.5 * YEAR_MS };
+};
+export function pickFocusCycle(enrichment = [], status = null, now = new Date()) {
+  const byKey = (k) => k && enrichment.find(c => c.key === k);
+  if (status) {
+    const f = byKey(status.active?.[0]?.key) || byKey(status.focus?.key) || byKey(status.recent?.key);
+    if (f) return f;
+  }
+  const t = now.getTime();
+  const dated = enrichment.map(c => ({ c, ...cycleWindow(c) })).filter(x => !isNaN(x.start) && x.start <= t).sort((a, b) => b.start - a.start);
+  const open = dated.find(x => t <= x.end);
+  return (open || dated[0])?.c || enrichment[enrichment.length - 1] || null;
+}
+const isOpenNow = (c, status, now = new Date()) => {
+  const s = [...(status?.active || [])].find(x => x.key === c.key);
+  if (status) return !!s;
+  const { start, end } = cycleWindow(c); const t = now.getTime(); return t >= start && t <= end;
+};
+
+export function buildWorkbookPdf({ name, birthdata, natal, enrichment = [], workbook, status = null, generatedAt = new Date() }) {
   const doc = new jsPDF({ unit: "pt", format: "letter" });
   const w = writer(doc);
   const wb = workbook || {};
   const nm = clean(name || "Your");
+  const focus = pickFocusCycle(enrichment, status, generatedAt);
+  const others = enrichment.filter(c => c !== focus);
   // Cover
   w.y = 200;
   w.text("LIT BY DESIGN", { font: "helvetica", style: "bold", size: 11, color: gold, align: "center" });
@@ -83,6 +110,7 @@ export function buildWorkbookPdf({ name, birthdata, natal, enrichment = [], work
   // Intro
   w.page(); w.h1("Welcome");
   w.text(wb.themes?.intro || `${name ? nm + ", this" : "This"} workbook accompanies The Unwritten Map, your Human Design reading. The reading is your map; this workbook is how you live it. Move through it slowly. Your natal design is who you are and it never changes; each cycle you have lived added energies that flow through that design, and your natal authority still chooses which to follow. Use these pages to notice, practice and integrate.`);
+  if (focus) w.text(`These pages focus on ${focus.label}, the season ${isOpenNow(focus, status, generatedAt) ? "you are in now" : "you most recently walked"}: the centers, gates and channels it brings online, with practices and journal space to live them.`);
   w.text("How to use this workbook: read one page at a time, try the practices for a week, and write freely in the space provided. There are no wrong answers.", { style: "italic", color: muted });
   // Natal home base
   w.page(); w.h1("Your Home Base - Natal Design");
@@ -94,8 +122,8 @@ export function buildWorkbookPdf({ name, birthdata, natal, enrichment = [], work
     });
   }
   w.h2("REFLECTION"); w.text("Where in your life do you already feel most at home in your design?", { style: "italic" }); w.lines(6);
-  // Per cycle
-  enrichment.forEach(c => {
+  // Focus cycle only: full initiation summary (centers, gates, channels), integration and journal pages.
+  (focus ? [focus] : []).forEach(c => {
     const cw = wb.cycles?.[c.key] || {};
     w.page(); renderCycleSummary(w, c);
     w.page(); w.h1(`${c.label} - Integration`);
@@ -115,12 +143,21 @@ export function buildWorkbookPdf({ name, birthdata, natal, enrichment = [], work
     w.page(); w.h1(`${c.label} - Journal`);
     (prompts.length ? prompts : fallback).forEach(p => { w.text(p, { style: "bolditalic", size: 12.5, gap: 0.2 }); w.lines(6); });
   });
-  // Themes
+  // Themes: the other cycles get one or two sentences each (no gate/channel detail), then the reflection prompts.
   if (enrichment.length) {
     w.page(); w.h1("Themes Across Your Cycles");
-    w.text(`Your journey so far: ${enrichment.map(c => c.label).join(" -> ")}. Look at how each season built on the last.`, { style: "italic" });
+    if (focus && others.length) {
+      w.text(`This workbook goes deep on ${focus.label}, the season ${isOpenNow(focus, status, generatedAt) ? "you are in now" : "you most recently walked"}. Your other cycles are part of the ground it stands on; their full detail lives in The Unwritten Map.`, { style: "italic" });
+      others.filter(c => isOpenNow(c, status, generatedAt)).forEach(c =>
+        w.text(`${c.label}: also active now${c.key === "chironReturn" ? " (a permanent overlay)" : ""}, alongside ${focus.label}. Its story and Magic Wand are in The Unwritten Map.`, { size: 11.5, gap: 0.35 }));
+      const done = others.filter(c => !isOpenNow(c, status, generatedAt));
+      if (done.length) w.text(`Completed: ${done.map(c => c.label).join(" and ")}. What ${done.length > 1 ? "those thresholds" : "that threshold"} broke open and gave you is already part of how you meet ${focus.label}.`, { size: 11.5, gap: 0.35 });
+      w.y += 6;
+    } else {
+      w.text(`Your journey so far: ${enrichment.map(c => c.label).join(" -> ")}. Look at how each season built on the last.`, { style: "italic" });
+    }
     (wb.themes?.themesPrompts?.length ? wb.themes.themesPrompts : ["What thread runs through every cycle you have lived?", "What did each cycle prepare you for in the next?", "What feels most integrated now?"])
-      .forEach(p => { w.text(p, { style: "bolditalic", size: 12.5, gap: 0.2 }); w.lines(7); });
+      .forEach(p => { w.ensure(60 + 7 * 24); w.text(p, { style: "bolditalic", size: 12.5, gap: 0.2 }); w.lines(7); });
   }
   // Closing
   w.page(); w.y = 220;

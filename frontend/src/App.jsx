@@ -707,7 +707,7 @@ export default function App() {
                                       ⬇ Download PDF{splitForPdf(messages).qa.length ? " (includes your questions)" : ""}
                                   </button>
                                   {charts?.natal && (
-                                      <button className="pdf-btn wb-btn" onClick={() => downloadWorkbookPdf({ name: birthdata?.name, birthdata, natal: charts.natal, enrichment: charts.enrichment || [], workbook })}>
+                                      <button className="pdf-btn wb-btn" onClick={() => downloadWorkbookPdf({ name: birthdata?.name, birthdata, natal: charts.natal, enrichment: charts.enrichment || [], status: charts.status, workbook })}>
                                           ✎ Download The Living Blueprint Workbook
                                       </button>
                                   )}
