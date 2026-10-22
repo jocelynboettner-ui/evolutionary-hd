@@ -79,7 +79,7 @@ function ReadingTableOfContents({ visible, birthdata, planets, cycles = [], stat
                 <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginBottom: "24px" }}>
                   {[
             { title: "WHERE YOU ARE NOW", items: [] },
-            { title: "YOUR HOME BASE — YOUR NATAL DESIGN", items: ["Type, Strategy & Authority", "Profile", "Centers & Definition", "Incarnation Cross", "Your Channels — Superpowers and Superhighways", "Your Magic Wand — your Sun & Earth, about 70% of your soul's purpose"] },
+            { title: "YOUR HOME BASE — YOUR NATAL DESIGN", items: ["Type, Strategy & Authority", "Profile", "Centers & Definition", "Incarnation Cross", "Your Channels — Superpowers and Superhighways", "Your Magic Wand — your conscious Sun, about 70% of your soul's purpose"] },
             ...(cycleItems.length ? [{ title: "THE SEASON YOU ARE IN", items: cycleItems }] : []),
             { title: "THE INVITATION FORWARD", items: [] },
             ...(doneItems.length ? [{ title: "YOUR COMPLETED CYCLES", items: doneItems }] : []),

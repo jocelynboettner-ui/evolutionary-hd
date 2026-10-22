@@ -66,23 +66,25 @@ export function renderCycleSummary(w, c) {
   const nw = c.natalWand;
   if (nw?.natalSun) {
     w.h2("YOUR NATAL WAND IN THIS SEASON");
-    w.text(`Natal Sun ${nw.natalSun.gate}.${nw.natalSun.line}${nw.natalEarth ? ` / Earth ${nw.natalEarth.gate}.${nw.natalEarth.line}` : ""}` + (nw.cycleSun ? `   -   this season's Sun ${nw.cycleSun.gate}.${nw.cycleSun.line}${nw.cycleEarth ? ` / Earth ${nw.cycleEarth.gate}.${nw.cycleEarth.line}` : ""}` : ""), { size: 11, style: "bold", gap: 0.2 });
+    w.text(`Natal Sun ${nw.natalSun.gate}.${nw.natalSun.line}${nw.natalSun.gift ? ` (${nw.natalSun.gift})` : ""}` + (nw.cycleSun ? `   -   this season's Sun ${nw.cycleSun.gate}.${nw.cycleSun.line}` : ""), { size: 11, style: "bold", gap: 0.2 });
     wandLinkLines(nw).forEach(t => w.text(t, { size: 10.5, indent: 12, gap: 0.15 }));
   }
 }
 
-// The natal Magic Wand (conscious Sun + Earth), shared by the reading PDF and the workbook.
-export function renderNatalWand(w, wand, { title = "YOUR MAGIC WAND - SUN AND EARTH" } = {}) {
+// The natal Magic Wand (the conscious Sun gate.line alone), shared by the reading PDF and the workbook.
+export function renderNatalWand(w, wand, { title = "YOUR MAGIC WAND - YOUR CONSCIOUS SUN" } = {}) {
   if (!wand?.sun) return;
   w.h2(title);
-  w.text("Your conscious Sun and its Earth. In Human Design the Sun carries about 70% of your imprint, so this pair is about 70% of your soul's purpose.", { size: 11, style: "italic", color: muted, gap: 0.3 });
-  [["Sun", wand.sun, "what you radiate"], ["Earth", wand.earth, "what grounds it"]].forEach(([role, p, note]) => {
+  w.text("Your conscious Sun. In Human Design the Sun carries about 70% of your imprint, so it is about 70% of your soul's purpose.", { size: 11, style: "italic", color: muted, gap: 0.3 });
+  [["Sun", wand.sun, "what you radiate"]].forEach(([role, p, note]) => {
     if (!p) return;
     w.ensure(60);
     w.text(`${role}  Gate ${p.gate}.${p.line}${p.name ? "  " + p.name : ""}  (${note})`, { font: "helvetica", style: "bold", size: 10.5, gap: 0.1 });
     const det = [p.keynote, p.lineDescription && `Line ${p.line}: ${p.lineDescription}`, p.center && `${p.center} center`].filter(Boolean).join("  -  ");
     if (det) w.text(det, { size: 10.5, indent: 12, gap: 0.1 });
-    if (p.geneKey) w.text(`Gene Key ${p.gate}: ${p.geneKey.shadow} -> ${p.geneKey.gift} -> ${p.geneKey.siddhi}`, { size: 10.5, indent: 12, color: red, gap: 0.3 });
+    if (p.geneKey) w.text(`Gene Key ${p.gate}: ${p.geneKey.shadow} -> ${p.geneKey.gift} -> ${p.geneKey.siddhi}`, { size: 10.5, indent: 12, color: red, gap: 0.1 });
+    const wire = p.channels?.length ? `Carried by your ${p.channels.map(c => c.label).join(" and ")}` : p.partners?.length ? `A hanging gate, listening for Gate ${p.partners.join(" or ")}` : "";
+    if (wire) w.text(wire, { size: 10.5, indent: 12, gap: 0.3 });
   });
   w.text(`How you wield it: ${wand.type}${wand.strategy ? ` (${wand.strategy})` : ""}, ${wand.authority}: ${wand.wield}.`, { size: 11, gap: 0.4 });
 }

@@ -59,7 +59,7 @@ export function CycleCards({ enrichment, compact = false }) {
                         </>}
                         {c.natalWand?.natalSun && <>
                             <H>Your natal wand in this season</H>
-                            <div className="cc-small">Natal Sun {c.natalWand.natalSun.gate}.{c.natalWand.natalSun.line}{c.natalWand.natalEarth ? ` · Earth ${c.natalWand.natalEarth.gate}.${c.natalWand.natalEarth.line}` : ""}{c.natalWand.cycleSun ? ` · this season's Sun ${c.natalWand.cycleSun.gate}.${c.natalWand.cycleSun.line}${c.natalWand.cycleEarth ? ` / Earth ${c.natalWand.cycleEarth.gate}.${c.natalWand.cycleEarth.line}` : ""}` : ""}</div>
+                            <div className="cc-small">Natal Sun {c.natalWand.natalSun.gate}.{c.natalWand.natalSun.line}{c.natalWand.natalSun.gift ? ` (${c.natalWand.natalSun.gift})` : ""}{c.natalWand.cycleSun ? ` · this season's Sun ${c.natalWand.cycleSun.gate}.${c.natalWand.cycleSun.line}` : ""}</div>
                             {wandLinkLines(c.natalWand).map(t => <div key={t} className="cc-item">{t}</div>)}
                         </>}
                     </div>
@@ -69,7 +69,7 @@ export function CycleCards({ enrichment, compact = false }) {
     );
 }
 
-// The natal Magic Wand: conscious Sun + Earth (about 70% of the soul's purpose).
+// The natal Magic Wand: the conscious Sun gate.line alone (about 70% of the soul's purpose).
 export function NatalWandCard({ wand }) {
     if (!wand?.sun) return null;
     const Pt = ({ role, p, note }) => !p ? null : (
@@ -84,9 +84,8 @@ export function NatalWandCard({ wand }) {
         <div className="cycle-cards natal-wand">
             <div className="cc-wand" style={{ marginTop: 0 }}>
                 <div className="cc-wand-title">🪄 Your Natal Magic Wand</div>
-                <div className="cc-small">Your conscious Sun and its Earth: in Human Design the Sun carries about 70% of your imprint, so this pair is about 70% of your soul's purpose.</div>
+                <div className="cc-small">Your conscious Sun: in Human Design the Sun carries about 70% of your imprint, so it is about 70% of your soul's purpose.</div>
                 <Pt role="Sun" p={wand.sun} note="what you radiate" />
-                <Pt role="Earth" p={wand.earth} note="what grounds it" />
                 <H>How you wield it</H>
                 <div className="cc-small"><b>{wand.type}</b>{wand.strategy ? ` · ${wand.strategy}` : ""} · <b>{wand.authority}</b>: {wand.wield}.</div>
             </div>
