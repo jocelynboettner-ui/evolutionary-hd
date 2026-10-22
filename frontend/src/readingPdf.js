@@ -28,7 +28,7 @@ function headingOf(line) {
  * @param {{ name?: string, birthdata?: {birthdate?:string,birthtime?:string,location?:string}, parts: string[], generatedAt?: Date }} opts
  * @returns {jsPDF}
  */
-export function buildReadingPdf({ name, birthdata, natal = '', natalImage = null, natalWand = null, planets = [], cycles = [], closing = '', completedIntro = '', past = [], parts = null, qa = [], generatedAt = new Date() }) {
+export function buildReadingPdf({ name, birthdata, natal = '', natalImage = null, natalWand = null, nodes = null, planets = [], cycles = [], closing = '', completedIntro = '', past = [], parts = null, qa = [], generatedAt = new Date() }) {
   // Current-cycle-first order: natal + current-cycle bodygraphs -> where you are now + home base text ->
   // current cycle(s) (initiation summary, story + Magic Wand) -> invitation forward -> completed cycles
   // (smaller bodygraph, summary, brief story) -> planetary placements (reference) -> Your Questions.
@@ -134,8 +134,51 @@ export function buildReadingPdf({ name, birthdata, natal = '', natalImage = null
       y += LH * 0.6;
     });
   };
+  // Plain-language heading + paragraphs (nodes section, journal prompts, one move).
+  const heading = (h) => { ensure(BODY * 1.6 * 4); y += 8; doc.setFont("times", "bold"); doc.setFontSize(15); doc.setTextColor(...gold); doc.splitTextToSize(clean(h), maxW).forEach(l => { doc.text(l, M, y); y += 20; }); y += 4; };
+  const para = (t, { italic = false, indent = 0 } = {}) => {
+    doc.setFont("times", italic ? "italic" : "normal"); doc.setFontSize(BODY); doc.setTextColor(...ink);
+    const wrapped = doc.splitTextToSize(clean(t), maxW - indent);
+    wrapped.forEach((l, i) => { if (i === 0 && wrapped.length > 1) ensure(LH * 2); else ensure(LH); doc.text(l, M + indent, y); y += LH; });
+    y += LH * 0.6;
+  };
+  // Small "For the curious" box: the only place the actual placements appear.
+  const curiousBox = (c) => {
+    if (!c?.lines?.length) return;
+    doc.setFont("helvetica", "normal"); doc.setFontSize(8.5);
+    const lines = c.lines.flatMap(t => doc.splitTextToSize(clean(t), maxW - 20));
+    const h = 22 + lines.length * 11 + 8;
+    ensure(h + 10); y += 4;
+    doc.setDrawColor(...gold); doc.setLineWidth(0.5); doc.setFillColor(250, 246, 236); doc.roundedRect(M, y, maxW, h, 4, 4, "FD");
+    let yy = y + 14;
+    doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.setTextColor(...gold); doc.text(clean(c.title || "FOR THE CURIOUS"), M + 10, yy, { charSpace: 1 }); yy += 12;
+    doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); doc.setTextColor(...muted);
+    lines.forEach(l => { doc.text(l, M + 10, yy); yy += 11; });
+    y += h + 12;
+  };
+  const renderNodes = (r) => {
+    if (!r?.sections?.length) return;
+    doc.addPage(); y = M;
+    heading(r.title);
+    if (r.intro) para(r.intro, { italic: true });
+    r.sections.forEach(sec => { heading(sec.heading); sec.paras.forEach(t => para(t)); });
+    curiousBox(r.curious);
+  };
+  // Close of the reading: journal prompts, then ONE MOVE FOR THE NEXT 24 HOURS (always last).
+  const renderClosingMoves = (r) => {
+    if (!r?.oneMove) return;
+    ensure(LH * 10); y += LH * 0.5;
+    if (r.journal?.prompts?.length) {
+      heading(r.journal.title);
+      if (r.journal.intro) para(r.journal.intro, { italic: true });
+      r.journal.prompts.forEach((t, i) => para(`${i + 1}.  ${t}`, { indent: 6 }));
+    }
+    heading(r.oneMove.title);
+    para(r.oneMove.text);
+  };
   renderText(natal);
   if (natalWand?.sun) { const w = writer(doc); w.y = y; w.ensure(200); renderNatalWand(w, natalWand, { title: "YOUR MAGIC WAND AT A GLANCE" }); y = w.y + 10; }
+  renderNodes(nodes);
   cycles.forEach(c => {
     doc.addPage(); y = M;
     if (c.enrichment) { const w = writer(doc); w.y = y; renderCycleSummary(w, c.enrichment); y = w.y + 10; }
@@ -154,7 +197,8 @@ export function buildReadingPdf({ name, birthdata, natal = '', natalImage = null
       if (c.text) { ensure(60); renderText(c.text); }
     });
   }
-  // 1:1 session invitation (clickable link), after the completed cycles and before the reference appendix.
+  renderClosingMoves(nodes);
+  // 1:1 session invitation (clickable link), after the reading's close and before the reference appendix.
   {
     ensure(110); y += LH;
     doc.setDrawColor(...gold); doc.setLineWidth(0.5); doc.line(W / 2 - 60, y, W / 2 + 60, y); y += 26;

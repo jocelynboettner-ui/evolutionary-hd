@@ -55,8 +55,8 @@ export function renderCycleSummary(w, c) {
   }
   if (c.authority.shifted) w.text(`Practicing ${c.authority.cycle} awareness; your natal ${c.authority.natal} authority remains your decision-maker.`, { size: 11, color: muted });
   w.h2("YOUR MAGIC WAND - WHAT THIS CYCLE OVERLAYS");
-  if (c.magicWand.newCenters.length) w.text("Centers that come online: " + c.magicWand.newCenters.map(x => `${x.center} (${x.gift})`).join("; "), { size: 11 });
-  c.magicWand.channels.forEach(ch => w.text(`Channel ${ch.label}${ch.natalGate ? ` - natal Gate ${ch.natalGate} met by Gate ${ch.newGates.join(" & ")}` : " - fully new"}`, { size: 11, style: "bold", gap: 0.15 }));
+  if (c.magicWand.newCenters.length) w.text("New strengths that switch on (centers): " + c.magicWand.newCenters.map(x => `${x.center} (${x.gift})`).join("; "), { size: 11 });
+  c.magicWand.channels.forEach(ch => w.text(`New superhighway: ${ch.label}${ch.natalGate ? ` - your natal Gate ${ch.natalGate} met by Gate ${ch.newGates.join(" & ")}` : " - fully new"}`, { size: 11, style: "bold", gap: 0.15 }));
   w.y += 4;
   c.magicWand.newGates.forEach(g => {
     w.ensure(48);
@@ -79,8 +79,8 @@ export function renderNatalWand(w, wand, { title = "YOUR MAGIC WAND - YOUR CONSC
   [["Sun", wand.sun, "what you radiate"]].forEach(([role, p, note]) => {
     if (!p) return;
     w.ensure(60);
-    w.text(`${role}  Gate ${p.gate}.${p.line}${p.name ? "  " + p.name : ""}  (${note})`, { font: "helvetica", style: "bold", size: 10.5, gap: 0.1 });
-    const det = [p.keynote, p.lineDescription && `Line ${p.line}: ${p.lineDescription}`, p.center && `${p.center} center`].filter(Boolean).join("  -  ");
+    w.text(`${role}${p.name ? "  " + p.name : ""}  (Gate ${p.gate}; ${note})`, { font: "helvetica", style: "bold", size: 10.5, gap: 0.1 });
+    const det = [p.keynote, p.lineDescription].filter(Boolean).join("  -  ");
     if (det) w.text(det, { size: 10.5, indent: 12, gap: 0.1 });
     if (p.geneKey) w.text(`Gene Key ${p.gate}: ${p.geneKey.shadow} -> ${p.geneKey.gift} -> ${p.geneKey.siddhi}`, { size: 10.5, indent: 12, color: red, gap: 0.1 });
     const wire = wandWiringText(p);

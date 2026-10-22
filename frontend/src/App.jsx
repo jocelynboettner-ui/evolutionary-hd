@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { CycleCards, NatalWandCard, cycleCardsCss } from "./CycleCards.jsx";
+import { CycleCards, NatalWandCard, NodesSection, ClosingMoves, cycleCardsCss, nodesCss } from "./CycleCards.jsx";
 import { downloadWorkbookPdf } from "./workbookPdf.js";
 import { buildReadingPdf, SESSION_URL, SESSION_INVITE, SESSION_CTA } from "./readingPdf.js";
 import { parseBirthText } from "../../backend/birth-parse.js";
@@ -80,9 +80,11 @@ function ReadingTableOfContents({ visible, birthdata, planets, cycles = [], stat
                   {[
             { title: "WHERE YOU ARE NOW", items: [] },
             { title: "YOUR HOME BASE — YOUR NATAL DESIGN", items: ["Type, Strategy & Authority", "Profile", "Centers & Definition", "Incarnation Cross", "Your Channels — Superpowers and Superhighways", "Your Magic Wand — your conscious Sun, about 70% of your soul's purpose"] },
+            { title: "YOUR NODES — WHERE YOU'VE BEEN AND WHERE YOU'RE HEADED", items: [] },
             ...(cycleItems.length ? [{ title: "THE SEASON YOU ARE IN", items: cycleItems }] : []),
             { title: "THE INVITATION FORWARD", items: [] },
             ...(doneItems.length ? [{ title: "YOUR COMPLETED CYCLES", items: doneItems }] : []),
+            { title: "JOURNAL PROMPTS & ONE MOVE FOR THE NEXT 24 HOURS", items: [] },
             { title: "REFERENCE — PLANETARY KEY & HOW TO READ YOUR DEFINITION", items: [] },
                     ].map(({ title, items }) => (
                                 <div key={title} style={{ borderLeft: "1px solid rgba(184,134,11,0.2)", paddingLeft: "16px" }}>
@@ -259,6 +261,7 @@ function ReadingView({ messages, charts, birthdata }) {
         {charts?.natal?.birthTimeNote && <p className="birth-note" style={{ fontSize: 13, color: '#e8dcc0', textAlign: 'center', margin: '0 auto 1rem', maxWidth: 560 }}>Birth time note: {charts.natal.birthTimeNote}</p>}
         <Message role="assistant" content={seg.natal} />
         {charts?.natal?.wand && <NatalWandCard wand={charts.natal.wand} />}
+        {charts?.natal?.nodes && <NodesSection nodes={charts.natal.nodes} />}
         {current.map(k => {
             const e = en.find(x => x.key === k); const t = seg.cycles.find(c => c.key === k)?.text;
             return <div key={k} className="cycle-section" data-cycle={k}>
@@ -278,6 +281,7 @@ function ReadingView({ messages, charts, birthdata }) {
                 </div>;
             })}
         </div>}
+        {charts?.natal?.nodes && <ClosingMoves nodes={charts.natal.nodes} />}
         <div className="session-invite" style={{ textAlign: "center", margin: "2rem auto", padding: "24px", maxWidth: 560, border: "1px solid rgba(184,134,11,0.4)", borderRadius: 12, background: "rgba(184,134,11,0.06)" }}>
             <p style={{ margin: "0 0 16px", fontSize: 19, fontStyle: "italic", color: "#f5f1e8", lineHeight: 1.5 }}>{SESSION_INVITE}</p>
             <a href={SESSION_URL} target="_blank" rel="noopener noreferrer" className="pdf-btn" style={{ display: "inline-block", textDecoration: "none" }}>{SESSION_CTA}</a>
@@ -341,6 +345,7 @@ async function buildPdfDoc(birthdata, messages, charts) {
         natal: seg.natal,
         natalImage: imgs.natal || null,
         natalWand: charts?.natal?.wand || null,
+        nodes: charts?.natal?.nodes || null,
         planets: charts?.natal?.planets || [],
         cycles: current.map(k => ({ key: k, image: imgs[k] || null, enrichment: en.find(e => e.key === k) || null, text: seg.cycles.find(c => c.key === k)?.text || '' })),
         closing: seg.closing,
@@ -422,24 +427,24 @@ function GeneratingScreen() {
     );
 }
 
-// Follow-up questions aligned to the cycle framing, personalized from the computed cycle data.
-function followupPrompts(charts) {
+// Follow-up questions, trimmed (owner, Oct 2026) to ones that are not redundant with each other or with the reading:
+// the reading already covers the cycle Magic Wand and natal wand in this season, the Chiron purpose, Gene Keys,
+// integration practices, the nodes and a 24-hour move, so those questions are gone. At most three remain:
+// one "how do I live this season's energy through my design" question (type shift, else profile), one about a
+// completed First Saturn Return (only when it is not the current cycle), and one about close relationships.
+export function followupPrompts(charts) {
     const n = charts?.natal || {};
     const en = charts?.enrichment || [];
     const pretty = t => String(t || "").replace(/_+/g, " ").replace(/\b\w/g, c => c.toUpperCase());
     const prof = p => { const m = String(p || "").match(/(\d)\D+(\d)/); return m ? `${m[1]}/${m[2]}` : ""; };
     const natalType = pretty(n.type) || "natal";
     const current = en.find(e => e.key === charts?.status?.focus?.key) || en[en.length - 1];
-    const chiron = en.find(e => e.key === "chironReturn");
     const saturn = en.find(e => e.key === "saturnReturn");
     const out = [];
     if (current?.type?.shifted) out.push(`How do I live my ${current.transit || current.label} ${current.type.cycle} energy through my ${natalType} design?`);
-    if (chiron) out.push(`What is my Chiron incarnation cross${chiron.cross.cycle ? `, the ${chiron.cross.cycle.replace(/\s*\(.*\)$/, "")},` : ""} asking of me in the second half of life?`);
-    if (current) out.push(`How do I embody my ${current.transit || current.label} ${current.profile.cycle} profile while honoring my natal ${prof(n.profile) || current.profile.natal} profile?`);
-    if (saturn) out.push(saturn.key === current?.key ? `What is my First Saturn Return (${saturn.phase || "The Maiden"}) asking me to build right now?` : `What did my First Saturn Return, ${saturn.phase || "The Maiden"}, begin that is flowering now?`);
-    out.push(current ? `What is my magic wand in ${current.phase || current.label}, and how do I use it?` : "What is my magic wand in this season, and how do I use it?");
-    out.push("Which Gene Keys gift is ripening in me now?");
-    out.push("What practice would help me integrate this week?");
+    else if (current?.profile?.shifted) out.push(`How do I embody my ${current.transit || current.label} ${current.profile.cycle} profile while honoring my natal ${prof(n.profile) || current.profile.natal} profile?`);
+    if (saturn && saturn.key !== current?.key) out.push(`What did my First Saturn Return, ${saturn.phase || "The Maiden"}, begin that is flowering now?`);
+    out.push("How does my design show up in my closest relationships, and what do I need from the people I love?");
     return out;
 }
 
@@ -843,6 +848,7 @@ export default function App() {
                                 .wb-btn { background: transparent; color: #e0c068; border: 1.5px solid #c9a84c; margin-top: -0.75rem; }
                                 .wb-btn:hover { background: rgba(201,168,76,0.15); }
                                 ${cycleCardsCss}
+                                ${nodesCss}
                                 .planet-list { display: flex; flex-direction: column; gap: 10px; }
                                 .planet-row { padding: 10px 12px; border-left: 2px solid rgba(201,168,76,0.5); background: rgba(255,255,255,0.03); border-radius: 0 8px 8px 0; }
                                 .planet-name { font-family: var(--ui-font); font-weight: 600; font-size: 16px; color: #e0c068; }

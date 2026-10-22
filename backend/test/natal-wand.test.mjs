@@ -21,11 +21,12 @@ assert.ok(!/CONSCIOUS EARTH|Gate 17\.4/.test(p)); assert.match(p, /Earth is not 
 const hang = { ...natal, personality: { ...natal.personality, Sun: { ...natal.personality.Sun, gate: 17, line: 2 } } };
 assert.deepEqual(natalMagicWand(hang).sun.partners, [62]); assert.equal(natalMagicWand(hang).sun.wiring, 'hanging');
 assert.match(formatNatalWandForPrompt(hang), /HANGING gate.*partner Gate 62.*electromagnetic connection.*transit or life cycle/);
-assert.match(wandWiringText(natalMagicWand(hang).sun), /hanging gate, waiting for Gate 62.*electromagnetic/);
+assert.match(wandWiringText(natalMagicWand(hang).sun), /comes fully alive when you're around people who carry its other half \(Gate 62\), or when a life cycle lights it up\. That moment is magic\./);
+assert.ok(!/hanging|electromagnetic/i.test(wandWiringText(natalMagicWand(hang).sun)), 'card wording stays plain');
 // Completed Sun channel = superhighway, naming the channel and partner gate.
 assert.equal(w.sun.wiring, 'superhighway'); assert.equal(w.sun.channels[0].partner, 58);
 assert.match(p, /COMPLETED natal channel 18-58 Channel of Judgment \(partner Gate 58\): a SUPERHIGHWAY they have had all their life, consistent and always on/);
-assert.match(wandWiringText(w.sun), /superhighway you've had all your life: 18-58 Channel of Judgment, with partner Gate 58.*always been yours/);
+assert.match(wandWiringText(w.sun), /superhighway you've had all your life \(18-58 Channel of Judgment, with Gate 58\)\. Built in and always on.*always been yours/);
 assert.equal(natalMagicWand(null), null); assert.equal(formatNatalWandForPrompt({}), '');
 
 // Any type / authority: never assumes Sacral.

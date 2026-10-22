@@ -40,15 +40,15 @@ export function CycleCards({ enrichment, compact = false }) {
                     <div className="cc-wand">
                         <div className="cc-wand-title">🪄 Your Magic Wand</div>
                         {c.magicWand.newCenters.length > 0 && <>
-                            <H>Centers that come online</H>
+                            <H>New strengths that switch on (centers)</H>
                             {c.magicWand.newCenters.map(x => <div key={x.center} className="cc-item"><b>{x.center}</b> — {x.gift}</div>)}
                         </>}
                         {c.magicWand.channels.length > 0 && <>
-                            <H>Channels completed</H>
+                            <H>New superhighways this season (channels)</H>
                             {c.magicWand.channels.map(ch => <div key={ch.channel} className="cc-item"><b>{ch.label}</b>{ch.natalGate ? ` — your natal Gate ${ch.natalGate} met by Gate ${ch.newGates.join(" & ")}` : " — fully new"}</div>)}
                         </>}
                         {c.magicWand.newGates.length > 0 && <>
-                            <H>New gates · the planet carrying each · Gene Keys</H>
+                            <H>New energies this season (gates) · the planet carrying each · the gift in each</H>
                             {c.magicWand.newGates.map(g => (
                                 <div key={g.gate} className="cc-gate">
                                     <b>Gate {g.gate}</b> <span className="cc-small">({g.center})</span>
@@ -74,8 +74,8 @@ export function NatalWandCard({ wand }) {
     if (!wand?.sun) return null;
     const Pt = ({ role, p, note }) => !p ? null : (
         <div className="cc-gate">
-            <b>{role} · Gate {p.gate}.{p.line}</b>{p.name ? <span className="cc-small"> {p.name}</span> : null}
-            <div className="cc-small">{[p.keynote, p.lineDescription && `Line ${p.line}: ${p.lineDescription}`, p.center && `${p.center} center`].filter(Boolean).join(" · ")}</div>
+            <b>{role}{p.name ? ` · ${p.name}` : ""}</b> <span className="cc-small">(Gate {p.gate})</span>
+            <div className="cc-small">{[p.keynote, p.lineDescription].filter(Boolean).join(" · ")}</div>
             {p.geneKey && <div className="cc-gk">{p.geneKey.shadow} → <b>{p.geneKey.gift}</b> → {p.geneKey.siddhi}</div>}
             <div className="cc-small">{note}</div>
             {wandWiringText(p) && <div className="cc-small">{wandWiringText(p)}</div>}
@@ -114,4 +114,59 @@ export const cycleCardsCss = `
 .cc-gate { padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 15px; }
 .cc-gk { font-size: 14px; color: #d9c8ff; margin-top: 2px; }
 @media (max-width: 520px) { .cc-grid { grid-template-columns: 1fr; } .cycle-cards { padding: 16px; } }
+`;
+
+// YOUR NODES (plain language, built server-side by backend/nodes-reading.js): where you've been, the turning
+// point, where you're headed. The actual placements appear only in the small "For the curious" box.
+export function NodesSection({ nodes }) {
+    if (!nodes?.sections?.length) return null;
+    return (
+        <div className="reading-nodes" data-section="nodes">
+            <div className="rn-title">{nodes.title}</div>
+            {nodes.intro && <p className="rn-intro">{nodes.intro}</p>}
+            {nodes.sections.map(sec => (
+                <div key={sec.heading} className="rn-sec">
+                    <div className="rn-h">{sec.heading}</div>
+                    {sec.paras.map((t, i) => <p key={i} className="rn-p">{t}</p>)}
+                </div>
+            ))}
+            {nodes.curious?.lines?.length > 0 && (
+                <div className="rn-curious">
+                    <div className="rn-curious-t">{nodes.curious.title}</div>
+                    {nodes.curious.lines.map((t, i) => <div key={i}>{t}</div>)}
+                </div>
+            )}
+        </div>
+    );
+}
+
+// The close of the reading: two or three journal prompts, then ONE MOVE FOR THE NEXT 24 HOURS (always last).
+export function ClosingMoves({ nodes }) {
+    if (!nodes?.oneMove) return null;
+    return (
+        <div className="reading-nodes reading-close" data-section="closing-moves">
+            {nodes.journal?.prompts?.length > 0 && <div className="rn-sec">
+                <div className="rn-h">{nodes.journal.title}</div>
+                {nodes.journal.intro && <p className="rn-intro">{nodes.journal.intro}</p>}
+                <ol className="rn-prompts">{nodes.journal.prompts.map((t, i) => <li key={i}>{t}</li>)}</ol>
+            </div>}
+            <div className="rn-sec rn-move">
+                <div className="rn-h">{nodes.oneMove.title}</div>
+                <p className="rn-p">{nodes.oneMove.text}</p>
+            </div>
+        </div>
+    );
+}
+
+export const nodesCss = `
+.reading-nodes { max-width: 720px; margin: 0 auto 24px; padding: 24px 26px; background: rgba(14,8,26,0.85); border: 1px solid rgba(201,168,76,0.3); border-radius: 16px; color: #f5f1e8; }
+.rn-title { font-family: 'Cinzel', Georgia, serif; color: ${gold}; font-size: 19px; letter-spacing: 0.08em; margin-bottom: 10px; }
+.rn-intro { font-family: var(--reading-font); font-style: italic; color: rgba(240,234,216,0.85); font-size: 17px; line-height: 1.6; margin: 0 0 12px; }
+.rn-h { font-family: 'Cinzel', Georgia, serif; color: ${gold}; font-size: 15px; letter-spacing: 0.12em; margin: 18px 0 6px; }
+.rn-p { font-family: var(--reading-font); font-size: 18px; line-height: 1.7; margin: 0 0 12px; }
+.rn-prompts { font-family: var(--reading-font); font-size: 18px; line-height: 1.6; padding-left: 22px; margin: 0; }
+.rn-prompts li { margin-bottom: 8px; }
+.rn-move { border-top: 1px solid rgba(201,168,76,0.25); margin-top: 18px; }
+.rn-curious { margin-top: 16px; padding: 10px 14px; border: 1px solid rgba(201,168,76,0.25); border-radius: 10px; background: rgba(201,168,76,0.05); font-size: 13px; line-height: 1.5; color: rgba(240,234,216,0.7); }
+.rn-curious-t { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(201,168,76,0.9); margin-bottom: 4px; }
 `;

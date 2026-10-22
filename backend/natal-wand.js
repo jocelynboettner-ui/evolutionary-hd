@@ -69,11 +69,13 @@ const ptLine = (role, p) => !p ? `${role}: not provided in the chart data.` :
   + (p.channels.length ? `; part of COMPLETED natal channel ${p.channels.map(c => c.label + ' (partner Gate ' + c.partner + ')').join(' and ')}: a SUPERHIGHWAY they have had all their life, consistent and always on`
     : (p.partners.length ? `; a HANGING gate (channel incomplete), waiting for partner Gate ${p.partners.join(' or ')}: full access comes when they sync with people who carry Gate ${p.partners.join(' or ')} (electromagnetic connection) or when a transit or life cycle lights it` : ''));
 
-// One short shared line for the card and the PDF box: superhighway vs hanging gate.
+// One short shared line for the card and the PDF box, in everyday words (owner: the reading felt too complex):
+// completed channel = a lifelong superhighway; a Sun gate waiting for its partner comes fully alive with people
+// who carry the other half, or when a life cycle lights it, and that moment is magic.
 export function wandWiringText(p) {
   if (!p) return '';
-  if (p.channels?.length) return `A superhighway you've had all your life: ${p.channels.map(c => `${c.label}, with partner Gate ${c.partner}`).join('; ')}. Consistent and always on; you know this energy because it has always been yours.`;
-  if (p.partners?.length) return `A hanging gate, waiting for Gate ${p.partners.join(' or ')}. You get the full current when you sync with people who carry it (electromagnetic connection), or when a transit or life cycle lights it.`;
+  if (p.channels?.length) return `A superhighway you've had all your life (${p.channels.map(c => `${c.label}, with Gate ${c.partner}`).join('; ')}). Built in and always on: you know this energy because it has always been yours.`;
+  if (p.partners?.length) return `This energy comes fully alive when you're around people who carry its other half (Gate ${p.partners.join(' or ')}), or when a life cycle lights it up. That moment is magic.`;
   return '';
 }
 
