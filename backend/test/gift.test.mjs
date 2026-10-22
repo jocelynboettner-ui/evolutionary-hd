@@ -32,7 +32,7 @@ const fake = {
 };
 const a = await createGiftCodes(fake, 3);
 assert.equal(a.codes.length, 3);
-assert.deepEqual(calls.coupons, [{ id: GIFT_COUPON_ID, name: 'Unwritten Map gift', percent_off: 100, duration: 'once' }]);
+assert.deepEqual(calls.coupons, [{ id: GIFT_COUPON_ID, name: 'Your Missing Map gift', percent_off: 100, duration: 'once' }]);
 assert.ok(calls.promos.every(p => p.max_redemptions === 1 && p.coupon === GIFT_COUPON_ID && /^MAP-/.test(p.code)));
 assert.equal(a.livemode, false);
 const b = await createGiftCodes(fake, 50);

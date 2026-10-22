@@ -127,14 +127,14 @@ export function buildWorkbookPdf({ name, birthdata, natal, enrichment = [], work
   w.y = 200;
   w.text("LIT BY DESIGN", { font: "helvetica", style: "bold", size: 11, color: gold, align: "center" });
   w.text("The Living Blueprint Workbook", { style: "bold", size: 26, align: "center" });
-  w.text("A companion to The Unwritten Map: the map, and then the workbook to live it", { style: "italic", size: 13, color: muted, align: "center" });
+  w.text("A companion to Your Missing Map: the map, and then the workbook to live it", { style: "italic", size: 13, color: muted, align: "center" });
   if (name) w.text(nm, { size: 20, align: "center" });
   const bd = birthdata || {};
   if (bd.birthdate) w.text(["Born " + bd.birthdate, bd.birthtime, bd.location].filter(Boolean).join("  -  "), { font: "helvetica", size: 11, color: muted, align: "center" });
   w.text("Prepared " + generatedAt.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }), { font: "helvetica", size: 11, color: muted, align: "center" });
   // Intro
   w.page(); w.h1("Welcome");
-  w.text(wb.themes?.intro || `${name ? nm + ", this" : "This"} workbook accompanies The Unwritten Map, your Human Design reading. The reading is your map; this workbook is how you live it. Move through it slowly. Your natal design is who you are and it never changes; each cycle you have lived added energies that flow through that design, and your natal authority still chooses which to follow. Use these pages to notice, practice and integrate.`);
+  w.text(wb.themes?.intro || `${name ? nm + ", this" : "This"} workbook accompanies Your Missing Map, your Human Design reading. The reading is your map; this workbook is how you live it. Move through it slowly. Your natal design is who you are and it never changes; each cycle you have lived added energies that flow through that design, and your natal authority still chooses which to follow. Use these pages to notice, practice and integrate.`);
   if (focus) w.text(`These pages focus on ${focus.label}, the season ${isOpenNow(focus, status, generatedAt) ? "you are in now" : "you most recently walked"}: the centers, gates and channels it brings online, with practices and journal space to live them.`);
   w.text("How to use this workbook: read one page at a time, try the practices for a week, and write freely in the space provided. There are no wrong answers.", { style: "italic", color: muted });
   // Natal home base
@@ -177,9 +177,9 @@ export function buildWorkbookPdf({ name, birthdata, natal, enrichment = [], work
   if (enrichment.length) {
     w.page(); w.h1("Themes Across Your Cycles");
     if (focus && others.length) {
-      w.text(`This workbook goes deep on ${focus.label}, the season ${isOpenNow(focus, status, generatedAt) ? "you are in now" : "you most recently walked"}. Your other cycles are part of the ground it stands on; their full detail lives in The Unwritten Map.`, { style: "italic" });
+      w.text(`This workbook goes deep on ${focus.label}, the season ${isOpenNow(focus, status, generatedAt) ? "you are in now" : "you most recently walked"}. Your other cycles are part of the ground it stands on; their full detail lives in Your Missing Map.`, { style: "italic" });
       others.filter(c => isOpenNow(c, status, generatedAt)).forEach(c =>
-        w.text(`${c.label}: also active now${c.key === "chironReturn" ? " (a permanent overlay)" : ""}, alongside ${focus.label}. Its story and Magic Wand are in The Unwritten Map.`, { size: 11.5, gap: 0.35 }));
+        w.text(`${c.label}: also active now${c.key === "chironReturn" ? " (a permanent overlay)" : ""}, alongside ${focus.label}. Its story and Magic Wand are in Your Missing Map.`, { size: 11.5, gap: 0.35 }));
       const done = others.filter(c => !isOpenNow(c, status, generatedAt));
       if (done.length) w.text(`Completed: ${done.map(c => c.label).join(" and ")}. What ${done.length > 1 ? "those thresholds" : "that threshold"} broke open and gave you is already part of how you meet ${focus.label}.`, { size: 11.5, gap: 0.35 });
       w.y += 6;
@@ -195,7 +195,7 @@ export function buildWorkbookPdf({ name, birthdata, natal, enrichment = [], work
   w.text(wb.themes?.closing || "May you keep returning to these pages as your design continues to unfold. You are home in yourself.", { style: "italic", size: 13, align: "center" });
   w.y += 30;
   w.text("LIT BY DESIGN", { font: "helvetica", style: "bold", size: 12, color: gold, align: "center" });
-  w.text("The Unwritten Map  ·  The Living Blueprint Workbook", { font: "helvetica", size: 10, color: muted, align: "center" });
+  w.text("Your Missing Map  ·  The Living Blueprint Workbook", { font: "helvetica", size: 10, color: muted, align: "center" });
   // footer
   const n = doc.internal.getNumberOfPages();
   for (let i = 2; i <= n; i++) { doc.setPage(i); doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...muted);

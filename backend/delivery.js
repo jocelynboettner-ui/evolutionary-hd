@@ -89,9 +89,9 @@ export function buildReadingEmail({ from, replyTo, to, name, pdf, downloadUrl })
   const link = downloadUrl ? `<p>You can also download it again here: <a href="${esc(downloadUrl)}">${esc(downloadUrl)}</a></p>` : '';
   const msg = {
     from, to: [to],
-    subject: 'Your Unwritten Map',
-    html: `<p>${hi}</p><p>Thank you for your purchase. The Unwritten Map, your personalized Human Design reading, is attached as a PDF.</p>${link}<p>With love,<br>Jocelyn</p>`,
-    text: `${name ? 'Dear ' + name + ',' : 'Hello,'}\n\nThank you for your purchase. The Unwritten Map, your personalized Human Design reading, is attached as a PDF.\n${downloadUrl ? '\nYou can also download it again here: ' + downloadUrl + '\n' : ''}\nWith love,\nJocelyn`,
+    subject: 'Your Missing Map',
+    html: `<p>${hi}</p><p>Thank you for your purchase. Your Missing Map, your personalized Human Design reading, is attached as a PDF.</p>${link}<p>With love,<br>Jocelyn</p>`,
+    text: `${name ? 'Dear ' + name + ',' : 'Hello,'}\n\nThank you for your purchase. Your Missing Map, your personalized Human Design reading, is attached as a PDF.\n${downloadUrl ? '\nYou can also download it again here: ' + downloadUrl + '\n' : ''}\nWith love,\nJocelyn`,
     attachments: [{ filename: pdfFilename(name), content: pdf.toString('base64') }],
   };
   if (replyTo) msg.reply_to = replyTo;

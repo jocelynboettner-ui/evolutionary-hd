@@ -1,6 +1,6 @@
 export const SESSION_URL = "https://app.acuityscheduling.com/schedule.php?owner=40622879";
 export const SESSION_INVITE = "Want a reading that's fully yours? Sit with me 1:1 and we'll read your map together.";
-export const SESSION_CTA = "Book a session · $222";
+export const SESSION_CTA = "Book a session · $333";
 // readingPdf.js — client-side PDF export of a finished reading (no server cost).
 import { jsPDF } from "jspdf";
 import { PLANET_INTRO, planetMeaning } from "../../backend/reading-context.js";
@@ -45,7 +45,7 @@ export function buildReadingPdf({ name, birthdata, natal = '', natalImage = null
     for (let i = 1; i <= n; i++) {
       doc.setPage(i);
       doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...muted);
-      doc.text("Lit by Design  -  The Unwritten Map" + (name ? "  -  " + clean(name) : ""), M, H - 36);
+      doc.text("Lit by Design  -  Your Missing Map" + (name ? "  -  " + clean(name) : ""), M, H - 36);
       doc.text(`Page ${i} of ${n}`, W - M, H - 36, { align: "right" });
     }
   };
@@ -55,7 +55,10 @@ export function buildReadingPdf({ name, birthdata, natal = '', natalImage = null
   doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(...gold);
   doc.text("LIT BY DESIGN", W / 2, y, { align: "center", charSpace: 2 }); y += 28;
   doc.setFont("times", "bold"); doc.setFontSize(24); doc.setTextColor(...ink);
-  doc.text("The Unwritten Map", W / 2, y, { align: "center" }); y += 22;
+  doc.text("Your Missing Map", W / 2, y, { align: "center" }); y += 22;
+  doc.setFont("times", "italic"); doc.setFontSize(13); doc.setTextColor(...ink);
+  doc.splitTextToSize("The map was always there. No one handed it to you.", maxW).forEach(l => { doc.text(l, W / 2, y, { align: "center" }); y += 17; });
+  y += 2;
   doc.setFont("times", "italic"); doc.setFontSize(12); doc.setTextColor(...muted);
   doc.splitTextToSize("Your personalized Human Design reading through your Saturn, Uranus and Chiron returns.", maxW).forEach(l => { doc.text(l, W / 2, y, { align: "center" }); y += 16; });
   y += 14; doc.setTextColor(...ink);
@@ -234,5 +237,5 @@ export function buildReadingPdf({ name, birthdata, natal = '', natalImage = null
 export function downloadReadingPdf(opts) {
   const doc = buildReadingPdf(opts);
   const slug = (opts.name || "reading").toString().trim().replace(/[^a-z0-9]+/gi, "-").toLowerCase();
-  doc.save(`the-unwritten-map-${slug}.pdf`);
+  doc.save(`your-missing-map-${slug}.pdf`);
 }

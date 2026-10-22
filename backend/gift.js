@@ -2,7 +2,7 @@
 import crypto from 'crypto';
 
 export const GIFT_COUPON_ID = 'unwritten-map-gift';
-export const GIFT_COUPON_NAME = 'Unwritten Map gift';
+export const GIFT_COUPON_NAME = 'Your Missing Map gift';
 export const MAX_GIFT_CODES = 20;
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';   // no 0/O/1/I for readability
 
