@@ -1,5 +1,6 @@
 // workbookPdf.js — printable, client-side personalized workbook + shared cycle-summary pages.
 import { jsPDF } from "jspdf";
+import { wandLinkLines } from "../../backend/natal-wand.js";
 
 export const clean = (t) => String(t || "")
   .replace(/\r/g, "").replace(/\*\*(.+?)\*\*/g, "$1")
@@ -62,6 +63,28 @@ export function renderCycleSummary(w, c) {
     w.text(`Gate ${g.gate} (${g.center})` + (g.geneKey ? `   ${g.geneKey.shadow} -> ${g.geneKey.gift} -> ${g.geneKey.siddhi}` : ""), { font: "helvetica", style: "bold", size: 10, gap: 0.05 });
     if (g.planets.length) w.text(g.planets.map(p => `${p.side} ${p.planet} ${g.gate}.${p.line} - ${p.meaning}`).join("; "), { size: 10, color: red, indent: 12, gap: 0.3 });
   });
+  const nw = c.natalWand;
+  if (nw?.natalSun) {
+    w.h2("YOUR NATAL WAND IN THIS SEASON");
+    w.text(`Natal Sun ${nw.natalSun.gate}.${nw.natalSun.line}${nw.natalEarth ? ` / Earth ${nw.natalEarth.gate}.${nw.natalEarth.line}` : ""}` + (nw.cycleSun ? `   -   this season's Sun ${nw.cycleSun.gate}.${nw.cycleSun.line}${nw.cycleEarth ? ` / Earth ${nw.cycleEarth.gate}.${nw.cycleEarth.line}` : ""}` : ""), { size: 11, style: "bold", gap: 0.2 });
+    wandLinkLines(nw).forEach(t => w.text(t, { size: 10.5, indent: 12, gap: 0.15 }));
+  }
+}
+
+// The natal Magic Wand (conscious Sun + Earth), shared by the reading PDF and the workbook.
+export function renderNatalWand(w, wand, { title = "YOUR MAGIC WAND - SUN AND EARTH" } = {}) {
+  if (!wand?.sun) return;
+  w.h2(title);
+  w.text("Your conscious Sun and its Earth. In Human Design the Sun carries about 70% of your imprint, so this pair is about 70% of your soul's purpose.", { size: 11, style: "italic", color: muted, gap: 0.3 });
+  [["Sun", wand.sun, "what you radiate"], ["Earth", wand.earth, "what grounds it"]].forEach(([role, p, note]) => {
+    if (!p) return;
+    w.ensure(60);
+    w.text(`${role}  Gate ${p.gate}.${p.line}${p.name ? "  " + p.name : ""}  (${note})`, { font: "helvetica", style: "bold", size: 10.5, gap: 0.1 });
+    const det = [p.keynote, p.lineDescription && `Line ${p.line}: ${p.lineDescription}`, p.center && `${p.center} center`].filter(Boolean).join("  -  ");
+    if (det) w.text(det, { size: 10.5, indent: 12, gap: 0.1 });
+    if (p.geneKey) w.text(`Gene Key ${p.gate}: ${p.geneKey.shadow} -> ${p.geneKey.gift} -> ${p.geneKey.siddhi}`, { size: 10.5, indent: 12, color: red, gap: 0.3 });
+  });
+  w.text(`How you wield it: ${wand.type}${wand.strategy ? ` (${wand.strategy})` : ""}, ${wand.authority}: ${wand.wield}.`, { size: 11, gap: 0.4 });
 }
 
 const keyRank = (c, g) => (c.magicWand.channels.some(ch => ch.newGates.includes(g)) ? 2 : 0) + ((c.cross.gates || []).includes(g) ? 1 : 0);
@@ -122,6 +145,10 @@ export function buildWorkbookPdf({ name, birthdata, natal, enrichment = [], work
     });
   }
   w.h2("REFLECTION"); w.text("Where in your life do you already feel most at home in your design?", { style: "italic" }); w.lines(6);
+  if (natal?.wand?.sun) {
+    renderNatalWand(w, natal.wand);
+    w.h2("REFLECTION"); w.text(`Where did your Gate ${natal.wand.sun.gate}${natal.wand.sun.geneKey ? " gift of " + natal.wand.sun.geneKey.gift : ""} move through you this week, and what did your ${natal.wand.authority || "authority"} say about where to point it?`, { style: "italic" }); w.lines(5);
+  }
   // Focus cycle only: full initiation summary (centers, gates, channels), integration and journal pages.
   (focus ? [focus] : []).forEach(c => {
     const cw = wb.cycles?.[c.key] || {};
@@ -136,6 +163,7 @@ export function buildWorkbookPdf({ name, birthdata, natal, enrichment = [], work
       w.text(`Gate ${g.gate}${gk ? `: ${gk.shadow} -> ${gk.gift} -> ${gk.siddhi}` : ""}`, { font: "helvetica", style: "bold", size: 11, gap: 0.2 });
       w.text(g.prompt, { style: "italic", size: 12, gap: 0.2 }); w.lines(4);
     });
+    if ((cw.natalWandPractices || []).length) { w.h2("YOUR NATAL WAND IN THIS SEASON"); cw.natalWandPractices.forEach((p, i) => w.text(`${i + 1}.  ${p}`, { size: 12, gap: 0.3 })); w.lines(3); }
     const practices = [...(cw.practices || []), ...(c.key === "chironReturn" ? (wb.purpose?.practices || []) : [])];
     if (practices.length) { w.h2("INTEGRATION PRACTICES"); practices.forEach((p, i) => w.text(`${i + 1}.  ${p}`, { size: 12, gap: 0.3 })); w.text("Notes on practicing:", { size: 11, color: muted, gap: 0 }); w.lines(4); }
     const prompts = [...(cw.journalPrompts || []), ...(c.key === "chironReturn" ? (wb.purpose?.journalPrompts || []) : [])];

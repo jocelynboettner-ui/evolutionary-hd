@@ -3,6 +3,7 @@
 // Natal profile / cross / type / authority are always HOME BASE; the cycle chart adds what
 // the person is learning to embody. Only reached (past/current) cycles are ever included.
 import { planetTable, planetMeaning, channelLabel, normChannelKey, CYCLE_PHASES } from './reading-context.js';
+import { cycleWandLinks, formatCycleWandLinks } from './natal-wand.js';
 
 // Gene Keys (Richard Rudd): gate -> [Shadow, Gift, Siddhi]
 export const GENE_KEYS = {
@@ -117,6 +118,7 @@ export function cycleEnrichment(key, natal, overlay, peakDate, ownedChannels) {
       info: typeInfo(pretty(overlay.type)), natalInfo: typeInfo(pretty(natal.type)) },
     authority: { natal: authLabel(natal.authority), cycle: authLabel(overlay.authority), shifted: authLabel(natal.authority) !== authLabel(overlay.authority) },
     magicWand: { newCenters, channels, newGates },
+    natalWand: cycleWandLinks(natal, overlay),
   };
 }
 
@@ -156,6 +158,7 @@ export function formatEnrichmentForPrompt(list, natal) {
     if (c.magicWand.newCenters.length) L.push('  Newly defined centers: ' + c.magicWand.newCenters.map(x => `${x.center} (${x.gift})`).join('; '));
     c.magicWand.channels.forEach(ch => L.push(`  Channel ${ch.label} — ${ch.kind}${ch.natalGate ? ` (natal Gate ${ch.natalGate} met by Gate ${ch.newGates.join(' & ')})` : ''}`));
     c.magicWand.newGates.forEach(g => L.push(`  New Gate ${g.gate} (${g.center}) via ${g.planets.map(p => `${p.side} ${p.planet} ${g.gate}.${p.line} — ${p.meaning}`).join('; ') || 'planet n/a'}; Gene Key ${g.gate}: Shadow ${g.geneKey?.shadow} / Gift ${g.geneKey?.gift} / Siddhi ${g.geneKey?.siddhi}`));
+    if (c.natalWand) L.push(formatCycleWandLinks(c.natalWand));
   }
   L.push('=== END CYCLE EMBODIMENT DATA ===');
   return L.join('\n');

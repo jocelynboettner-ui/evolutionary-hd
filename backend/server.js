@@ -11,6 +11,7 @@ import crypto from 'crypto';
 import { tzForLocation } from './location-tz.js';
 import { parseBirthText } from './birth-parse.js';
 import { formatPlanets } from './reading-context.js';
+import { natalMagicWand, formatNatalWandForPrompt } from './natal-wand.js';
 import { buildFactsBlock, attributeChannels, formatAttribution, channelList, currentCycleStatus, formatCycleStatus, bodygraphData, CYCLE_LABELS } from './reading-context.js';
 import Stripe from 'stripe';
 import { buildEnrichment, formatEnrichmentForPrompt } from './cycle-enrichment.js';
@@ -56,11 +57,12 @@ TIME SCOPE RULE (overrides everything below): Only write about the cycle the per
 ANTI-REPETITION RULE (applies to the whole reading and every section call): State each idea ONCE, in the one section whose purpose it serves. Never restate an earlier section's point in different words. Phrases such as "permanently yours", "the full flowering", "earned wisdom", "how to live it now" may appear at most ONCE in the entire reading. Do not end sections by summarizing what was already said. Each section must add something new.
 
 READING OUTLINE (current-first) — the reading is in this exact order; each section has ONE distinct purpose; stay inside it. The cycle the person is in NOW (FOCUS in the CURRENT CYCLE block) leads and is carried through the whole reading; the natal design is the home base it is read against; completed cycles come only at the end:
-Part 1 (ORIENTATION + HOME BASE):
+Part 1 (ORIENTATION + HOME BASE + NATAL MAGIC WAND):
   WHERE YOU ARE NOW: a short orientation (150-250 words) in plain language. Name the phase they are in now, leading with the phase name and keeping the transit name alongside (e.g. "Chiron Return: The Phoenix"), where they are in it (approaching the peak, past the peak and integrating, a permanent overlay, or between windows with the most recently entered cycle still integrating), and what it is asking of them. If an OVERLAY is listed, lead with the FOCUS and name the overlay in one sentence. If no cycle window has opened yet, say plainly that the natal design is the whole focus. Never mention future cycles.
-  YOUR HOME BASE: the natal design, concise (350-450 words): type, strategy, signature/not-self, authority (natal authority always decides, in every cycle), profile, defined and open centers in a few sentences, natal incarnation cross, and the natal channels as superpowers in a sentence or two each. Frame it as the ground the current cycle is read against. No planet-by-planet section (the planetary placements are shown separately as a reference table).
+  YOUR HOME BASE: the natal design, concise (350-450 words): type, strategy, signature/not-self, authority (natal authority always decides, in every cycle), profile, defined and open centers in a few sentences, natal incarnation cross, and the natal channels as superpowers in a sentence or two each. Frame it as the ground the current cycle is read against. No planet-by-planet section (the planetary placements are shown separately as a reference table); the conscious Sun and Earth are written in YOUR MAGIC WAND, not here.
+  YOUR MAGIC WAND: the natal Magic Wand, written right after YOUR HOME BASE (550-750 words, 5-6 paragraphs of prose, no lists, no sub-headings). Use ONLY the NATAL MAGIC WAND DATA block (the conscious Personality Sun and its conscious Earth). Paragraph 1: what the natal Magic Wand is (the conscious Sun, grounded by its Earth) and why it is about 70% of their soul's purpose (in Human Design the Sun carries about 70% of the neutrino imprint). Paragraph 2: the Sun gate and line in embodied language (gate number, its name and keynote, the line and its description, its center, its Gene Key Shadow, Gift and Siddhi as given; if it sits in a natal channel, how that channel carries it; if it is a hanging gate, the partner gate it is listening for). Paragraph 3: the Earth gate and line the same way, as what grounds the wand in the body and keeps it steady. Paragraph 4: how the wand shows up when it is lived (the Gift; the type's signature) versus in not-self (the Shadow; the type's not-self theme), with concrete everyday pictures. Paragraph 5: how their natal authority wields the wand, using the exact authority from the chart facts and the 'how it wields the wand' line, together with their type's strategy; for any type or authority, never assume Sacral. Optional paragraph 6: one simple daily practice for waving the wand, in prose. This section is about the natal wand only; the cycle's Magic Wand comes later in its own section, so do not describe cycle activations here.
 Part 2 (THE CURRENT CYCLE IN DEPTH, then the close, then completed cycles):
-  YOUR [FOCUS CYCLE]: the lived story of the current season (present tense), then YOUR [CYCLE] MAGIC WAND (profile, cross, type, authority practice, centers, channels, planets, Gene Keys, LIVING IT NOW, practices), each read against the natal design; for the Chiron Return also YOUR SECOND-HALF-OF-LIFE PURPOSE.
+  YOUR [FOCUS CYCLE]: the lived story of the current season (present tense), then YOUR [CYCLE] MAGIC WAND (profile, cross, type, authority practice, centers, channels, planets, Gene Keys, how the cycle hands them their NATAL Sun/Earth wand, LIVING IT NOW, practices), each read against the natal design; for the Chiron Return also YOUR SECOND-HALF-OF-LIFE PURPOSE.
   (Only if listed) the OVERLAY cycle, shorter, as an overlay on the focus.
   THE INVITATION FORWARD: a short integrative close that returns to the current cycle and the natal design, with natal authority choosing.
   YOUR COMPLETED CYCLES: only at the very end, introduced with an invitation to recognize or witness the cycles already walked; each completed cycle briefly, past tense.
@@ -112,6 +114,7 @@ LANGUAGE — always use embodied language:
 SECTION NAMES FOR THE INITIAL READING — use these exactly, in this order:
 WHERE YOU ARE NOW  (the orientation described in the READING OUTLINE: the current phase, where they are in it, what it is asking; uses the CURRENT CYCLE block)
 YOUR HOME BASE  (concise natal design as described in the READING OUTLINE; natal authority always decides; channels in a sentence or two each)
+YOUR MAGIC WAND  (the natal Magic Wand: conscious Sun and Earth, about 70% of the soul's purpose, as described in the READING OUTLINE; uses the NATAL MAGIC WAND DATA block)
 The current cycle in depth, THE INVITATION FORWARD and the completed cycles are written later, one call at a time.
 
 GATE SECTION (REFERENCE ONLY — do NOT write this section in the initial reading; the planetary placements are shown as a table. Use this guidance only if a follow-up question asks about a planet):
@@ -173,27 +176,27 @@ STEP 3 — ERA SUPERPOWERS:
                                  "Your design has been building toward this moment your entire life. Every threshold was preparation. Every activation was a layer of the medicine you came to offer. If you would like to explore how to live this activation now — how to embody what came online and offer it to the world — reply with your specific question and I am here."
                                  */
 RESPONSE LENGTH:
-Initial reading — write WHERE YOU ARE NOW and YOUR HOME BASE in flowing prose, within their word ranges.
+Initial reading — write WHERE YOU ARE NOW, YOUR HOME BASE and YOUR MAGIC WAND in flowing prose, within their word ranges.
 Follow-up questions — 400-600 words maximum.
 
 THE MOST IMPORTANT INSTRUCTION:
 Write as if you are the wise woman who has watched this soul across fifty years and can finally tell them what you have witnessed. Every sentence should make the person think: Yes. That's exactly it. I never had words for it before, but that's exactly it.
 
 CRITICAL — STOP AFTER EACH SECTION:
-The reading is delivered in layers. You MUST stop completely after YOUR HOME BASE and wait for the user to respond.
+The reading is delivered in layers. You MUST stop completely after YOUR MAGIC WAND (which follows YOUR HOME BASE) and wait for the user to respond.
 Do NOT continue into YOUR STORY OF BECOMING automatically.
 Do NOT generate the arc unless the user types "continue."
 Never generate a New Era section.
 Do NOT generate the activation section unless the user types "activation."
 
-After YOUR HOME BASE, write the closing line and then STOP. Generate nothing else. Wait for input.
+After YOUR MAGIC WAND, write the closing line and then STOP. Generate nothing else. Wait for input.
 
 The closing line after the natal reading is:
 "If you are ready to go deeper into the season you are in now, type continue."
 
 Then stop completely.
 
-CLOSING PROMPT: After YOUR HOME BASE, always end with this exact line:
+CLOSING PROMPT: After YOUR MAGIC WAND, always end with this exact line:
 "If you are ready to go deeper into the season you are in now, type continue."
 
 /* CYCLE RESPONSE INSTRUCTIONS:
@@ -558,7 +561,7 @@ app.post("/api/chat", async (req, res) => {
         saturn2: cycles.secondSaturnReturn?.peak,
       }) : 'NULL');
 
-      if (hdChart) chartText += formatHDChart(hdChart) + '\n' + formatPlanets(hdChart) + '\n';
+      if (hdChart) chartText += formatHDChart(hdChart) + '\n' + formatPlanets(hdChart) + '\n' + formatNatalWandForPrompt(hdChart) + '\n';
       if (hdChart?.birthTimeNote) chartText += `BIRTH TIME NOTE: ${hdChart.birthTimeNote} Mention this once, briefly and plainly, at the start of the natal section, and suggest checking the birth certificate if the other occurrence/time is possible.\n`;
 
       if (cycles && hdChart) {
@@ -594,6 +597,7 @@ app.post("/api/chat", async (req, res) => {
     if (cycleStatus) chartText = formatCycleStatus(cycleStatus) + '\n\n' + chartText;
     if (hdChart) {
       const natalBg = bodygraphData(hdChart);
+      if (natalBg) natalBg.wand = natalMagicWand(hdChart);   // natal Magic Wand card (Sun/Earth)
       if (natalBg && hdChart?.birthTimeNote) natalBg.birthTimeNote = hdChart.birthTimeNote;
       const shownCycles = [cycleStatus?.focus, ...(cycleStatus?.overlays || [])].filter(Boolean);
       const activeOverlays = shownCycles.map(c => {
@@ -730,7 +734,7 @@ app.post("/api/chat", async (req, res) => {
               return { text: t.slice(0, i).trim(), wb };
             };
             const nm = birthdata.name || 'them';
-            const RULES = `ANTI-REPETITION: other sections already cover the home base natal design (Part 1), the story of the current season (the YOUR [CYCLE] story section), the Chiron cross purpose (YOUR SECOND-HALF-OF-LIFE PURPOSE) and the completed cycles (at the end); cover only this section's purpose, state each idea once, and avoid "permanently yours" / "full flowering" unless this is the only place it appears. Plain text only: no markdown, no #, no **, no bullet symbols except "• " where asked. Sub-headings are ALL-CAPS lines on their own. Only this cycle; never mention or forecast any future cycle. Follow the CYCLE FRAMING RULE: natal design is who ${nm} is and never changes; the cycle type, profile and cross are energies flowing THROUGH it in this season, and natal authority still chooses which to follow (never "you became" / "you are now"). Use exact names and numbers from CYCLE EMBODIMENT DATA. When naming a planet carrying a gate, use its given meaning.`;
+            const RULES = `ANTI-REPETITION: other sections already cover the home base natal design and the natal Magic Wand (Part 1), the story of the current season (the YOUR [CYCLE] story section), the Chiron cross purpose (YOUR SECOND-HALF-OF-LIFE PURPOSE) and the completed cycles (at the end); cover only this section's purpose, state each idea once, and avoid "permanently yours" / "full flowering" unless this is the only place it appears. Plain text only: no markdown, no #, no **, no bullet symbols except "• " where asked. Sub-headings are ALL-CAPS lines on their own. Only this cycle; never mention or forecast any future cycle. Follow the CYCLE FRAMING RULE: natal design is who ${nm} is and never changes; the cycle type, profile and cross are energies flowing THROUGH it in this season, and natal authority still chooses which to follow (never "you became" / "you are now"). Use exact names and numbers from CYCLE EMBODIMENT DATA. When naming a planet carrying a gate, use its given meaning.`;
             const wandPrompt = (c, overlay = false) => `Write ONLY the section "YOUR ${c.transit.toUpperCase()} MAGIC WAND" for ${nm} (phase: ${c.label}). This is ${overlay ? 'an OVERLAY on the current focus cycle (also active now; present tense; keep it shorter and relate it to the focus cycle)' : (focusInWindow ? 'the CURRENT cycle, the focus of this reading (present tense)' : 'the most recently entered cycle; its window has closed and no new window has opened, so it is the focus of this reading, integrating now (past tense for what it opened, present tense for how it is integrating)')}. Read every part of it against the natal design (home base). Use the ${c.label.toUpperCase()} block of CYCLE EMBODIMENT DATA. Name the phase (${c.phase}) alongside the transit name.
 First line exactly: YOUR ${c.transit.toUpperCase()} MAGIC WAND
 Then these sub-headings in order:
@@ -740,10 +744,11 @@ ${c.key === 'chironReturn' ? '' : `THE CROSS OF THIS SEASON  (one paragraph: the
 ` : ''}${c.authority.shifted ? `THE AWARENESS YOU ARE PRACTICING: ${c.authority.cycle}  (one short paragraph: practicing this awareness; natal ${c.authority.natal} authority remains the decision-maker, never replaced)
 ` : ''}THE GIFTS THAT CAME ONLINE  (the heart of this section: every newly defined center and every channel listed, each as a gift; name the planet carrying the new gate and what that planet means)
 GENE KEYS FOR YOUR NEW GATES  (choose the 3-5 most important new gates, prioritising channel and cross gates; for each, one line "Gate N: Shadow X → Gift Y → Siddhi Z" then one sentence of contemplation)
+YOUR NATAL WAND IN THIS SEASON  (${overlay ? '1-2 paragraphs' : '3-4 paragraphs'}: reveal how THIS cycle hands ${nm} a way to use the NATAL Magic Wand, the conscious Sun ${c.natalWand?.natalSun ? c.natalWand.natalSun.gate + '.' + c.natalWand.natalSun.line : ''} and Earth ${c.natalWand?.natalEarth ? c.natalWand.natalEarth.gate + '.' + c.natalWand.natalEarth.line : ''} from YOUR MAGIC WAND, to navigate this cycle. Use the NATAL WAND IN THIS CYCLE lines of this cycle's data: the cycle's own Sun/Earth as the season's wand the natal wand learns to work with; any channel the cycle completes or re-lights through a natal Sun/Earth gate; any center of a natal Sun/Earth gate that comes online; and how the newly defined centers and channels above give the natal Sun gift new routes to move. Name the natal Sun and Earth gates by number and gift. Be concrete: what pointing the natal wand through this season looks like in a real week, decided by natal ${c.authority.natal} authority. Do not re-explain the natal wand itself; build on it. Then exactly 2 lines starting "• " with practices for using the natal wand in this season.)
 LIVING IT NOW  (1-2 paragraphs: practical, everyday decision-making in this season with natal ${c.authority.natal} authority)
 INTEGRATION PRACTICES  (exactly 3 lines, each starting "• ")
-Frame the cycle profile, cross and type together as the initiation of this season. Length ${overlay ? '350-450' : '550-750'} words; keep the JSON compact. ${RULES}
-After the section output a line exactly <<<WORKBOOK>>> and then ONE JSON object only: {"cycleReflection":"2-3 sentence intro for this cycle's workbook page","practices":["3 practices"],"journalPrompts":["3 journal prompts"],"geneKeyContemplations":[{"gate":N,"prompt":"..."}]} (3 contemplations).`;
+Frame the cycle profile, cross and type together as the initiation of this season. Length ${overlay ? '450-600' : '800-1050'} words; keep the JSON compact. ${RULES}
+After the section output a line exactly <<<WORKBOOK>>> and then ONE JSON object only: {"cycleReflection":"2-3 sentence intro for this cycle's workbook page","practices":["3 practices"],"journalPrompts":["3 journal prompts"],"geneKeyContemplations":[{"gate":N,"prompt":"..."}],"natalWandPractices":["2 practices for using the natal Sun/Earth wand in this cycle"]} (3 contemplations).`;
             const chiron = enrichment.find(c => c.key === 'chironReturn');
             const purposePrompt = chiron && `Write ONLY the section "YOUR SECOND-HALF-OF-LIFE PURPOSE" for ${nm}. It is the Chiron Return incarnation cross: "${chiron.cross.cycle}" (gates ${chiron.cross.gates.join(', ')}). Home base stays the natal cross "${chiron.cross.natal}".
 First line exactly: YOUR SECOND-HALF-OF-LIFE PURPOSE
@@ -759,7 +764,7 @@ After the section output a line exactly <<<WORKBOOK>>> and then ONE JSON object 
               { role: 'assistant', content: 'Understood. One section per request, following its structure exactly.' },
             ];
             const currentEn = enrichment.filter(c => currentKeys.includes(c.key));
-            const wandJobs = currentEn.map(c => generateArcSection(wandPrompt(c, c.key !== focusKey), c.key === focusKey ? 4000 : 2800, extraCtx).then(splitWb).catch(e => { console.error('Wand error', c.key, e.message); return null; }));
+            const wandJobs = currentEn.map(c => generateArcSection(wandPrompt(c, c.key !== focusKey), c.key === focusKey ? 5200 : 3400, extraCtx).then(splitWb).catch(e => { console.error('Wand error', c.key, e.message); return null; }));
             const purposeJob = chiron && currentKeys.includes('chironReturn') ? generateArcSection(purposePrompt, 3200, extraCtx).then(splitWb).catch(e => { console.error('Purpose error', e.message); return null; }) : Promise.resolve(null);
             const themesJob = generateArcSection(themesPrompt, 1600, extraCtx).then(splitWb).catch(e => { console.error('Themes error', e.message); return null; });
 

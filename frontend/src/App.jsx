@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { CycleCards, cycleCardsCss } from "./CycleCards.jsx";
+import { CycleCards, NatalWandCard, cycleCardsCss } from "./CycleCards.jsx";
 import { downloadWorkbookPdf } from "./workbookPdf.js";
 import { buildReadingPdf, SESSION_URL, SESSION_INVITE, SESSION_CTA } from "./readingPdf.js";
 import { parseBirthText } from "../../backend/birth-parse.js";
@@ -79,7 +79,7 @@ function ReadingTableOfContents({ visible, birthdata, planets, cycles = [], stat
                 <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginBottom: "24px" }}>
                   {[
             { title: "WHERE YOU ARE NOW", items: [] },
-            { title: "YOUR HOME BASE — YOUR NATAL DESIGN", items: ["Type, Strategy & Authority", "Profile", "Centers & Definition", "Incarnation Cross", "Your Channels — Superpowers and Superhighways"] },
+            { title: "YOUR HOME BASE — YOUR NATAL DESIGN", items: ["Type, Strategy & Authority", "Profile", "Centers & Definition", "Incarnation Cross", "Your Channels — Superpowers and Superhighways", "Your Magic Wand — your Sun & Earth, about 70% of your soul's purpose"] },
             ...(cycleItems.length ? [{ title: "THE SEASON YOU ARE IN", items: cycleItems }] : []),
             { title: "THE INVITATION FORWARD", items: [] },
             ...(doneItems.length ? [{ title: "YOUR COMPLETED CYCLES", items: doneItems }] : []),
@@ -258,6 +258,7 @@ function ReadingView({ messages, charts, birthdata }) {
         {charts && <Bodygraphs charts={charts} only={['natal', ...current]} status />}
         {charts?.natal?.birthTimeNote && <p className="birth-note" style={{ fontSize: 13, color: '#e8dcc0', textAlign: 'center', margin: '0 auto 1rem', maxWidth: 560 }}>Birth time note: {charts.natal.birthTimeNote}</p>}
         <Message role="assistant" content={seg.natal} />
+        {charts?.natal?.wand && <NatalWandCard wand={charts.natal.wand} />}
         {current.map(k => {
             const e = en.find(x => x.key === k); const t = seg.cycles.find(c => c.key === k)?.text;
             return <div key={k} className="cycle-section" data-cycle={k}>
@@ -339,6 +340,7 @@ async function buildPdfDoc(birthdata, messages, charts) {
         birthdata,
         natal: seg.natal,
         natalImage: imgs.natal || null,
+        natalWand: charts?.natal?.wand || null,
         planets: charts?.natal?.planets || [],
         cycles: current.map(k => ({ key: k, image: imgs[k] || null, enrichment: en.find(e => e.key === k) || null, text: seg.cycles.find(c => c.key === k)?.text || '' })),
         closing: seg.closing,

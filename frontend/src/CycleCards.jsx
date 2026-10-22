@@ -1,6 +1,7 @@
 // CycleCards.jsx — structured "initiation of this season" cards per reached cycle
 // (cycle profile, cycle cross, cycle type, Magic Wand gifts with planets + Gene Keys).
 import React from "react";
+import { wandLinkLines } from "../../backend/natal-wand.js";
 
 const gold = "#e0c068";
 export function actualWindow(c) {
@@ -56,9 +57,39 @@ export function CycleCards({ enrichment, compact = false }) {
                                 </div>
                             ))}
                         </>}
+                        {c.natalWand?.natalSun && <>
+                            <H>Your natal wand in this season</H>
+                            <div className="cc-small">Natal Sun {c.natalWand.natalSun.gate}.{c.natalWand.natalSun.line}{c.natalWand.natalEarth ? ` · Earth ${c.natalWand.natalEarth.gate}.${c.natalWand.natalEarth.line}` : ""}{c.natalWand.cycleSun ? ` · this season's Sun ${c.natalWand.cycleSun.gate}.${c.natalWand.cycleSun.line}${c.natalWand.cycleEarth ? ` / Earth ${c.natalWand.cycleEarth.gate}.${c.natalWand.cycleEarth.line}` : ""}` : ""}</div>
+                            {wandLinkLines(c.natalWand).map(t => <div key={t} className="cc-item">{t}</div>)}
+                        </>}
                     </div>
                 </div>
             ))}
+        </div>
+    );
+}
+
+// The natal Magic Wand: conscious Sun + Earth (about 70% of the soul's purpose).
+export function NatalWandCard({ wand }) {
+    if (!wand?.sun) return null;
+    const Pt = ({ role, p, note }) => !p ? null : (
+        <div className="cc-gate">
+            <b>{role} · Gate {p.gate}.{p.line}</b>{p.name ? <span className="cc-small"> {p.name}</span> : null}
+            <div className="cc-small">{[p.keynote, p.lineDescription && `Line ${p.line}: ${p.lineDescription}`, p.center && `${p.center} center`].filter(Boolean).join(" · ")}</div>
+            {p.geneKey && <div className="cc-gk">{p.geneKey.shadow} → <b>{p.geneKey.gift}</b> → {p.geneKey.siddhi}</div>}
+            <div className="cc-small">{note}{p.channels?.length ? ` · carried by ${p.channels.map(c => c.label).join(" and ")}` : p.partners?.length ? ` · listening for Gate ${p.partners.join(" or ")}` : ""}</div>
+        </div>
+    );
+    return (
+        <div className="cycle-cards natal-wand">
+            <div className="cc-wand" style={{ marginTop: 0 }}>
+                <div className="cc-wand-title">🪄 Your Natal Magic Wand</div>
+                <div className="cc-small">Your conscious Sun and its Earth: in Human Design the Sun carries about 70% of your imprint, so this pair is about 70% of your soul's purpose.</div>
+                <Pt role="Sun" p={wand.sun} note="what you radiate" />
+                <Pt role="Earth" p={wand.earth} note="what grounds it" />
+                <H>How you wield it</H>
+                <div className="cc-small"><b>{wand.type}</b>{wand.strategy ? ` · ${wand.strategy}` : ""} · <b>{wand.authority}</b>: {wand.wield}.</div>
+            </div>
         </div>
     );
 }

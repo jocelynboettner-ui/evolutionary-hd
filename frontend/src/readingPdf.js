@@ -4,7 +4,7 @@ export const SESSION_CTA = "Book a session · $222";
 // readingPdf.js — client-side PDF export of a finished reading (no server cost).
 import { jsPDF } from "jspdf";
 import { PLANET_INTRO, planetMeaning } from "../../backend/reading-context.js";
-import { writer, renderCycleSummary } from "./workbookPdf.js";
+import { writer, renderCycleSummary, renderNatalWand } from "./workbookPdf.js";
 
 const clean = (t) => String(t || "")
   .replace(/\r/g, "")
@@ -28,7 +28,7 @@ function headingOf(line) {
  * @param {{ name?: string, birthdata?: {birthdate?:string,birthtime?:string,location?:string}, parts: string[], generatedAt?: Date }} opts
  * @returns {jsPDF}
  */
-export function buildReadingPdf({ name, birthdata, natal = '', natalImage = null, planets = [], cycles = [], closing = '', completedIntro = '', past = [], parts = null, qa = [], generatedAt = new Date() }) {
+export function buildReadingPdf({ name, birthdata, natal = '', natalImage = null, natalWand = null, planets = [], cycles = [], closing = '', completedIntro = '', past = [], parts = null, qa = [], generatedAt = new Date() }) {
   // Current-cycle-first order: natal + current-cycle bodygraphs -> where you are now + home base text ->
   // current cycle(s) (initiation summary, story + Magic Wand) -> invitation forward -> completed cycles
   // (smaller bodygraph, summary, brief story) -> planetary placements (reference) -> Your Questions.
@@ -135,6 +135,7 @@ export function buildReadingPdf({ name, birthdata, natal = '', natalImage = null
     });
   };
   renderText(natal);
+  if (natalWand?.sun) { const w = writer(doc); w.y = y; w.ensure(200); renderNatalWand(w, natalWand, { title: "YOUR MAGIC WAND AT A GLANCE" }); y = w.y + 10; }
   cycles.forEach(c => {
     doc.addPage(); y = M;
     if (c.enrichment) { const w = writer(doc); w.y = y; renderCycleSummary(w, c.enrichment); y = w.y + 10; }
