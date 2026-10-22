@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { transformV3Response } from '../hd-v3-parser.js';
-import { natalMagicWand, formatNatalWandForPrompt, cycleWandLinks, formatCycleWandLinks, wandLinkLines, authorityKey, AUTHORITY_WIELD } from '../natal-wand.js';
+import { natalMagicWand, formatNatalWandForPrompt, wandWiringText, cycleWandLinks, formatCycleWandLinks, wandLinkLines, authorityKey, AUTHORITY_WIELD } from '../natal-wand.js';
 import { buildEnrichment, formatEnrichmentForPrompt } from '../cycle-enrichment.js';
 const load = f => transformV3Response(JSON.parse(fs.readFileSync(new URL(f, import.meta.url))).full_raw);
 const natal = load('./fixture-jocelyn-raw.json');
@@ -19,7 +19,13 @@ assert.match(p, /CONSCIOUS SUN \(the Magic Wand.*Gate 18\.4/); assert.match(p, /
 assert.ok(!/CONSCIOUS EARTH|Gate 17\.4/.test(p)); assert.match(p, /Earth is not part of the wand/);
 // Hanging Sun gate: the partner it listens for.
 const hang = { ...natal, personality: { ...natal.personality, Sun: { ...natal.personality.Sun, gate: 17, line: 2 } } };
-assert.deepEqual(natalMagicWand(hang).sun.partners, [62]); assert.match(formatNatalWandForPrompt(hang), /waiting for Gate 62/);
+assert.deepEqual(natalMagicWand(hang).sun.partners, [62]); assert.equal(natalMagicWand(hang).sun.wiring, 'hanging');
+assert.match(formatNatalWandForPrompt(hang), /HANGING gate.*partner Gate 62.*electromagnetic connection.*transit or life cycle/);
+assert.match(wandWiringText(natalMagicWand(hang).sun), /hanging gate, waiting for Gate 62.*electromagnetic/);
+// Completed Sun channel = superhighway, naming the channel and partner gate.
+assert.equal(w.sun.wiring, 'superhighway'); assert.equal(w.sun.channels[0].partner, 58);
+assert.match(p, /COMPLETED natal channel 18-58 Channel of Judgment \(partner Gate 58\): a SUPERHIGHWAY they have had all their life, consistent and always on/);
+assert.match(wandWiringText(w.sun), /superhighway you've had all your life: 18-58 Channel of Judgment, with partner Gate 58.*always been yours/);
 assert.equal(natalMagicWand(null), null); assert.equal(formatNatalWandForPrompt({}), '');
 
 // Any type / authority: never assumes Sacral.
@@ -43,6 +49,16 @@ assert.ok(wandLinkLines(cycleWandLinks(natal, ov)).some(t => /your natal Sun Gat
 // Hanging Sun 17 in an open Ajna: a cycle with 62 completes 17-62 and brings the wand's center online.
 const hl = cycleWandLinks(hang, { ...chiron, gates: [...chiron.gates, 62] });
 assert.ok(hl.links.find(x => x.channel === '17-62' && x.kind === 'completed by the cycle'));
+assert.ok(hl.links.find(x => x.channel === '17-62').magic);
+assert.match(formatCycleWandLinks(hl), /MAGIC: this cycle lights partner Gate 62 of the HANGING natal Sun Gate 17.*full current of the soul purpose comes online/);
+assert.ok(wandLinkLines(hl).some(t => /^Magic: this season lights Gate 62.*full current of your soul purpose/.test(t)));
+// Hanging Sun with no partner lit: still names the partner and how to get access.
+assert.match(formatCycleWandLinks(cycleWandLinks(hang, chiron)), /hanging and this cycle does not light partner Gate 62/);
+// Re-lit natal Sun channel: amplifying a known superhighway, never called magic.
+const rl = cycleWandLinks(natal, ov); assert.ok(!rl.links[0].magic);
+assert.match(formatCycleWandLinks(rl), /amplifies a superhighway they already know/);
+assert.ok(wandLinkLines(rl).some(t => /amplifying a superhighway you already know/.test(t)));
+assert.match(formatCycleWandLinks(l), /superhighway that stays on through this season/);
 const e = buildEnrichment(natal, { chironReturn: chiron }, { chironReturn: { peak_datetime: '2023-06-09T09:47:00' } }, new Date('2026-10-16'));
 assert.equal(e[0].natalWand.natalSun.gate, 18);
 const et = formatEnrichmentForPrompt(e, natal);
@@ -56,6 +72,8 @@ assert.match(server, /formatNatalWandForPrompt\(hdChart\)/);
 assert.match(server, /YOUR NATAL WAND IN THIS SEASON {2}\(/);
 assert.match(server, /"natalWandPractices"/);
 assert.match(server, /The natal Magic Wand is the conscious \(Personality\) Sun gate\.line ALONE/);
+assert.match(server, /superhighway they have had all their lives, consistent and always on/); assert.match(server, /electromagnetic connection/);
+assert.match(server, /call it out prominently as magic, the moment the full current of their soul purpose comes online/); assert.match(server, /amplifying a superhighway they already know/);
 assert.ok(!/Sun\/Earth wand|Sun and Earth, about 70%|grounded by its Earth|the Earth gate and line the same way/i.test(server));
 assert.match(server, /Length \$\{overlay \? '450-600' : '800-1050'\} words/);
 console.log('natal magic wand tests passed (conscious Sun 18.4 only, Sacral; any authority; hanging-gate + cycle links)');

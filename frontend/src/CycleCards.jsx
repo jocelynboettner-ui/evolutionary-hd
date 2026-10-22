@@ -1,7 +1,7 @@
 // CycleCards.jsx — structured "initiation of this season" cards per reached cycle
 // (cycle profile, cycle cross, cycle type, Magic Wand gifts with planets + Gene Keys).
 import React from "react";
-import { wandLinkLines } from "../../backend/natal-wand.js";
+import { wandLinkLines, wandWiringText } from "../../backend/natal-wand.js";
 
 const gold = "#e0c068";
 export function actualWindow(c) {
@@ -77,7 +77,8 @@ export function NatalWandCard({ wand }) {
             <b>{role} · Gate {p.gate}.{p.line}</b>{p.name ? <span className="cc-small"> {p.name}</span> : null}
             <div className="cc-small">{[p.keynote, p.lineDescription && `Line ${p.line}: ${p.lineDescription}`, p.center && `${p.center} center`].filter(Boolean).join(" · ")}</div>
             {p.geneKey && <div className="cc-gk">{p.geneKey.shadow} → <b>{p.geneKey.gift}</b> → {p.geneKey.siddhi}</div>}
-            <div className="cc-small">{note}{p.channels?.length ? ` · carried by ${p.channels.map(c => c.label).join(" and ")}` : p.partners?.length ? ` · listening for Gate ${p.partners.join(" or ")}` : ""}</div>
+            <div className="cc-small">{note}</div>
+            {wandWiringText(p) && <div className="cc-small">{wandWiringText(p)}</div>}
         </div>
     );
     return (

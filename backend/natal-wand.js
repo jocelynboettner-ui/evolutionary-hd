@@ -37,12 +37,13 @@ function point(p, natalGates, natalChannels) {
   if (!p || !p.gate) return null;
   const g = p.gate;
   const gk = p.geneKeys && p.geneKeys.gift ? p.geneKeys : geneKey(g);
-  const channels = natalChannels.filter(k => k.split('-').map(Number).includes(g)).map(k => ({ channel: k, label: channelLabel(k) }));
+  const channels = natalChannels.filter(k => k.split('-').map(Number).includes(g)).map(k => ({ channel: k, label: channelLabel(k), partner: k.split('-').map(Number).find(x => x !== g) }));
   const hanging = channels.length ? [] : partnersOf(g).filter(x => !natalGates.has(x));
   return {
     gate: g, line: p.line, name: p.iChingName || '', keynote: p.gateKeynote || '', lineDescription: p.lineDescription || '',
     sign: p.sign || '', center: GATE_CENTER[g] || '', geneKey: gk || null, channels,
     partners: hanging,   // harmonic gates that would complete a channel with it (when it isn't already in a natal channel)
+    wiring: channels.length ? 'superhighway' : (hanging.length ? 'hanging' : ''),
   };
 }
 
@@ -65,7 +66,16 @@ export function natalMagicWand(chart) {
 const ptLine = (role, p) => !p ? `${role}: not provided in the chart data.` :
   `${role}: Gate ${p.gate}.${p.line}${p.name ? ' — ' + p.name : ''}${p.keynote ? '; keynote "' + p.keynote + '"' : ''}${p.lineDescription ? '; line ' + p.line + ': "' + p.lineDescription + '"' : ''}; center ${p.center || 'n/a'}`
   + (p.geneKey ? `; Gene Key ${p.gate}: Shadow ${p.geneKey.shadow} → Gift ${p.geneKey.gift} → Siddhi ${p.geneKey.siddhi}` : '')
-  + (p.channels.length ? `; part of natal channel ${p.channels.map(c => c.label).join(' and ')}` : (p.partners.length ? `; a hanging gate (not in a natal channel), waiting for Gate ${p.partners.join(' or ')}` : ''));
+  + (p.channels.length ? `; part of COMPLETED natal channel ${p.channels.map(c => c.label + ' (partner Gate ' + c.partner + ')').join(' and ')}: a SUPERHIGHWAY they have had all their life, consistent and always on`
+    : (p.partners.length ? `; a HANGING gate (channel incomplete), waiting for partner Gate ${p.partners.join(' or ')}: full access comes when they sync with people who carry Gate ${p.partners.join(' or ')} (electromagnetic connection) or when a transit or life cycle lights it` : ''));
+
+// One short shared line for the card and the PDF box: superhighway vs hanging gate.
+export function wandWiringText(p) {
+  if (!p) return '';
+  if (p.channels?.length) return `A superhighway you've had all your life: ${p.channels.map(c => `${c.label}, with partner Gate ${c.partner}`).join('; ')}. Consistent and always on; you know this energy because it has always been yours.`;
+  if (p.partners?.length) return `A hanging gate, waiting for Gate ${p.partners.join(' or ')}. You get the full current when you sync with people who carry it (electromagnetic connection), or when a transit or life cycle lights it.`;
+  return '';
+}
 
 export function formatNatalWandForPrompt(chart) {
   const w = natalMagicWand(chart);
@@ -91,7 +101,7 @@ export function cycleWandLinks(natal, overlay) {
     const isNatal = natalGates.has(partner);
     if (isNatal && !ov.has(partner)) continue;   // already a natal channel and not re-lit by the cycle
     const k = normChannelKey(`${p.gate}-${partner}`);
-    links.push({ natalGate: p.gate, partner, channel: k, label: channelLabel(k), kind: isNatal ? 'natal channel re-lit by the cycle' : 'completed by the cycle' });
+    links.push({ natalGate: p.gate, partner, channel: k, label: channelLabel(k), kind: isNatal ? 'natal channel re-lit by the cycle' : 'completed by the cycle', magic: !isNatal });
   }
   const defined = gs => { const c = new Set(); CHANNELS.forEach(([a, b]) => { if (gs.has(a) && gs.has(b)) { c.add(GATE_CENTER[a]); c.add(GATE_CENTER[b]); } }); return c; };
   const natalC = defined(natalGates), compC = defined(comp);
@@ -99,7 +109,7 @@ export function cycleWandLinks(natal, overlay) {
   const centerLink = p.center && !natalC.has(p.center) && compC.has(p.center) ? { gate: p.gate, center: p.center } : null;
   const cs = overlay.personality?.Sun?.gate ? { gate: overlay.personality.Sun.gate, line: overlay.personality.Sun.line, name: overlay.personality.Sun.iChingName || '' } : null;
   return {
-    natalSun: { gate: p.gate, line: p.line, name: p.name, gift: p.geneKey?.gift || '' },
+    natalSun: { gate: p.gate, line: p.line, name: p.name, gift: p.geneKey?.gift || '', wiring: p.wiring, partners: p.partners, channels: p.channels.map(c => c.label) },
     cycleSun: cs, links, centerLink,
     sameGate: !!(cs && cs.gate === p.gate),   // the cycle's Sun sits on the natal wand gate
   };
@@ -110,9 +120,13 @@ export function formatCycleWandLinks(l) {
   const L = [`NATAL WAND IN THIS CYCLE (natal conscious Sun ${l.natalSun.gate}.${l.natalSun.line}${l.natalSun.gift ? ', Gift ' + l.natalSun.gift : ''}):`];
   if (l.cycleSun) L.push(`  This cycle's conscious Sun: Gate ${l.cycleSun.gate}.${l.cycleSun.line}${l.cycleSun.name ? ' ' + l.cycleSun.name : ''} (the season's light the natal wand learns to work with)`);
   if (l.sameGate) L.push(`  The cycle's Sun sits on the natal wand Gate ${l.natalSun.gate}: the season amplifies the wand directly.`);
-  l.links.forEach(x => L.push(`  Channel ${x.label}: natal Sun Gate ${x.natalGate} + cycle Gate ${x.partner} (${x.kind})`));
+  l.links.forEach(x => L.push(x.magic
+    ? `  MAGIC: this cycle lights partner Gate ${x.partner} of the HANGING natal Sun Gate ${x.natalGate}, completing ${x.label}. The full current of the soul purpose comes online for this season; call it out prominently and give concrete ways to use it.`
+    : `  Channel ${x.label}: natal Sun Gate ${x.natalGate} + cycle Gate ${x.partner} (natal channel re-lit by the cycle): amplifies a superhighway they already know.`));
   if (l.centerLink) L.push(`  The natal Sun Gate ${l.centerLink.gate} sits in the ${l.centerLink.center}, open natally and defined in this cycle: the wand's own center comes online`);
   if (!l.links.length && !l.centerLink && !l.sameGate) L.push(`  No channel runs directly through the natal Sun Gate ${l.natalSun.gate} in this cycle; the cycle hands the wand new centers, channels and the season's Sun to work through.`);
+  if (l.natalSun.wiring === 'superhighway' && !l.links.length) L.push(`  The natal Sun Gate ${l.natalSun.gate} already runs a completed natal channel (${l.natalSun.channels.join(', ')}): a superhighway that stays on through this season.`);
+  if (l.natalSun.wiring === 'hanging' && !l.links.some(x => x.magic)) L.push(`  The natal Sun Gate ${l.natalSun.gate} is hanging and this cycle does not light partner Gate ${l.natalSun.partners.join(' or ')}; full access still comes through people who carry it (electromagnetic connection) or a transit that lights it.`);
   return L.join('\n');
 }
 
@@ -121,7 +135,9 @@ export function wandLinkLines(l) {
   if (!l) return [];
   const out = [];
   if (l.sameGate) out.push(`This season's Sun sits on your natal wand Gate ${l.natalSun.gate}`);
-  (l.links || []).forEach(x => out.push(`${x.label}: your natal Sun Gate ${x.natalGate} meets Gate ${x.partner} (${x.kind})`));
+  (l.links || []).forEach(x => out.push(x.magic
+    ? `Magic: this season lights Gate ${x.partner}, completing your ${x.label}. The full current of your soul purpose comes online.`
+    : `${x.label}: your natal Sun Gate ${x.natalGate} meets Gate ${x.partner} again, amplifying a superhighway you already know`));
   if (l.centerLink) out.push(`Your natal Sun Gate ${l.centerLink.gate} lives in the ${l.centerLink.center}, which comes online this season`);
   return out;
 }

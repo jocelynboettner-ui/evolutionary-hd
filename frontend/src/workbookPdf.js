@@ -1,6 +1,6 @@
 // workbookPdf.js — printable, client-side personalized workbook + shared cycle-summary pages.
 import { jsPDF } from "jspdf";
-import { wandLinkLines } from "../../backend/natal-wand.js";
+import { wandLinkLines, wandWiringText } from "../../backend/natal-wand.js";
 
 export const clean = (t) => String(t || "")
   .replace(/\r/g, "").replace(/\*\*(.+?)\*\*/g, "$1")
@@ -83,7 +83,7 @@ export function renderNatalWand(w, wand, { title = "YOUR MAGIC WAND - YOUR CONSC
     const det = [p.keynote, p.lineDescription && `Line ${p.line}: ${p.lineDescription}`, p.center && `${p.center} center`].filter(Boolean).join("  -  ");
     if (det) w.text(det, { size: 10.5, indent: 12, gap: 0.1 });
     if (p.geneKey) w.text(`Gene Key ${p.gate}: ${p.geneKey.shadow} -> ${p.geneKey.gift} -> ${p.geneKey.siddhi}`, { size: 10.5, indent: 12, color: red, gap: 0.1 });
-    const wire = p.channels?.length ? `Carried by your ${p.channels.map(c => c.label).join(" and ")}` : p.partners?.length ? `A hanging gate, listening for Gate ${p.partners.join(" or ")}` : "";
+    const wire = wandWiringText(p);
     if (wire) w.text(wire, { size: 10.5, indent: 12, gap: 0.3 });
   });
   w.text(`How you wield it: ${wand.type}${wand.strategy ? ` (${wand.strategy})` : ""}, ${wand.authority}: ${wand.wield}.`, { size: 11, gap: 0.4 });
