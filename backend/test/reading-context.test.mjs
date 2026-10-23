@@ -105,6 +105,8 @@ console.log('no-future tests passed');
   assert.match(f, /Sun: Conscious 18\.4.*Unconscious 52\.6/);
   assert.match(f, /Pluto: Conscious 18\.1.*Unconscious 46\.4/);
   assert.match(f, /Chiron: not provided/);
-  assert.match(f, /Mercury — your mind and your communication/);
+  assert.match(f, /Mercury — communication, what you're here to say/);
+  assert.match(f, /Moon — your driving force/); assert.match(f, /Saturn — discipline, the judge/);
+  assert.ok(!/emotional anchor|karma/.test(f));
   console.log('planet table tests passed (matches API)');
 }

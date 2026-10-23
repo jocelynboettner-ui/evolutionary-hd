@@ -19,11 +19,16 @@ const MASC = [
   ['a woman in her 50s', 'a man in his 50s'], ['women in their 50s', 'men in their 50s'],
 ];
 
+// Incarnation cross names that contain an arc word (e.g. "Right Angle Cross of the Sleeping Phoenix") are
+// chart data, not phase names: they are shielded so the masculine rename never alters them.
+const PROTECTED = /Sleeping\s+Phoenix/gi;
+
 export function arcText(s, arc) {
   if (normalizeArc(arc) !== 'masculine' || typeof s !== 'string') return s;
-  let out = s;
+  const kept = [];
+  let out = s.replace(PROTECTED, m => { kept.push(m); return `\u0000${kept.length - 1}\u0000`; });
   for (const [a, b] of MASC) out = out.split(a).join(b);
-  return out;
+  return out.replace(/\u0000(\d+)\u0000/g, (_, i) => kept[+i]);
 }
 
 // Apply the arc's phase names to every string in a value (objects/arrays; numbers etc. untouched).

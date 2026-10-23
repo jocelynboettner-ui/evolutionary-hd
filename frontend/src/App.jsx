@@ -3,6 +3,7 @@ import { CycleCards, NatalWandCard, NodesSection, ClosingMoves, PlanetsCurious, 
 import { downloadWorkbookPdf } from "./workbookPdf.js";
 import { buildReadingPdf, SESSION_URL, SESSION_INVITE, SESSION_CTA } from "./readingPdf.js";
 import { parseBirthText } from "../../backend/birth-parse.js";
+import { plainProse } from "../../backend/plain-guard.js";
 import { PLANET_ORDER, planetMeaning } from "../../backend/reading-context.js";
 import { renderBodygraphSVG, svgToPng } from "./bodygraph.js";
 
@@ -33,24 +34,6 @@ function Stars() {
           </svg>
         );
 }
-
-const PlanetaryKey = [
-  { planet: "Sun (Conscious)", meaning: "your visible identity, what you radiate" },
-  { planet: "Earth (Conscious)", meaning: "your grounding, what stabilizes you" },
-  { planet: "Moon (Conscious)", meaning: "your emotional anchor, your inner rhythm" },
-  { planet: "Sun (Unconscious)", meaning: "your deepest nature, felt before seen" },
-  { planet: "North Node", meaning: "your evolutionary direction, where you're going" },
-  { planet: "South Node", meaning: "your past patterns, what you came from" },
-  { planet: "Saturn", meaning: "your teacher, your discipline, your karma" },
-  { planet: "Chiron", meaning: "your wound and your medicine" },
-  { planet: "Uranus", meaning: "your disruption and your genius" },
-  { planet: "Neptune", meaning: "your dream and your dissolution" },
-  { planet: "Pluto", meaning: "your transformation and your power" },
-  { planet: "Jupiter", meaning: "your expansion and your wisdom" },
-  { planet: "Mars", meaning: "your drive and your will" },
-  { planet: "Venus", meaning: "your values and your magnetism" },
-  { planet: "Mercury", meaning: "your mind and your communication" },
-  ];
 
 function ReadingTableOfContents({ visible, birthdata, planets, cycles = [], status = null, part = "all" }) {
     if (!visible) return null;
@@ -297,13 +280,14 @@ const MARK_RE = '^\\[\\[(CYCLE:[a-zA-Z]+|PAST:[a-zA-Z]+|CLOSING|COMPLETED)\\]\\]
 const MARK = new RegExp(MARK_RE + '\\s*$', 'm');
 export function stripMarkers(t) { return String(t || '').replace(new RegExp(MARK_RE + '\\s*\\n?', 'gm'), '').replace(/\n{3,}/g, '\n\n'); }
 export function splitReading(parts) {
-    const natal = stripMarkers(parts[0] || '').trim();
+    // Model-written prose passes through the plain-language guard (no gate/channel/line numbers in the body).
+    const natal = plainProse(stripMarkers(parts[0] || '').trim());
     const rest = parts.slice(1).join('\n\n');
     const cycles = [], past = []; let closing = '', completed = '';
-    if (!MARK.test(rest)) return { natal, cycles, closing: stripMarkers(rest).trim(), completed, past };
+    if (!MARK.test(rest)) return { natal, cycles, closing: plainProse(stripMarkers(rest).trim()), completed, past };
     const chunks = rest.split(new RegExp(MARK_RE + '\\s*$', 'm'));
     for (let i = 1; i < chunks.length; i += 2) {
-        const tag = chunks[i], body = (chunks[i + 1] || '').trim();
+        const tag = chunks[i], body = plainProse((chunks[i + 1] || '').trim());
         if (tag === 'CLOSING') closing = body;
         else if (tag === 'COMPLETED') completed = body;
         else if (tag.startsWith('PAST:')) past.push({ key: tag.slice(5), text: body });

@@ -45,3 +45,10 @@ const card = applyArc({ key: 'uranusOpposition', label: CYCLE_PHASES.uranusOppos
 assert.equal(card.phase, 'Closing the Builder');
 assert.equal(card.theme, 'closing the Builder: awakening to your authentic difference');
 console.log('arc tests passed');
+// Cross names are chart data: the masculine rename must not touch them.
+{
+  const s = 'Right Angle Cross of the Sleeping Phoenix (20/34 | 55/59). RIGHT ANGLE CROSS OF THE SLEEPING PHOENIX. Chiron Return: The Phoenix.';
+  const m = arcText(s, 'masculine');
+  assert.ok(m.includes('Right Angle Cross of the Sleeping Phoenix (20/34 | 55/59)') && m.includes('THE SLEEPING PHOENIX') && m.includes('Chiron Return: The Crucible'), m);
+  console.log('arc cross-name protection passed');
+}

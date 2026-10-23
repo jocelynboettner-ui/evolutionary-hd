@@ -114,7 +114,7 @@ const server = src('../server.js');
 assert.match(server, /import \{ nodesReading, formatNodesForPrompt \} from '\.\/nodes-reading\.js'/);
 assert.match(server, /natalBg\.nodes = nodes/); assert.match(server, /chartText \+= '\\n' \+ formatNodesForPrompt\(nodes\)/);
 assert.match(server, /Never write a nodes section yourself/); assert.match(server, /Never write journal prompts or a 24-hour move/);
-assert.match(server, /PLAIN LANGUAGE RULE/); assert.match(server, /never write line numbers or gate\.line codes/);
+assert.match(server, /PLAIN LANGUAGE RULE/); assert.match(server, /Never write gate numbers, channel numbers \(such as 21-45\), line numbers or gate\.line codes/); assert.match(server, /plainProse\(stripToolTags\(t\)\)/);
 // Frontend: nodes after the natal wand; journal prompts + one move close the reading (before the session invite), on screen and in the PDF.
 const app = src('../../frontend/src/App.jsx'), pdf = src('../../frontend/src/readingPdf.js'), cards = src('../../frontend/src/CycleCards.jsx');
 assert.ok(app.indexOf('<NodesSection') > app.indexOf('<NatalWandCard') && app.indexOf('<NodesSection') < app.indexOf('{current.map'));

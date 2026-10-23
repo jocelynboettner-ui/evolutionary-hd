@@ -16,9 +16,10 @@ export const CYCLE_PLANET_LINES = {
 
 export function cyclePlanetLine(key) { return CYCLE_PLANET_LINES[key]?.line || ''; }
 
-// Compact chart, Ra Uru Hu's traditional planet keynotes in plain words (for the curious box only).
+// Ra Uru Hu's traditional planet keynotes in plain words. SINGLE SOURCE OF TRUTH for every planet meaning in
+// the Reader: the curious box below, reading-context.js PLANET_MEANINGS (cycle cards, planetary key, PDF, model prompt).
 export const PLANET_KEYNOTES = [
-  ['Sun', 'your life force, the light you\'re here to shine (about 70% of your imprint)'],
+  ['Sun', 'your life force, the light you\'re here to shine'],
   ['Earth', 'your grounding, what keeps you balanced'],
   ['Moon', 'your driving force, what moves you'],
   ['North Node', 'your direction and environment for the second half of life'],
@@ -38,6 +39,6 @@ export const PLANETS_CURIOUS = {
   title: 'FOR THE CURIOUS: WHAT EACH PLANET STANDS FOR',
   lines: [
     'Your life cycles are planets coming back to (or opposite) where they sat when you were born: the First Saturn Return (about 27 to 30), the Uranus Opposition (about 38 to 44), the Chiron Return (about 50 to 51) and the Second Saturn Return (about 58 to 60).',
-    ...PLANET_KEYNOTES.map(([p, m]) => `${p}: ${m}.`),
+    ...PLANET_KEYNOTES.map(([p, m]) => `${p}: ${m}${p === 'Sun' ? ' (about 70% of your imprint)' : ''}.`),
   ],
 };

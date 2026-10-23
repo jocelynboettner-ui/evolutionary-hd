@@ -158,7 +158,7 @@ export function formatEnrichmentForPrompt(list, natal) {
     L.push('MAGIC WAND (what this cycle overlays onto the natal chart):');
     if (c.magicWand.newCenters.length) L.push('  Newly defined centers: ' + c.magicWand.newCenters.map(x => `${x.center} (${x.gift})`).join('; '));
     c.magicWand.channels.forEach(ch => L.push(`  Channel ${ch.label} — ${ch.kind}${ch.natalGate ? ` (natal Gate ${ch.natalGate} met by Gate ${ch.newGates.join(' & ')})` : ''}`));
-    c.magicWand.newGates.forEach(g => L.push(`  New Gate ${g.gate} (${g.center}) via ${g.planets.map(p => `${p.side} ${p.planet} ${g.gate}.${p.line} — ${p.meaning}`).join('; ') || 'planet n/a'}; Gene Key ${g.gate}: Shadow ${g.geneKey?.shadow} / Gift ${g.geneKey?.gift} / Siddhi ${g.geneKey?.siddhi}`));
+    c.magicWand.newGates.forEach(g => L.push(`  New Gate ${g.gate}${g.planets[0]?.name ? ' "' + String(g.planets[0].name).replace(/\s*\([^)]*\)\s*$/, '') + '"' : ''} (${g.center}) via ${g.planets.map(p => `${p.side} ${p.planet} ${g.gate}.${p.line} — ${p.meaning}`).join('; ') || 'planet n/a'}; Gene Key ${g.gate}: Shadow ${g.geneKey?.shadow} / Gift ${g.geneKey?.gift} / Siddhi ${g.geneKey?.siddhi}`));
     if (c.natalWand) L.push(formatCycleWandLinks(c.natalWand));
   }
   L.push('=== END CYCLE EMBODIMENT DATA ===');

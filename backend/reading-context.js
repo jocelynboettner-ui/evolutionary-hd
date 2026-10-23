@@ -1,4 +1,5 @@
 // reading-context.js
+import { PLANET_KEYNOTES } from './planet-meanings.js';
 // Deterministic facts handed to the model so it never has to guess:
 // canonical channel names, current age / HD life phase, fixed natal authority,
 // and a one-cycle-per-channel attribution list.
@@ -234,23 +235,8 @@ export function bodygraphData(chart) {
 // ── All planetary activations (owner's planet meanings) ──
 export const PLANET_ORDER = ['Sun','Earth','Moon','North Node','South Node','Mercury','Venus','Mars','Jupiter','Saturn','Uranus','Neptune','Pluto','Chiron'];
 export const PLANET_INTRO = 'Each gate in your chart sits in a planetary position. The planet tells you HOW that gate expresses in your life.';
-export const PLANET_MEANINGS = {
-  'Sun (Conscious)': 'your visible identity, what you radiate',
-  'Earth (Conscious)': 'your grounding, what stabilizes you',
-  'Moon (Conscious)': 'your emotional anchor, your inner rhythm',
-  'Sun (Unconscious)': 'your deepest nature, felt before seen',
-  'North Node': "your evolutionary direction, where you're going",
-  'South Node': 'your past patterns, what you came from',
-  'Saturn': 'your teacher, your discipline, your karma',
-  'Chiron': 'your wound and your medicine',
-  'Uranus': 'your disruption and your genius',
-  'Neptune': 'your dream and your dissolution',
-  'Pluto': 'your transformation and your power',
-  'Jupiter': 'your expansion and your wisdom',
-  'Mars': 'your drive and your will',
-  'Venus': 'your values and your magnetism',
-  'Mercury': 'your mind and your communication',
-};
+// Planet meanings come from planet-meanings.js (Ra Uru Hu's traditional keynotes; single source of truth).
+export const PLANET_MEANINGS = Object.fromEntries(PLANET_KEYNOTES);
 export function planetMeaning(planet, side) {
   return PLANET_MEANINGS[`${planet} (${side})`] || PLANET_MEANINGS[planet] || PLANET_MEANINGS[`${planet} (Conscious)`] || '';
 }
