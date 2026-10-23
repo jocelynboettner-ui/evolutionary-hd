@@ -12,8 +12,13 @@ const cases = [
   ['Gene Key 21: Shadow Control', 'Its Gene Key: Shadow Control'],
   ['The 18 sees what needs fixing.', 'The energy of Integrity sees what needs fixing.'],
   ['It is a hanging gate in your chart.', 'It is a an energy that comes fully alive with the right people in your chart.'.replace('a an', 'a an')],
+  ['Your Sun sits in Gate 18 - the Gate of Correction, the energy', 'Your Sun sits in the Gate of Correction, the energy'],
+  ['The Gift of Gate 18 is Integrity.', 'Its Gift is Integrity.'],
+  ['Line 4 of Gate 18 is called The Incompetent.', 'Its line is called The Incompetent.'],
+  ['partnered with Gate 58, the Gate of Vitality, creating', 'partnered with the Gate of Vitality, creating'],
+  ['It is a hanging gate in your chart.', 'x'],
 ];
-for (const [i, o] of cases.slice(0, -1)) assert.equal(plainProse(i), o, i);
+for (const [i, o] of cases.filter(c => c[1] !== 'x')) assert.equal(plainProse(i), o, i);
 // Things that must NOT change: dates, ages, profiles, percentages, phase names.
 for (const keep of ['Peak 2016-05-15, window 2012–2019.', 'between about 39-46 and ages 42-53', 'your 4/6 profile and the 2/4 you are learning', 'about 70% of your imprint', 'The 2 asks you to pull back.', 'Chiron Return: The Phoenix'])
   assert.equal(plainProse(keep), keep, keep);

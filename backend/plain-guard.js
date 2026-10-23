@@ -28,6 +28,11 @@ export function plainProse(text) {
     return 'the ' + chName(+a, +b);
   });
   // 3. Gates (and their lines).
+  // 3a. Readable rewrites first: "Gate 18 - the Gate of Correction" -> "the Gate of Correction";
+  //     "The Gift of Gate 18" -> "Its Gift"; "Line 4 of Gate 18" -> "Its line".
+  t = t.replace(/\b[Gg]ate\s+\d{1,2}(?:\.\d)?(?:,?\s+line\s+\d)?\s*(?:[-–—,:]\s*)+(?=(?:the\s+)?Gate of\b)/g, '');
+  t = t.replace(/\b[Ll]ine\s+[1-6]\s+(?:of|in)\s+(?:your\s+)?[Gg]ate\s+\d{1,2}\b/g, m => (m[0] === 'L' ? 'Its line' : 'its line'));
+  t = t.replace(/\b([Tt]he)\s+(Gift|Shadow|Siddhi|keynote|Gene Key)\s+(?:of|for)\s+[Gg]ate\s+\d{1,2}\b/g, (m, the, w) => (the === 'The' ? 'Its ' : 'its ') + w);
   t = t.replace(/\b([Gg]ates?):?\s+(\d{1,2})((?:\s*(?:,|and|&)\s*(?:and\s+)?\d{1,2}\b)+)/g, (m, w, g1, rest, off, src) => {
     const counted = /\b(?:two|three|four|five|six|both|these|its|their|your)\s*$/i.test(src.slice(Math.max(0, off - 8), off));
     const gs = [g1, ...rest.match(/\d{1,2}/g)].map(Number), names = gs.map(g => GENE_KEYS[g]?.[1]).filter(Boolean);
