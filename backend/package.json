@@ -5,7 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node test/reading-context.test.mjs && node test/birth-parse.test.mjs && node test/cycle-enrichment.test.mjs && node test/overlay-time.test.mjs && python3 test/test_find_exact_peak.py && node test/birth-time.test.mjs && python3 test/test_parse_birth_utc.py && node test/delivery.test.mjs && node test/current-cycle.test.mjs && node test/arc.test.mjs && node test/branding.test.mjs && node test/gift.test.mjs && node test/natal-wand.test.mjs && node test/nodes-reading.test.mjs"
+    "test": "node test/reading-context.test.mjs && node test/birth-parse.test.mjs && node test/cycle-enrichment.test.mjs && node test/overlay-time.test.mjs && python3 test/test_find_exact_peak.py && node test/birth-time.test.mjs && python3 test/test_parse_birth_utc.py && node test/delivery.test.mjs && node test/current-cycle.test.mjs && node test/arc.test.mjs && node test/branding.test.mjs && node test/gift.test.mjs && node test/natal-wand.test.mjs && node test/nodes-reading.test.mjs && node test/planet-meanings.test.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.20.0",

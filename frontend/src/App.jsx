@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { CycleCards, NatalWandCard, NodesSection, ClosingMoves, cycleCardsCss, nodesCss } from "./CycleCards.jsx";
+import { CycleCards, NatalWandCard, NodesSection, ClosingMoves, PlanetsCurious, cycleCardsCss, nodesCss } from "./CycleCards.jsx";
 import { downloadWorkbookPdf } from "./workbookPdf.js";
 import { buildReadingPdf, SESSION_URL, SESSION_INVITE, SESSION_CTA } from "./readingPdf.js";
 import { parseBirthText } from "../../backend/birth-parse.js";
@@ -269,6 +269,7 @@ function ReadingView({ messages, charts, birthdata }) {
                 {t && <Message role="assistant" content={t} />}
             </div>;
         })}
+        {en.length > 0 && <PlanetsCurious />}
         {seg.closing && <Message role="assistant" content={seg.closing} />}
         {past.length > 0 && <div className="completed-cycles">
             <Message role="assistant" content={seg.completed || "YOUR COMPLETED CYCLES\n\nIf you'd like to recognize or witness the cycles you've already walked, here they are."} />

@@ -1,6 +1,7 @@
 // workbookPdf.js — printable, client-side personalized workbook + shared cycle-summary pages.
 import { jsPDF } from "jspdf";
 import { wandLinkLines, wandWiringText } from "../../backend/natal-wand.js";
+import { cyclePlanetLine } from "../../backend/planet-meanings.js";
 
 export const clean = (t) => String(t || "")
   .replace(/\r/g, "").replace(/\*\*(.+?)\*\*/g, "$1")
@@ -39,6 +40,8 @@ function actualWindowText(c) {
 
 export function renderCycleSummary(w, c) {
   w.h1(`${c.label} - The Initiation of This Season`);
+  const pl = c.planetLine || cyclePlanetLine(c.key);
+  if (pl) w.text(pl, { style: "italic", gap: 0.3 });
   w.text(`Your window (from your chart): ${actualWindowText(c)}.${c.window ? ` Typical window: ${c.window}.` : ""}`, { size: 11, color: muted, gap: 0.2 });
   w.text(`Your natal design is who you are and never changes; these are the energies flowing through it in this season, and your natal authority still chooses.`, { style: "italic", color: muted });
   w.h2("PROFILE YOU ARE LEARNING");

@@ -5,6 +5,7 @@
 // The South Node gate is the work a person has been doing; the North Node gate is the work they are moving
 // toward; the handoff happens around the Uranus opposition (about 40-44). Placements appear ONLY in the small
 // "For the curious" box. Pure helpers, server + browser.
+import { cyclePlanetLine } from './planet-meanings.js';
 import { CHANNELS, GATE_CENTER } from './cycle-enrichment.js';
 import { normChannelKey, channelLabel, computeAge, parseBirthdate } from './reading-context.js';
 import { authorityKey } from './natal-wand.js';
@@ -145,13 +146,13 @@ export function nodesReading(natal, { cycles = null, overlays = {}, status = nul
     const ds = uoCyc?.dS ? plain(uoCyc.dS.gate) : null, dn = uoCyc?.dN ? plain(uoCyc.dN.gate) : null;
     if (uoState === 'before') {
       const pk = uoPeak ? ` around ${uoPeak.getUTCFullYear()}` : '';
-      let s = `The big turning point in this map usually arrives in your early forties${pk}, the season this map calls ${uoPhase}. You aren't there yet. For now, the road behind you is still the road you're meant to walk fully, and the road ahead is already a quiet pull.`;
+      let s = `The big turning point in this map usually arrives in your early forties${pk}, the season this map calls ${uoPhase}. ${cyclePlanetLine('uranusOpposition')} You aren't there yet. For now, the road behind you is still the road you're meant to walk fully, and the road ahead is already a quiet pull.`;
       const fk = status?.focus?.key, fo = fk ? overlays?.[fk] : null, fcn = cycleNodes(fo)?.cN;
       if (fo && fcn) s += ` In the season you're in now (${status.focus.label}), that pull shows up as ${plain(fcn.gate).e}.`;
       turn.push(s);
     } else {
       const was = uoState === 'in' ? 'is' : 'was', ran = uoState === 'in' ? 'is running' : 'ran';
-      let s = `${uoState === 'in' ? 'Right now' : 'Somewhere ' + ages}${yrs ? ', ' + yrs : ''}, life ${ran} a quiet audit. This ${was} your midlife turning point, the season this map calls ${uoPhase}, when the road you'd been on starts handing you over to the road ahead.`;
+      let s = `${uoState === 'in' ? 'Right now' : 'Somewhere ' + ages}${yrs ? ', ' + yrs : ''}, life ${ran} a quiet audit. This ${was} your midlife turning point, the season this map calls ${uoPhase}, when the road you'd been on starts handing you over to the road ahead. ${cyclePlanetLine('uranusOpposition')}`;
       if (cs && cn) s += ` In that season the old pull toward ${cs.habit} started to loosen its grip, and in its place came a new pull: ${cn.e}.`;
       turn.push(s);
       if (ds && dn && uoCyc.dS.gate !== uoCyc.cS?.gate) turn.push(`The same season pressed on something quieter, too. It asked you to let go of ${ds.habit} and leaned you toward ${dn.e}.`);

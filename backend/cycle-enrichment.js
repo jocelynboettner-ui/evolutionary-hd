@@ -4,6 +4,7 @@
 // the person is learning to embody. Only reached (past/current) cycles are ever included.
 import { planetTable, planetMeaning, channelLabel, normChannelKey, CYCLE_PHASES } from './reading-context.js';
 import { cycleWandLinks, formatCycleWandLinks } from './natal-wand.js';
+import { cyclePlanetLine } from './planet-meanings.js';
 
 // Gene Keys (Richard Rudd): gate -> [Shadow, Gift, Siddhi]
 export const GENE_KEYS = {
@@ -108,7 +109,7 @@ export function cycleEnrichment(key, natal, overlay, peakDate, ownedChannels) {
   const cg = crossGates(overlay), ncg = crossGates(natal);
   const sun = overlay.personality?.Sun, dsun = overlay.design?.Sun;
   return {
-    key, label: CYCLE_PHASES[key]?.title || key, transit: CYCLE_PHASES[key]?.transit || key, phase: CYCLE_PHASES[key]?.phase || '', window: CYCLE_PHASES[key]?.window || '', theme: CYCLE_META[key]?.theme || '', peakDate: String(peakDate || '').slice(0, 10),
+    key, label: CYCLE_PHASES[key]?.title || key, transit: CYCLE_PHASES[key]?.transit || key, phase: CYCLE_PHASES[key]?.phase || '', window: CYCLE_PHASES[key]?.window || '', theme: CYCLE_META[key]?.theme || '', planetLine: cyclePlanetLine(key), peakDate: String(peakDate || '').slice(0, 10),
     profile: { natal: profileLabel(natal.profile), cycle: profileLabel(overlay.profile), shifted: profileLabel(natal.profile) !== profileLabel(overlay.profile),
       fromSun: sun && dsun ? `Conscious Sun ${sun.gate}.${sun.line} / Unconscious Sun ${dsun.gate}.${dsun.line}` : '' },
     cross: { natal: natal.incarnation_cross || '', cycle: overlay.incarnation_cross || '', gates: cg, natalGates: ncg,

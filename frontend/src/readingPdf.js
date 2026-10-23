@@ -5,6 +5,7 @@ export const SESSION_CTA = "Book a session · $333";
 import { jsPDF } from "jspdf";
 import { PLANET_INTRO, planetMeaning } from "../../backend/reading-context.js";
 import { writer, renderCycleSummary, renderNatalWand } from "./workbookPdf.js";
+import { PLANETS_CURIOUS } from "../../backend/planet-meanings.js";
 
 const clean = (t) => String(t || "")
   .replace(/\r/g, "")
@@ -187,6 +188,7 @@ export function buildReadingPdf({ name, birthdata, natal = '', natalImage = null
     if (c.enrichment) { const w = writer(doc); w.y = y; renderCycleSummary(w, c.enrichment); y = w.y + 10; }
     if (c.text) { ensure(60); renderText(c.text); }
   });
+  if (cycles.some(c => c.enrichment) || past.some(c => c.enrichment)) curiousBox(PLANETS_CURIOUS);
   if (closing) { ensure(LH * 6); y += LH; renderText(closing); }
   { ensure(LH * 3); doc.setFont("times", "italic"); doc.setFontSize(BODY); doc.setTextColor(...gold);
     doc.splitTextToSize("This reading is your map. The Living Blueprint Workbook is the companion to live it, one page and one practice at a time.", maxW).forEach(l => { doc.text(l, M, y); y += LH; }); y += LH * 0.6; }

@@ -2,6 +2,7 @@
 // (cycle profile, cycle cross, cycle type, Magic Wand gifts with planets + Gene Keys).
 import React from "react";
 import { wandLinkLines, wandWiringText } from "../../backend/natal-wand.js";
+import { cyclePlanetLine, PLANETS_CURIOUS } from "../../backend/planet-meanings.js";
 
 const gold = "#e0c068";
 export function actualWindow(c) {
@@ -20,6 +21,7 @@ export function CycleCards({ enrichment, compact = false }) {
             {enrichment.map(c => (
                 <div key={c.key} className="cc-card">
                     <div className="cc-cycle">{c.label}</div>
+                    {(c.planetLine || cyclePlanetLine(c.key)) && <p className="cc-planet" style={{ fontStyle: "italic", margin: "6px 0 8px" }}>{c.planetLine || cyclePlanetLine(c.key)}</p>}
                     <div className="cc-small">Your window (from your chart): {actualWindow(c)}</div>
                     {c.window && <div className="cc-small">Typical window: {c.window}</div>}
                     <div className="cc-grid">
@@ -136,6 +138,18 @@ export function NodesSection({ nodes }) {
                     {nodes.curious.lines.map((t, i) => <div key={i}>{t}</div>)}
                 </div>
             )}
+        </div>
+    );
+}
+
+// Small "For the curious" box: what each planet stands for (Ra Uru Hu's traditional keynotes, plain words).
+export function PlanetsCurious() {
+    return (
+        <div className="reading-nodes" data-section="planets-curious">
+            <div className="rn-curious">
+                <div className="rn-curious-t">{PLANETS_CURIOUS.title}</div>
+                {PLANETS_CURIOUS.lines.map((t, i) => <div key={i}>{t}</div>)}
+            </div>
         </div>
     );
 }
