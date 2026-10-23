@@ -3,7 +3,7 @@ import { CycleCards, NatalWandCard, NodesSection, ClosingMoves, PlanetsCurious, 
 import { downloadWorkbookPdf } from "./workbookPdf.js";
 import { buildReadingPdf, SESSION_URL, SESSION_INVITE, SESSION_CTA } from "./readingPdf.js";
 import { parseBirthText } from "../../backend/birth-parse.js";
-import { plainProse } from "../../backend/plain-guard.js";
+import { plainProse } from "../../backend/plain-guard.js"; // shared with the server (backend/plain-guard.js); the static site rebuilds only on frontend/ changes
 import { PLANET_ORDER, planetMeaning } from "../../backend/reading-context.js";
 import { renderBodygraphSVG, svgToPng } from "./bodygraph.js";
 
