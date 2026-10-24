@@ -6,6 +6,7 @@ import { parseBirthText } from "../../backend/birth-parse.js";
 import { plainProse } from "../../backend/plain-guard.js"; // shared with the server (backend/plain-guard.js); the static site rebuilds only on frontend/ changes
 import { PLANET_ORDER, planetMeaning } from "../../backend/reading-context.js";
 import { renderBodygraphSVG, svgToPng } from "./bodygraph.js";
+import { LOOK_BACK_TITLE, LOOK_BACK_INTRO, parseLookBackBlock } from "../../backend/look-back.js";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://evolutionary-hd-api.onrender.com";
 
@@ -38,10 +39,11 @@ function Stars() {
 function ReadingTableOfContents({ visible, birthdata, planets, cycles = [], status = null, part = "all" }) {
     if (!visible) return null;
     const showContents = part !== "key", showKey = part !== "contents";
-    const curKeys = status ? [status.focus?.key, ...(status.overlays || []).map(o => o.key)].filter(Boolean) : cycles.map(c => c.key);
-    const doneKeys = status ? (status.completed || []).map(c => c.key) : [];
-    const cycleItems = cycles.filter(c => curKeys.includes(c.key)).map(c => c.label + (c.key === status?.focus?.key ? "" : " (overlay)") + (c.key === "chironReturn" ? " — story, Magic Wand, Gene Keys, practices, Second-Half-of-Life Purpose" : " — story, Magic Wand, Gene Keys, practices"));
-    const doneItems = cycles.filter(c => doneKeys.includes(c.key)).map(c => c.label);
+    // Only the focus cycle is read in depth; overlays still integrating and completed cycles are in LOOKING BACK.
+    const curKeys = status ? [status.focus?.key].filter(Boolean) : cycles.map(c => c.key);
+    const doneKeys = status ? [...(status.overlays || []), ...(status.completed || [])].map(c => c.key) : [];
+    const cycleItems = cycles.filter(c => curKeys.includes(c.key)).map(c => c.label + (c.key === "chironReturn" ? " — story, deeper lessons, Magic Wand, Gene Keys, practices, Second-Half-of-Life Purpose" : " — story, deeper lessons, Magic Wand, Gene Keys, practices"));
+    const doneItems = cycles.filter(c => doneKeys.includes(c.key)).map(c => c.label + " — a short look back with journal prompts");
     return (
           <div style={{
                   background: "rgba(184,134,11,0.04)",
@@ -66,7 +68,7 @@ function ReadingTableOfContents({ visible, birthdata, planets, cycles = [], stat
             { title: "YOUR NODES — WHERE YOU'VE BEEN AND WHERE YOU'RE HEADED", items: [] },
             ...(cycleItems.length ? [{ title: "THE SEASON YOU ARE IN", items: cycleItems }] : []),
             { title: "THE INVITATION FORWARD", items: [] },
-            ...(doneItems.length ? [{ title: "YOUR COMPLETED CYCLES", items: doneItems }] : []),
+            ...(doneItems.length ? [{ title: LOOK_BACK_TITLE, items: doneItems }] : []),
             { title: "JOURNAL PROMPTS & ONE MOVE FOR THE NEXT 24 HOURS", items: [] },
             { title: "REFERENCE — PLANETARY KEY & HOW TO READ YOUR DEFINITION", items: [] },
                     ].map(({ title, items }) => (
@@ -212,15 +214,32 @@ function Bodygraphs({ charts, only, status = false }) {
     );
 }
 
+// One compact LOOK BACK card: years, 2-3 plain sentences on the season's theme and lesson, 2 journal prompts.
+// No bodygraph and no gate/channel cards for these cycles (owner direction: a look back, not a study).
+export function LookBackCard({ k, text, fallbackLabel }) {
+    const c = parseLookBackBlock(text || '');
+    if (!c.summary && !c.prompts.length) return null;
+    return <div className="cycle-section past-cycle look-back-card" data-cycle={k}>
+        <div className="lb-label">{c.label || (fallbackLabel || '').toUpperCase()}</div>
+        {(c.years || c.active) && <div className="lb-years">{c.active ? 'Still integrating · ' : ''}{c.years}</div>}
+        {c.summary && <p className="lb-summary">{c.summary}</p>}
+        {c.prompts.length > 0 && <>
+            <div className="lb-prompts-title">Look back</div>
+            <ul className="lb-prompts">{c.prompts.map((p, i) => <li key={i}>{p}</li>)}</ul>
+        </>}
+    </div>;
+}
+
 // On-screen reading, current-cycle-first: status + natal & current bodygraphs -> where you are now + home base
 // -> current cycle(s) in depth -> invitation forward -> completed cycles (brief) -> planetary key reference -> follow-ups.
 export function readingKeys(seg, charts) {
     const en = charts?.enrichment || [], st = charts?.status || {};
-    const cur = [st.focus?.key, ...(st.overlays || []).map(o => o.key)].filter(Boolean);
+    // Deep treatment: the FOCUS cycle only. Everything else the person has entered is a compact LOOK BACK card.
+    const cur = [st.focus?.key].filter(Boolean);
     const current = cur.filter(k => seg.cycles.some(c => c.key === k) || en.some(e => e.key === k));
     seg.cycles.forEach(c => { if (!current.includes(c.key)) current.push(c.key); });
     const order = ['saturnReturn', 'uranusOpposition', 'chironReturn', 'secondSaturnReturn'];
-    const done = (st.completed || []).map(c => c.key);
+    const done = [...(st.overlays || []), ...(st.completed || [])].map(c => c.key);
     const past = order.filter(k => !current.includes(k) && (seg.past.some(p => p.key === k) || (done.includes(k) && en.some(e => e.key === k))));
     return { current, past };
 }
@@ -254,16 +273,9 @@ function ReadingView({ messages, charts, birthdata }) {
         })}
         {en.length > 0 && <PlanetsCurious />}
         {seg.closing && <Message role="assistant" content={seg.closing} />}
-        {past.length > 0 && <div className="completed-cycles">
-            <Message role="assistant" content={seg.completed || "YOUR COMPLETED CYCLES\n\nIf you'd like to recognize or witness the cycles you've already walked, here they are."} />
-            {past.map(k => {
-                const e = en.find(x => x.key === k); const t = seg.past.find(c => c.key === k)?.text;
-                return <div key={k} className="cycle-section past-cycle" data-cycle={k} style={{ maxWidth: 560, margin: '0 auto' }}>
-                    {charts && <Bodygraphs charts={charts} only={k} />}
-                    {e && <CycleCards enrichment={[e]} compact />}
-                    {t && <Message role="assistant" content={t} />}
-                </div>;
-            })}
+        {past.length > 0 && <div className="completed-cycles look-back">
+            <Message role="assistant" content={seg.completed || LOOK_BACK_TITLE + "\n\n" + LOOK_BACK_INTRO} />
+            {past.map(k => <LookBackCard key={k} k={k} text={seg.past.find(c => c.key === k)?.text} fallbackLabel={en.find(x => x.key === k)?.label} />)}
         </div>}
         {charts?.natal?.nodes && <ClosingMoves nodes={charts.natal.nodes} />}
         <div className="session-invite" style={{ textAlign: "center", margin: "2rem auto", padding: "24px", maxWidth: 560, border: "1px solid rgba(184,134,11,0.4)", borderRadius: 12, background: "rgba(184,134,11,0.06)" }}>
@@ -334,8 +346,8 @@ async function buildPdfDoc(birthdata, messages, charts) {
         planets: charts?.natal?.planets || [],
         cycles: current.map(k => ({ key: k, image: imgs[k] || null, enrichment: en.find(e => e.key === k) || null, text: seg.cycles.find(c => c.key === k)?.text || '' })),
         closing: seg.closing,
-        completedIntro: past.length ? (seg.completed || "YOUR COMPLETED CYCLES\n\nIf you'd like to recognize or witness the cycles you've already walked, here they are.") : '',
-        past: past.map(k => ({ key: k, image: imgs[k] || null, enrichment: en.find(e => e.key === k) || null, text: seg.past.find(c => c.key === k)?.text || '' })),
+        completedIntro: past.length ? (seg.completed || LOOK_BACK_TITLE + "\n\n" + LOOK_BACK_INTRO) : '',
+        past: past.map(k => ({ key: k, label: en.find(e => e.key === k)?.label || '', text: seg.past.find(c => c.key === k)?.text || '' })),
         qa,
     });
 }
@@ -834,6 +846,13 @@ export default function App() {
                                 .wb-btn { background: transparent; color: #e0c068; border: 1.5px solid #c9a84c; margin-top: -0.75rem; }
                                 .wb-btn:hover { background: rgba(201,168,76,0.15); }
                                 ${cycleCardsCss}
+                                .look-back-card { max-width: 560px; margin: 0 auto 14px; padding: 14px 18px; border: 1px solid rgba(201,168,76,0.35); border-radius: 10px; background: rgba(201,168,76,0.05); font-family: var(--reading-font); }
+                                .lb-label { font-family: 'Cinzel', Georgia, serif; font-size: 13px; letter-spacing: 0.12em; color: #e0c068; }
+                                .lb-years { font-family: var(--ui-font); font-size: 13px; color: rgba(240,234,216,0.7); margin-top: 2px; }
+                                .lb-summary { font-size: 15.5px; line-height: 1.55; color: rgba(245,241,232,0.92); margin: 8px 0 6px; }
+                                .lb-prompts-title { font-family: var(--ui-font); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #c9a84c; margin-top: 6px; }
+                                .lb-prompts { margin: 4px 0 0 18px; padding: 0; font-size: 15px; line-height: 1.5; font-style: italic; color: rgba(245,241,232,0.88); }
+                                .lb-prompts li { margin-bottom: 4px; }
                                 ${nodesCss}
                                 .planet-list { display: flex; flex-direction: column; gap: 10px; }
                                 .planet-row { padding: 10px 12px; border-left: 2px solid rgba(201,168,76,0.5); background: rgba(255,255,255,0.03); border-radius: 0 8px 8px 0; }

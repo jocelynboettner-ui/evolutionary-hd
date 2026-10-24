@@ -6,6 +6,7 @@ import { jsPDF } from "jspdf";
 import { PLANET_INTRO, planetMeaning } from "../../backend/reading-context.js";
 import { writer, renderCycleSummary, renderNatalWand } from "./workbookPdf.js";
 import { PLANETS_CURIOUS } from "../../backend/planet-meanings.js";
+import { LOOK_BACK_TITLE, LOOK_BACK_INTRO, parseLookBackBlock } from "../../backend/look-back.js";
 
 const clean = (t) => String(t || "")
   .replace(/\r/g, "")
@@ -188,19 +189,37 @@ export function buildReadingPdf({ name, birthdata, natal = '', natalImage = null
     if (c.enrichment) { const w = writer(doc); w.y = y; renderCycleSummary(w, c.enrichment); y = w.y + 10; }
     if (c.text) { ensure(60); renderText(c.text); }
   });
-  if (cycles.some(c => c.enrichment) || past.some(c => c.enrichment)) curiousBox(PLANETS_CURIOUS);
+  if (cycles.some(c => c.enrichment)) curiousBox(PLANETS_CURIOUS);
   if (closing) { ensure(LH * 6); y += LH; renderText(closing); }
   { ensure(LH * 3); doc.setFont("times", "italic"); doc.setFontSize(BODY); doc.setTextColor(...gold);
     doc.splitTextToSize("This reading is your map. The Living Blueprint Workbook is the companion to live it, one page and one practice at a time.", maxW).forEach(l => { doc.text(l, M, y); y += LH; }); y += LH * 0.6; }
+  // LOOKING BACK: one compact box per other cycle (years, 2-3 sentences, 2 journal prompts). No bodygraph, no gate cards.
+  const lookBackBox = (c) => {
+    const lb = parseLookBackBlock(c.text || '');
+    if (!lb.summary && !lb.prompts.length) return;
+    const SZ = 10.5, LL = SZ * 1.45, pad = 10, iw = maxW - 2 * pad;
+    doc.setFontSize(SZ);
+    const sum = lb.summary ? doc.splitTextToSize(clean(lb.summary), iw) : [];
+    const pr = lb.prompts.map(p => doc.splitTextToSize("- " + clean(p), iw - 6));
+    const h = pad + 13 + (lb.years || lb.active ? 13 : 0) + 4 + sum.length * LL + (pr.length ? 16 + pr.reduce((a, l) => a + l.length * LL + 2, 0) : 0) + pad - 4;
+    ensure(h + 12);
+    doc.setDrawColor(...gold); doc.setLineWidth(0.6); doc.setFillColor(251, 247, 236); doc.roundedRect(M, y, maxW, h, 4, 4, "FD");
+    let yy = y + pad + 9;
+    doc.setFont("helvetica", "bold"); doc.setFontSize(9.5); doc.setTextColor(...gold); doc.text(clean(lb.label || (c.label || "").toUpperCase()), M + pad, yy, { charSpace: 0.8 }); yy += 13;
+    if (lb.years || lb.active) { doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...muted); doc.text(clean((lb.active ? "Still integrating - " : "") + lb.years), M + pad, yy); yy += 13; }
+    yy += 4; doc.setFont("times", "normal"); doc.setFontSize(SZ); doc.setTextColor(...ink);
+    sum.forEach(l => { doc.text(l, M + pad, yy); yy += LL; });
+    if (pr.length) {
+      yy += 4; doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.setTextColor(...gold); doc.text("LOOK BACK", M + pad, yy, { charSpace: 1 }); yy += 12;
+      doc.setFont("times", "italic"); doc.setFontSize(SZ); doc.setTextColor(...ink);
+      pr.forEach(ls => { ls.forEach(l => { doc.text(l, M + pad + 4, yy); yy += LL; }); yy += 2; });
+    }
+    y += h + 12;
+  };
   if (past.length) {
-    doc.addPage(); y = M;
-    renderText(completedIntro || "YOUR COMPLETED CYCLES\n\nIf you'd like to recognize or witness the cycles you've already walked, here they are.");
-    past.forEach(c => {
-      ensure(260); y += LH * 0.5;
-      if (c.image) drawImage(c.image, 220);
-      if (c.enrichment) { const w = writer(doc); w.y = y; renderCycleSummary(w, c.enrichment); y = w.y + 10; }
-      if (c.text) { ensure(60); renderText(c.text); }
-    });
+    ensure(LH * 8); y += LH;
+    renderText(completedIntro || LOOK_BACK_TITLE + "\n\n" + LOOK_BACK_INTRO);
+    past.forEach(lookBackBox);
   }
   renderClosingMoves(nodes);
   // 1:1 session invitation (clickable link), after the reading's close and before the reference appendix.

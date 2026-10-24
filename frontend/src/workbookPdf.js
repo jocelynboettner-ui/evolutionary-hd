@@ -180,9 +180,9 @@ export function buildWorkbookPdf({ name, birthdata, natal, enrichment = [], work
   if (enrichment.length) {
     w.page(); w.h1("Themes Across Your Cycles");
     if (focus && others.length) {
-      w.text(`This workbook goes deep on ${focus.label}, the season ${isOpenNow(focus, status, generatedAt) ? "you are in now" : "you most recently walked"}. Your other cycles are part of the ground it stands on; their full detail lives in Your Missing Map.`, { style: "italic" });
+      w.text(`This workbook goes deep on ${focus.label}, the season ${isOpenNow(focus, status, generatedAt) ? "you are in now" : "you most recently walked"}. Your other cycles are part of the ground it stands on; Your Missing Map gives each a short look back with journal prompts.`, { style: "italic" });
       others.filter(c => isOpenNow(c, status, generatedAt)).forEach(c =>
-        w.text(`${c.label}: also active now${c.key === "chironReturn" ? " (a permanent overlay)" : ""}, alongside ${focus.label}. Its story and Magic Wand are in Your Missing Map.`, { size: 11.5, gap: 0.35 }));
+        w.text(`${c.label}: also active now${c.key === "chironReturn" ? " (a permanent overlay)" : ""}, alongside ${focus.label}. Its look back is in Your Missing Map.`, { size: 11.5, gap: 0.35 }));
       const done = others.filter(c => !isOpenNow(c, status, generatedAt));
       if (done.length) w.text(`Completed: ${done.map(c => c.label).join(" and ")}. What ${done.length > 1 ? "those thresholds" : "that threshold"} broke open and gave you is already part of how you meet ${focus.label}.`, { size: 11.5, gap: 0.35 });
       w.y += 6;
