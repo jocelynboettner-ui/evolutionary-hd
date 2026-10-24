@@ -82,7 +82,7 @@ export const CYCLE_META = {
   saturnReturn:       { theme: 'the Maiden: becoming your own authority' },
   uranusOpposition:   { theme: 'closing the Mother: awakening to your authentic difference' },
   chironReturn:       { theme: 'the Phoenix: the wound becoming medicine; your second-half-of-life purpose' },
-  secondSaturnReturn: { theme: 'into the Sovereign: elderhood and the harvest of mastery' },
+  secondSaturnReturn: { theme: 'into the Sovereign: living from your own authority, with nothing left to prove' },
 };
 
 // natal, overlay: transformed v3 charts. Returns one cycle's enrichment.

@@ -1,6 +1,6 @@
 export const SESSION_URL = "https://app.acuityscheduling.com/schedule.php?owner=40622879";
-export const SESSION_INVITE = "Want a reading that's fully yours? Sit with me 1:1 and we'll read your map together.";
-export const SESSION_CTA = "Book a session · $333";
+export const SESSION_INVITE = "This is your map. If you want to walk the season you're in with me, we'll sit together 1:1 for 90 minutes. We'll read what it's asking of you, and where you've been performing instead of living.";
+export const SESSION_CTA = "Book your 90-minute session · $333";
 // readingPdf.js — client-side PDF export of a finished reading (no server cost).
 import { jsPDF } from "jspdf";
 import { PLANET_INTRO, planetMeaning } from "../../backend/reading-context.js";
@@ -61,7 +61,7 @@ export function buildReadingPdf({ name, birthdata, natal = '', natalImage = null
   doc.splitTextToSize("The map was always there. No one handed it to you.", maxW).forEach(l => { doc.text(l, W / 2, y, { align: "center" }); y += 17; });
   y += 2;
   doc.setFont("times", "italic"); doc.setFontSize(12); doc.setTextColor(...muted);
-  doc.splitTextToSize("Your personalized Human Design reading through your Saturn, Uranus and Chiron returns.", maxW).forEach(l => { doc.text(l, W / 2, y, { align: "center" }); y += 16; });
+  doc.splitTextToSize("Your Human Design, read through the great thresholds of your life: who you are by design, and the season you're in now.", maxW).forEach(l => { doc.text(l, W / 2, y, { align: "center" }); y += 16; });
   y += 14; doc.setTextColor(...ink);
   if (name) { doc.setFont("times", "normal"); doc.setFontSize(18); doc.text(clean(name), W / 2, y, { align: "center" }); y += 24; }
   doc.setFont("helvetica", "normal"); doc.setFontSize(11); doc.setTextColor(...muted);

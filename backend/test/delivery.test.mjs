@@ -4,7 +4,7 @@ import os from 'os';
 import path from 'path';
 import {
   deliveryConfig, validSessionId, isNewReadingRequest, readingAccess, readingState, sessionBirthdata,
-  createReadingStore, decodePdf, buildReadingEmail, sendReadingEmail, maskEmail, pdfFilename, MAX_READING_ATTEMPTS,
+  createReadingStore, decodePdf, buildReadingEmail, sendReadingEmail, maskEmail, pdfFilename, MAX_READING_ATTEMPTS, SESSION_BOOKING_URL,
 } from '../delivery.js';
 
 // Off unless both the key and the from address are set (no behavior change by default).
@@ -64,6 +64,8 @@ assert.deepEqual(msg.to, ['buyer@example.com']);
 assert.equal(msg.attachments[0].filename, 'evolutionary-hd-reading-jo-b-.pdf');
 assert.equal(Buffer.from(msg.attachments[0].content, 'base64').toString(), pdf.toString());
 assert.ok(msg.html.includes('Jo &lt;b&gt;'));
+assert.ok(msg.html.includes('Your Missing Map is attached') && msg.html.includes('90-minute 1:1 session is $333') && msg.html.includes(SESSION_BOOKING_URL));
+assert.ok(msg.text.includes('90-minute 1:1 session is $333: ' + SESSION_BOOKING_URL));
 assert.equal(msg.reply_to, 'jo@litbydesign.com');
 assert.equal(pdfFilename(''), 'evolutionary-hd-reading-reading.pdf');
 assert.equal(maskEmail('buyer@example.com'), 'b***@example.com');

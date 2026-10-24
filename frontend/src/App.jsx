@@ -393,7 +393,7 @@ async function streamChat(messages, birthdata) {
 const GEN_LINES = [
     "Calculating your chart and life cycles…",
     "Mapping the channels that have come online…",
-    "Weaving your story of becoming…",
+    "Reading the thresholds you've already crossed…",
     "Bringing it all together into your reading…",
 ];
 
@@ -648,7 +648,7 @@ export default function App() {
                                   <span style={{ fontSize: "clamp(32px,7vw,72px)", color: "#f0ead8", letterSpacing: "0.06em", lineHeight: 1 }}>Map</span>
                         </h1>
                         <p style={{ margin: "12px auto 0", maxWidth: "46ch", fontSize: "clamp(14px,2.2vw,18px)", color: "rgba(240,234,216,0.75)", fontStyle: "italic", lineHeight: 1.5 }}>The map was always there. No one handed it to you.</p>
-                        <p style={{ margin: "8px auto 0", maxWidth: "46ch", fontSize: "clamp(13px,1.9vw,16px)", color: "rgba(240,234,216,0.6)", lineHeight: 1.5 }}>Your personalized Human Design reading through your Saturn, Uranus and Chiron returns.</p>
+                        <p style={{ margin: "8px auto 0", maxWidth: "46ch", fontSize: "clamp(13px,1.9vw,16px)", color: "rgba(240,234,216,0.6)", lineHeight: 1.5 }}>Your Human Design, read through the great thresholds of your life: who you are by design, and the season you're in now.</p>
                         <div style={{ color: "#c9a84c", fontSize: "18px", marginTop: "12px", opacity: 0.7 }}>✦</div>
                   {chartDetected && birthdata && !loading && (
                       <div style={{ marginTop: "12px", fontSize: "12px", color: "rgba(134,239,172,0.85)", background: "rgba(134,239,172,0.08)", border: "1px solid rgba(134,239,172,0.2)", borderRadius: "20px", padding: "4px 16px", display: "inline-block" }}>
@@ -675,8 +675,8 @@ export default function App() {
                       <div style={{ textAlign: "center", padding: "60px 20px", color: "rgba(255,255,255,0.45)" }}>
                                   <div style={{ fontSize: "32px", marginBottom: "16px", opacity: 0.6 }}>✦</div>
                                   <div style={{ fontSize: "18px", lineHeight: "1.65", color: "rgba(230,220,255,0.92)" }}>
-                                                Share your birth date, time, and city<br />
-                                                to receive Your Missing Map, your evolutionary reading.
+                                                Share your name, birth date, time and city<br />
+                                                to receive Your Missing Map: the design you were born with, and the season of life you're in now.
                                   </div>
                                   <div style={{ marginTop: "16px", fontSize: "16px", color: "rgba(167,139,250,0.85)" }}>
                                                 Example: "My name is Sarah. October 5, 1975 at 6:30am in Chicago, Illinois"

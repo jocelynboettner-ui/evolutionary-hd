@@ -84,14 +84,17 @@ export const pdfFilename = (name) =>
 
 const esc = (s) => String(s || '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
+// The $333 90-minute 1:1 session (same booking link as SESSION_URL in frontend/src/readingPdf.js).
+export const SESSION_BOOKING_URL = 'https://app.acuityscheduling.com/schedule.php?owner=40622879';
+
 export function buildReadingEmail({ from, replyTo, to, name, pdf, downloadUrl }) {
   const hi = name ? `Dear ${esc(name)},` : 'Hello,';
   const link = downloadUrl ? `<p>You can also download it again here: <a href="${esc(downloadUrl)}">${esc(downloadUrl)}</a></p>` : '';
   const msg = {
     from, to: [to],
     subject: 'Your Missing Map',
-    html: `<p>${hi}</p><p>Thank you for your purchase. Your Missing Map, your personalized Human Design reading, is attached as a PDF.</p>${link}<p>With love,<br>Jocelyn</p>`,
-    text: `${name ? 'Dear ' + name + ',' : 'Hello,'}\n\nThank you for your purchase. Your Missing Map, your personalized Human Design reading, is attached as a PDF.\n${downloadUrl ? '\nYou can also download it again here: ' + downloadUrl + '\n' : ''}\nWith love,\nJocelyn`,
+    html: `<p>${hi}</p><p>Thank you. Your Missing Map is attached. Read it slowly, and come back to the section on the season you're in. It often lands differently the second time.</p>${link}<p>If you want to walk it with me, my 90-minute 1:1 session is $333: <a href="${SESSION_BOOKING_URL}">book your session</a>.</p><p>With love,<br>Jocelyn</p>`,
+    text: `${name ? 'Dear ' + name + ',' : 'Hello,'}\n\nThank you. Your Missing Map is attached. Read it slowly, and come back to the section on the season you're in. It often lands differently the second time.\n${downloadUrl ? '\nYou can also download it again here: ' + downloadUrl + '\n' : ''}\nIf you want to walk it with me, my 90-minute 1:1 session is $333: ${SESSION_BOOKING_URL}\n\nWith love,\nJocelyn`,
     attachments: [{ filename: pdfFilename(name), content: pdf.toString('base64') }],
   };
   if (replyTo) msg.reply_to = replyTo;
