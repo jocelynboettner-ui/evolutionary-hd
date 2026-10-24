@@ -30,7 +30,7 @@ function headingOf(line) {
  * @param {{ name?: string, birthdata?: {birthdate?:string,birthtime?:string,location?:string}, parts: string[], generatedAt?: Date }} opts
  * @returns {jsPDF}
  */
-export function buildReadingPdf({ name, birthdata, natal = '', natalImage = null, natalWand = null, nodes = null, planets = [], cycles = [], closing = '', completedIntro = '', past = [], parts = null, qa = [], generatedAt = new Date() }) {
+export function buildReadingPdf({ name, birthdata, natal = '', natalImage = null, natalWand = null, nodes = null, planets = [], cycles = [], closing = '', completedIntro = '', past = [], parts = null, qa = [], extraImages = [], generatedAt = new Date() }) {
   // Current-cycle-first order: natal + current-cycle bodygraphs -> where you are now + home base text ->
   // current cycle(s) (initiation summary, story + Magic Wand) -> invitation forward -> completed cycles
   // (smaller bodygraph, summary, brief story) -> planetary placements (reference) -> Your Questions.
@@ -79,7 +79,7 @@ export function buildReadingPdf({ name, birthdata, natal = '', natalImage = null
     if (y + h > H - M) { doc.addPage(); y = M; }
     doc.addImage(im.dataUrl, "PNG", (W - w) / 2, y, w, h); y += h + 14;
   };
-  const topImgs = [natalImage, ...cycles.map(c => c.image)].filter(Boolean);
+  const topImgs = [natalImage, ...cycles.map(c => c.image), ...extraImages].filter(Boolean);
   if (topImgs.length === 1) drawImage(topImgs[0], 330);
   else for (let i = 0; i < topImgs.length; i += 2) {
     const row = topImgs.slice(i, i + 2), w = (maxW - 14) / 2;
@@ -187,6 +187,7 @@ export function buildReadingPdf({ name, birthdata, natal = '', natalImage = null
   cycles.forEach(c => {
     doc.addPage(); y = M;
     if (c.enrichment) { const w = writer(doc); w.y = y; renderCycleSummary(w, c.enrichment); y = w.y + 10; }
+    if (c.curious) curiousBox(c.curious);
     if (c.text) { ensure(60); renderText(c.text); }
   });
   if (cycles.some(c => c.enrichment)) curiousBox(PLANETS_CURIOUS);

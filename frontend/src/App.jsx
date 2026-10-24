@@ -7,6 +7,7 @@ import { plainProse } from "../../backend/plain-guard.js"; // shared with the se
 import { PLANET_ORDER, planetMeaning } from "../../backend/reading-context.js";
 import { renderBodygraphSVG, svgToPng } from "./bodygraph.js";
 import { LOOK_BACK_TITLE, LOOK_BACK_INTRO, parseLookBackBlock } from "../../backend/look-back.js";
+import { isSovereignFocus, lookBackKeysFor, crossesCurious } from "../../backend/sovereign.js";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://evolutionary-hd-api.onrender.com";
 
@@ -41,8 +42,10 @@ function ReadingTableOfContents({ visible, birthdata, planets, cycles = [], stat
     const showContents = part !== "key", showKey = part !== "contents";
     // Only the focus cycle is read in depth; overlays still integrating and completed cycles are in LOOKING BACK.
     const curKeys = status ? [status.focus?.key].filter(Boolean) : cycles.map(c => c.key);
-    const doneKeys = status ? [...(status.overlays || []), ...(status.completed || [])].map(c => c.key) : [];
-    const cycleItems = cycles.filter(c => curKeys.includes(c.key)).map(c => c.label + (c.key === "chironReturn" ? " — story, deeper lessons, Magic Wand, Gene Keys, practices, Second-Half-of-Life Purpose" : " — story, deeper lessons, Magic Wand, Gene Keys, practices"));
+    const doneKeys = status ? lookBackKeysFor(status.focus?.key, (status.overlays || []).map(c => c.key), (status.completed || []).map(c => c.key)) : [];
+    const cycleItems = cycles.filter(c => curKeys.includes(c.key)).map(c => c.label + (c.key === "chironReturn" ? " — story, deeper lessons, Magic Wand, Gene Keys, practices, Second-Half-of-Life Purpose"
+        : isSovereignFocus(c.key) ? " — story, the cross of your Sovereign season, your natal, Chiron and Sovereign charts woven together, practices"
+        : " — story, deeper lessons, Magic Wand, Gene Keys, practices"));
     const doneItems = cycles.filter(c => doneKeys.includes(c.key)).map(c => c.label + " — a short look back with journal prompts");
     return (
           <div style={{
@@ -214,6 +217,15 @@ function Bodygraphs({ charts, only, status = false }) {
     );
 }
 
+// Small "For the curious" box (same look as the planets box); numbers live only here and in the chart cards.
+function CuriousBox({ box }) {
+    if (!box?.lines?.length) return null;
+    return <div className="reading-nodes" data-section="sovereign-crosses"><div className="rn-curious">
+        <div className="rn-curious-t">{box.title}</div>
+        {box.lines.map((t, i) => <div key={i}>{t}</div>)}
+    </div></div>;
+}
+
 // One compact LOOK BACK card: years, 2-3 plain sentences on the season's theme and lesson, 2 journal prompts.
 // No bodygraph and no gate/channel cards for these cycles (owner direction: a look back, not a study).
 export function LookBackCard({ k, text, fallbackLabel }) {
@@ -239,7 +251,7 @@ export function readingKeys(seg, charts) {
     const current = cur.filter(k => seg.cycles.some(c => c.key === k) || en.some(e => e.key === k));
     seg.cycles.forEach(c => { if (!current.includes(c.key)) current.push(c.key); });
     const order = ['saturnReturn', 'uranusOpposition', 'chironReturn', 'secondSaturnReturn'];
-    const done = [...(st.overlays || []), ...(st.completed || [])].map(c => c.key);
+    const done = lookBackKeysFor(st.focus?.key, (st.overlays || []).map(c => c.key), (st.completed || []).map(c => c.key));
     const past = order.filter(k => !current.includes(k) && (seg.past.some(p => p.key === k) || (done.includes(k) && en.some(e => e.key === k))));
     return { current, past };
 }
@@ -259,7 +271,7 @@ function ReadingView({ messages, charts, birthdata }) {
     const { current, past } = readingKeys(seg, charts);
     return <>
         {before.map((m, i) => <Message key={'b' + i} role={m.role} content={m.content} />)}
-        {charts && <Bodygraphs charts={charts} only={['natal', ...current]} status />}
+        {charts && <Bodygraphs charts={charts} only={['natal', ...current, ...(isSovereignFocus(charts?.status?.focus?.key) ? ['chironReturn'] : [])]} status />}
         {charts?.natal?.birthTimeNote && <p className="birth-note" style={{ fontSize: 13, color: '#e8dcc0', textAlign: 'center', margin: '0 auto 1rem', maxWidth: 560 }}>Birth time note: {charts.natal.birthTimeNote}</p>}
         <Message role="assistant" content={seg.natal} />
         {charts?.natal?.wand && <NatalWandCard wand={charts.natal.wand} />}
@@ -268,6 +280,7 @@ function ReadingView({ messages, charts, birthdata }) {
             const e = en.find(x => x.key === k); const t = seg.cycles.find(c => c.key === k)?.text;
             return <div key={k} className="cycle-section" data-cycle={k}>
                 {e && <CycleCards enrichment={[e]} compact />}
+                {isSovereignFocus(k) && <CuriousBox box={crossesCurious(en)} />}
                 {t && <Message role="assistant" content={t} />}
             </div>;
         })}
@@ -344,7 +357,8 @@ async function buildPdfDoc(birthdata, messages, charts) {
         natalWand: charts?.natal?.wand || null,
         nodes: charts?.natal?.nodes || null,
         planets: charts?.natal?.planets || [],
-        cycles: current.map(k => ({ key: k, image: imgs[k] || null, enrichment: en.find(e => e.key === k) || null, text: seg.cycles.find(c => c.key === k)?.text || '' })),
+        cycles: current.map(k => ({ key: k, image: imgs[k] || null, enrichment: en.find(e => e.key === k) || null, curious: isSovereignFocus(k) ? crossesCurious(en) : null, text: seg.cycles.find(c => c.key === k)?.text || '' })),
+        extraImages: isSovereignFocus(charts?.status?.focus?.key) && imgs.chironReturn ? [imgs.chironReturn] : [],
         closing: seg.closing,
         completedIntro: past.length ? (seg.completed || LOOK_BACK_TITLE + "\n\n" + LOOK_BACK_INTRO) : '',
         past: past.map(k => ({ key: k, label: en.find(e => e.key === k)?.label || '', text: seg.past.find(c => c.key === k)?.text || '' })),

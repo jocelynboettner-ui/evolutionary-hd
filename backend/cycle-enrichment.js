@@ -123,18 +123,24 @@ export function cycleEnrichment(key, natal, overlay, peakDate, ownedChannels) {
   };
 }
 
-// Build enrichment for reached cycles that have an overlay chart (peak <= now), chronological.
+// Build enrichment for reached cycles (window opened) that have an overlay chart, chronological.
 export function buildEnrichment(natal, overlays, cycles, now = new Date()) {
   const keys = ['saturnReturn', 'uranusOpposition', 'chironReturn', 'secondSaturnReturn'];
   const avail = keys.map(k => {
     const peak = cycles?.[k]?.peak_datetime || cycles?.[k]?.peak;
     const t = new Date(peak).getTime();
-    if (!overlays?.[k] || isNaN(t) || t > now.getTime()) return null;
+    // A cycle is included once its window has opened (peak - 3.5 years), so the focus cycle has its chart data
+    // before the exact peak too. Cycles whose window has not opened are future and never included.
+    if (!overlays?.[k] || isNaN(t) || t - 3.5 * 365.25 * 864e5 > now.getTime()) return null;
     return { key: k, peak, chart: overlays[k] };
   }).filter(Boolean).sort((a, b) => String(a.peak).localeCompare(String(b.peak)));
-  // each channel owned by the earliest cycle that produced it
+  // each channel owned by the earliest cycle that produced it. Exception: when the Second Saturn Return is the
+  // focus (the latest opened window), it is the one deep section (the Sovereign integration), so it owns every
+  // channel of its own overlay; the earlier cycles are compact Look Back cards that do not list channels.
   const owned = new Map(); const seen = new Set();
-  for (const c of avail) {
+  const last = avail[avail.length - 1];
+  const ownOrder = last?.key === 'secondSaturnReturn' ? [last, ...avail.slice(0, -1)] : avail;
+  for (const c of ownOrder) {
     const s = new Set(); const comp = new Set([...(natal.gates || []), ...(c.chart.gates || [])]); const ng = new Set(natal.gates || []);
     CHANNELS.forEach(([a, b]) => { if (comp.has(a) && comp.has(b) && !(ng.has(a) && ng.has(b))) { const k = normChannelKey(`${a}-${b}`); if (!seen.has(k)) { seen.add(k); s.add(k); } } });
     owned.set(c.key, s);

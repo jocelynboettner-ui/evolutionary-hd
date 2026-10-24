@@ -160,6 +160,7 @@ export function buildWorkbookPdf({ name, birthdata, natal, enrichment = [], work
     w.page(); renderCycleSummary(w, c);
     w.page(); w.h1(`${c.label} - Integration`);
     if (cw.cycleReflection) w.text(cw.cycleReflection, { style: "italic" });
+    if (c.key === "secondSaturnReturn" && cw.purposeReflection) { w.h2("WHAT THIS SEASON IS FOR"); w.text(cw.purposeReflection, { style: "italic" }); }
     if (c.key === "chironReturn" && wb.purpose?.purposeReflection) { w.h2("YOUR SECOND-HALF-OF-LIFE PURPOSE"); w.text(wb.purpose.purposeReflection, { style: "italic" }); }
     const gifts = (cw.geneKeyContemplations || []).length ? cw.geneKeyContemplations : [...c.magicWand.newGates].filter(g => g.geneKey).sort((a, b) => keyRank(c, b.gate) - keyRank(c, a.gate)).slice(0, 3).map(g => ({ gate: g.gate, prompt: `Where are you meeting the gift of ${g.geneKey.gift} (Gate ${g.gate}) in your life now?` }));
     w.h2("GENE KEYS GIFT CONTEMPLATION");

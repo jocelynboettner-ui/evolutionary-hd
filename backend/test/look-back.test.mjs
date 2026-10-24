@@ -56,7 +56,7 @@ assert.equal(parseLookBackBlock(arcText(block, 'masculine')).label, 'FIRST SATUR
 const server = rd('../server.js');
 assert.ok(server.includes('const currentKeys = [focusKey].filter(Boolean);'));
 assert.ok(server.includes("const purposeJob = chiron && focusKey === 'chironReturn' ?"));
-assert.ok(server.includes('lookBackKeys = ORDER.filter(k => k !== focusKey && (overlayKeys.includes(k) || completedKeys.includes(k)))'));
+assert.ok(server.includes('const lookBackKeys = lookBackKeysFor(focusKey, overlayKeys, completedKeys);'));
 assert.ok(server.includes('[[COMPLETED]]') && server.includes('formatLookBackBlock(') && server.includes('fallbackLookBack(key, c, active)'));
 assert.ok(server.includes('if (!currentKeys.includes(key)) continue;   // story only for the focus cycle'));
 assert.ok(server.includes('FOCUS RULE: only ONE cycle is read in depth') && server.includes('deeper lessons'));
