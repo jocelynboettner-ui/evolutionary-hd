@@ -12,3 +12,6 @@ export const TOWNS_SENTENCE = "Think of this in terms of cities and maps. These 
 
 // Generator / Manifesting Generator drain, in the reader's own words. Never "work that does not want you."
 export const UNWANTED_WORK = "doing work that you don't want to do";
+
+// 6th-line profile in the third phase (off the roof): the home-base role-model line.
+export const ROLE_MODEL_LINE = "You are here as the example, not the instructor. You live your life, and other people find their own way by watching yours.";

@@ -1,5 +1,6 @@
 // reading-context.js
 import { PLANET_KEYNOTES } from './planet-meanings.js';
+import { ROLE_MODEL_LINE } from './reading-copy.js';
 // Deterministic facts handed to the model so it never has to guess:
 // canonical channel names, current age / HD life phase, fixed natal authority,
 // and a one-cycle-per-channel attribution list.
@@ -57,6 +58,11 @@ export function computeAge(birthdate, now = new Date()) {
   return age;
 }
 
+// A 6 in the profile (3/6, 4/6, 6/2, 6/3) is the role-model line.
+export function hasSixthLine(profile) {
+  return /(^|\/)6(\/|$)/.test(String(profile || '').replace(/\s/g, ''));
+}
+
 // Human Design three-phase life (most pronounced for 6th-line profiles).
 export function lifePhase(age) {
   if (age == null) return null;
@@ -81,6 +87,9 @@ export function buildFactsBlock(hdChart, birthdata, now = new Date()) {
     L.push('TODAY: ' + now.toISOString().slice(0, 10));
     L.push('CURRENT AGE: ' + age + ' (computed from birth date; do not estimate a different age)');
     L.push('CURRENT HD LIFE PHASE: ' + phase.label);
+    if (phase.key === 'offroof' && hasSixthLine(hdChart?.profile)) {
+      L.push('ROLE MODEL LINE (6th line, third phase; use this exact sentence once in YOUR HOME BASE): ' + ROLE_MODEL_LINE);
+    }
   }
   L.push('');
   L.push('FIXED RULES:');

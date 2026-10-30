@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { plainProse, numericJargon } from '../plain-guard.js';
 const cases = [
   ['The 21-45 Channel of Money came online.', 'The Channel of Money came online.'],
@@ -34,4 +35,14 @@ const homed = plainProse(home);
 assert.match(homed, /G center\. Think of this in terms of cities and maps\. These are the towns you know by heart\./);
 assert.equal(plainProse(homed), homed);
 assert.ok(!plainProse('The Sun is a town.').includes('cities and maps'));
+const muddy = 'You are here to obscure the path so that others have to find their own.';
+assert.equal(plainProse(muddy), "You are here as the example, not the instructor. You live your life, and other people find their own way by watching yours.");
+assert.equal(plainProse(muddy + ' ' + muddy), "You are here as the example, not the instructor. You live your life, and other people find their own way by watching yours.");
+const role = 'YOUR HOME BASE\n\nIn this third phase you come down off the roof as the role model.\n\nYOUR MAGIC WAND\n\nThe Sun.';
+assert.match(plainProse(role), /role model\. You are here as the example, not the instructor\./);
+assert.ok(!plainProse('WHERE YOU ARE NOW\n\nYou are off the roof.').includes('the example, not the instructor'));
+const serverSrc = fs.readFileSync(new URL('../server.js', import.meta.url), 'utf8');
+assert.ok(serverSrc.includes('ROLE_MODEL_LINE'));
+assert.ok(!serverSrc.includes("You don't hand people the steps"));
+assert.ok(!/Leave both out of the prompt|Proposed plain rewrites/i.test(serverSrc));
 console.log('plain-language guard tests passed (gate/channel/line numbers out of prose; dates, ages, profiles kept)');

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import { CHANNEL_NAMES, channelLabel, computeAge, lifePhase, buildFactsBlock, attributeChannels, formatAttribution } from '../reading-context.js';
+import { CHANNEL_NAMES, channelLabel, computeAge, lifePhase, hasSixthLine, buildFactsBlock, attributeChannels, formatAttribution } from '../reading-context.js';
+import { ROLE_MODEL_LINE } from '../reading-copy.js';
 import { formatEvolutionaryArcForPrompt } from '../hd-evolutionary-arc.js';
 
 // 36 canonical channels, all named
@@ -23,6 +24,11 @@ const natal = { type:'Generator', authority:'Sacral Authority', profile:'4/6', i
 const facts = buildFactsBlock(natal, { birthdate:'1973-09-30' }, now);
 assert.match(facts, /CURRENT AGE: 53/);
 assert.match(facts, /off the roof/);
+assert.ok(facts.includes(ROLE_MODEL_LINE), '4/6 off the roof carries the role-model line');
+assert.equal(hasSixthLine('4/6') && hasSixthLine('6/2') && hasSixthLine('3/6') && hasSixthLine('6/3'), true);
+assert.equal(hasSixthLine('5/1') || hasSixthLine('2/4') || hasSixthLine('1/3'), false);
+assert.ok(!buildFactsBlock({ ...natal, profile: '5/1' }, { birthdate: '1973-09-30' }, now).includes(ROLE_MODEL_LINE));
+assert.ok(!buildFactsBlock(natal, { birthdate: '1986-10-16' }, now).includes(ROLE_MODEL_LINE), 'still on the roof');
 assert.match(facts, /10-57 Channel of Perfected Form/);
 assert.match(facts, /Sacral Authority\. It is FIXED/);
 assert.match(facts, /NEVER say the person's authority changes/);

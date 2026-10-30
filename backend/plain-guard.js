@@ -7,7 +7,7 @@
 //   bare "18.4" -> removed; "hanging gate" -> plain phrase; "Gene Key 21" -> "its Gene Key"
 import { GENE_KEYS, CHANNELS } from './cycle-enrichment.js';
 import { channelLabel, normChannelKey } from './reading-context.js';
-import { TOWNS_SENTENCE, UNWANTED_WORK } from './reading-copy.js';
+import { ROLE_MODEL_LINE, TOWNS_SENTENCE, UNWANTED_WORK } from './reading-copy.js';
 
 const CH = new Set(CHANNELS.map(([a, b]) => `${a}-${b}`));
 const isChannel = (a, b) => CH.has(`${Math.min(a, b)}-${Math.max(a, b)}`);
@@ -52,6 +52,8 @@ export function plainProse(text) {
   t = dropRepeatedAlive(t);
   t = t.replace(/doing work that does not want you/gi, UNWANTED_WORK);
   t = t.replace(/\bwork that (?:does not|doesn't) want you\b/gi, "work that you don't want to do");
+  t = replaceObscurePath(t);
+  t = ensureRoleModelLine(t);
   t = ensureTownsSentence(t);
   // Tidy: doubled spaces, space before punctuation, "the the", sentence-start capitals.
   t = t.replace(/[ \t]{2,}/g, ' ').replace(/ +([,.;:!?])/g, '$1').replace(/\bthe the\b/gi, 'the').replace(/,\s*,/g, ',');
@@ -70,6 +72,32 @@ function dropRepeatedAlive(text) {
     if (!seen) { seen = true; return m; }
     return '';
   });
+}
+
+// The 6th-line role-model sentence. Replaces "obscure the path…" if the model still writes it,
+// and adds the chosen line once when home base is already describing that phase.
+function replaceObscurePath(text) {
+  if (!text || !/obscure the path/i.test(text)) return text;
+  const line = ROLE_MODEL_LINE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return text
+    .replace(/[^.!?\n]*\bobscure the path\b[^.!?\n]*[.!?]?/gi, ROLE_MODEL_LINE)
+    .replace(new RegExp(line + '(?:\\s*' + line + ')+', 'g'), ROLE_MODEL_LINE);
+}
+function ensureRoleModelLine(text) {
+  if (!text || text.includes(ROLE_MODEL_LINE)) return text;
+  const head = text.search(/YOUR HOME BASE\b/);
+  if (head < 0) return text;
+  const rest = text.slice(head);
+  const nextHead = rest.slice(1).search(/\nYOUR [A-Z]/);
+  const end = nextHead < 0 ? text.length : head + 1 + nextHead;
+  const section = text.slice(head, end);
+  if (!/role model|off the roof/i.test(section)) return text;
+  const sentences = section.split(/(?<=[.!?])\s+/);
+  const target = sentences.find(s => /role model|off the roof/i.test(s));
+  if (!target) return text;
+  const at = head + section.indexOf(target) + target.length;
+  const glue = /[.!?]$/.test(target.trim()) ? ' ' : '. ';
+  return text.slice(0, at) + glue + ROLE_MODEL_LINE + text.slice(at);
 }
 
 // Backstop for YOUR HOME BASE: after the first sentence that names the Sacral and the G center,
