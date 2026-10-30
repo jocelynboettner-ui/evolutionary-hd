@@ -20,6 +20,7 @@ import { buildEnrichment, formatEnrichmentForPrompt } from './cycle-enrichment.j
 import { isPaidCheckout, createGiftCodes, listGiftCodes } from './gift.js';
 import { normalizeArc, arcText, applyArc, arcPromptNote } from './arc.js';
 import { deliveryConfig, createReadingStore, validSessionId, isNewReadingRequest, readingAccess, readingState, sessionBirthdata, decodePdf, sendReadingEmail, maskEmail, MAX_RESENDS } from './delivery.js';
+import { isolateChartMessages, resolveChartBirth, readingIdentity, assertReadingIdentity, assertFactsMatchIdentity, publishChartPayload, shouldUseFollowUpMode, deliveryBirthOk, chartIdForBirth } from './chart-identity.js';
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -425,15 +426,28 @@ async function setReadingState(session, fields) {
 
 app.post("/api/chat", async (req, res) => {
   const { sessionId, previewCode } = req.body || {};
-  if (!isOwnerCode(previewCode) && !(await isPaidSession(sessionId))) {
+  const ownerPreview = isOwnerCode(previewCode);
+  if (!ownerPreview && !(await isPaidSession(sessionId))) {
     return res.status(402).json({ error: "Payment required" });
   }
+  // A new birth entry is its own chart. Drop any earlier person's reading before access checks
+  // and before the model sees the thread (including the automatic "continue" request).
+  if (Array.isArray(req.body?.messages)) {
+    const before = req.body.messages.length;
+    req.body.messages = isolateChartMessages(req.body.messages);
+    if (req.body.messages.length !== before) console.log('Fresh chart turn: dropped', before - req.body.messages.length, 'earlier message(s)');
+  }
   // With email delivery on: one reading per payment, bound to the birth details entered at checkout.
-  if (DELIVERY.enabled && !isOwnerCode(previewCode)) {
+  // Owner preview never inherits a checkout session. A different birth payload is rejected so a gift
+  // code or saved session cannot be filled with the previous customer's chart.
+  if (DELIVERY.enabled && !ownerPreview) {
     const session = await getPaidSession(sessionId);
     if (!session) return res.status(402).json({ error: "Payment required" });
-    const bound = sessionBirthdata(session);
-    if (bound) req.body.birthdata = bound;
+    const decision = resolveChartBirth({ requestBirth: req.body?.birthdata, sessionBirth: sessionBirthdata(session), ownerPreview: false });
+    if (decision.error) {
+      return res.status(409).json({ error: "This checkout is already tied to a different birth chart. Enter this person's birth details and start a new checkout so their chart is calculated on its own.", code: decision.error });
+    }
+    if (decision.birthdata) req.body.birthdata = decision.birthdata;
     const isNew = isNewReadingRequest(req.body.messages);
     const access = readingAccess(session, isNew);
     if (!access.allow) return res.status(409).json({ error: "This purchase's reading has already been created.", code: access.code });
@@ -473,6 +487,7 @@ app.post("/api/chat", async (req, res) => {
 
   if (birthdata && birthdata.birthdate) {
     let chartText = '';
+    let factsBlock = '';
     let hdChart = null;
     let cycles = null;
 
@@ -566,7 +581,19 @@ app.post("/api/chat", async (req, res) => {
         return ov ? { ...c, chart: bodygraphData(ov) } : null;
       }).filter(Boolean);
       const cycleCharts = enrichment.map(c => ({ key: c.key, label: c.label, peak: c.peakDate, chart: bodygraphData(overlaysForClient?.[c.key]) })).filter(c => c.chart);
-      res.write('data: ' + JSON.stringify({ charts: { natal: natalBg, cycles: activeOverlays, status: cycleStatus, enrichment, cycleCharts } }) + '\n\n');
+      let chartsPayload;
+      try {
+        const identity = readingIdentity(hdChart, birthdata);
+        factsBlock = buildFactsBlock(hdChart, birthdata, now, identity.chartId);
+        assertReadingIdentity(identity, hdChart, birthdata);
+        assertFactsMatchIdentity(factsBlock, identity, now);
+        chartsPayload = publishChartPayload({ natal: natalBg, cycles: activeOverlays, status: cycleStatus, enrichment, cycleCharts }, hdChart, birthdata);
+      } catch (e) {
+        console.error('Chart identity mismatch:', e.message);
+        sendNotice(res, "This reading didn't match the birth details just entered, so it was not generated. Please try again.", 'chart_identity_mismatch');
+        return;
+      }
+      res.write('data: ' + JSON.stringify({ charts: chartsPayload }) + '\n\n');
     }
 
         // ── GROUP 2: Start slow fetches in background ──
@@ -606,7 +633,7 @@ app.post("/api/chat", async (req, res) => {
       if (lastMsg?.role === 'user') {
         augmentedMessages[augmentedMessages.length - 1] = {
           ...lastMsg,
-          content: buildFactsBlock(hdChart, birthdata, now) + '\n\n' + chartText + '\n\n' + lastMsg.content,
+          content: (factsBlock || buildFactsBlock(hdChart, birthdata, now, readingIdentity(hdChart, birthdata).chartId)) + '\n\n' + chartText + '\n\n' + lastMsg.content,
         };
       }
     }
@@ -821,7 +848,7 @@ End with one integrative sentence about ${isFocus || isOverlay ? 'how this is al
       await runArcPhase();
     } else {
       // Follow-up question after the reading: answer just that question, concisely.
-      const isFollowUp = messages.some(m => m?.role === 'assistant' && typeof m.content === 'string' && m.content.length > 500);
+      const isFollowUp = shouldUseFollowUpMode(messages);
       if (isFollowUp) {
         const li = augmentedMessages.length - 1;
         if (augmentedMessages[li]?.role === 'user') augmentedMessages[li] = { ...augmentedMessages[li], content: augmentedMessages[li].content + '\n\n[FOLLOW-UP MODE: answer only this question in 180-300 words. Honor the cycle framing in the question (natal design is who I am; cycle energies flow through it); never open by correcting the question. Do not re-explain what the reading already covered.]' };
@@ -955,9 +982,13 @@ async function emailStoredReading(session, pdf) {
 // Browser uploads the PDF it built once the reading finished; we store it and email it once.
 app.post('/api/reading/deliver', async (req, res) => {
   if (!DELIVERY.enabled) return res.json({ enabled: false, emailed: false });
-  const { sessionId, pdf } = req.body || {};
+  const { sessionId, pdf, birth } = req.body || {};
   const session = await getPaidSession(sessionId);
   if (!session) return res.status(402).json({ error: 'Payment required' });
+  const boundBirth = sessionBirthdata(session);
+  if (!deliveryBirthOk(boundBirth, birth)) {
+    return res.status(409).json({ error: 'This reading does not match the birth details for this purchase.', code: 'birth_mismatch' });
+  }
   const st = readingState(session);
   if (st.status === 'delivered' && readingStore.load(session.id)) {
     return res.json({ enabled: true, emailed: true, already: true });
@@ -965,7 +996,7 @@ app.post('/api/reading/deliver', async (req, res) => {
   const buf = decodePdf(pdf);
   if (!buf) return res.status(400).json({ error: 'Invalid PDF' });
   try {
-    readingStore.save(session.id, buf, { email: session.customer_details?.email || '' });
+    readingStore.save(session.id, buf, { email: session.customer_details?.email || '', chartId: chartIdForBirth(boundBirth || birth) });
   } catch (err) { console.error('Reading store error:', err.message); }
   try {
     const out = await emailStoredReading(session, buf);

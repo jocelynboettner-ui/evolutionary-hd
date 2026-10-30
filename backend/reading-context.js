@@ -65,12 +65,15 @@ export function lifePhase(age) {
   return { key: 'offroof', label: 'Third phase (~50 onward): "off the roof" — coming down as the embodied role model, living the wisdom authentically' };
 }
 
-export function buildFactsBlock(hdChart, birthdata, now = new Date()) {
+export function buildFactsBlock(hdChart, birthdata, now = new Date(), chartId = '') {
   const age = computeAge(birthdata?.birthdate, now);
   const phase = lifePhase(age);
   const authority = hdChart?.authority || 'unknown';
   const L = [];
   L.push('=== CRITICAL CHART FACTS (use EXACTLY these values, no exceptions) ===');
+  if (chartId) L.push('CHART ID: ' + chartId);
+  const who = [birthdata?.name, birthdata?.birthdate, birthdata?.birthtime, birthdata?.location].filter(Boolean).join(' | ');
+  if (who) L.push('THIS CHART ONLY: ' + who + '. Do not use type, profile, authority, cross, centers, or channels from any other person.');
   L.push('TYPE: ' + (hdChart?.type || 'unknown'));
   L.push('AUTHORITY: ' + authority);
   L.push('PROFILE: ' + (hdChart?.profile || 'unknown'));
