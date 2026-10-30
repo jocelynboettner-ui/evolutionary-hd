@@ -89,7 +89,7 @@ export function renderNatalWand(w, wand, { title = "YOUR MAGIC WAND - YOUR CONSC
     const wire = wandWiringText(p);
     if (wire) w.text(wire, { size: 10.5, indent: 12, gap: 0.3 });
   });
-  w.text(`How you wield it: ${wand.type}${wand.strategy ? ` (${wand.strategy})` : ""}, ${wand.authority}: ${wand.wield}.`, { size: 11, gap: 0.4 });
+  w.text(`How you decide: ${wand.type}${wand.strategy ? ` (${wand.strategy})` : ""}, ${wand.authority}: ${wand.wield}.`, { size: 11, gap: 0.4 });
 }
 
 const keyRank = (c, g) => (c.magicWand.channels.some(ch => ch.newGates.includes(g)) ? 2 : 0) + ((c.cross.gates || []).includes(g) ? 1 : 0);

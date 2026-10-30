@@ -4,7 +4,8 @@ import { downloadWorkbookPdf } from "./workbookPdf.js";
 import { buildReadingPdf, SESSION_URL, SESSION_INVITE, SESSION_CTA } from "./readingPdf.js";
 import { parseBirthText } from "../../backend/birth-parse.js";
 import { plainProse } from "../../backend/plain-guard.js"; // shared with the server (backend/plain-guard.js); the static site rebuilds only on frontend/ changes
-import { PLANET_ORDER, planetMeaning } from "../../backend/reading-context.js";
+import { OPENING_LINE, COMPLETED_CYCLES_INTRO } from "../../backend/reading-copy.js";
+import { PlanetKey, GateModal, planetKeyCss } from "./PlanetKey.jsx";
 import { renderBodygraphSVG, svgToPng } from "./bodygraph.js";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://evolutionary-hd-api.onrender.com";
@@ -36,6 +37,7 @@ function Stars() {
 }
 
 function ReadingTableOfContents({ visible, birthdata, planets, cycles = [], status = null, part = "all" }) {
+    const [openGate, setOpenGate] = useState(null);
     if (!visible) return null;
     const showContents = part !== "key", showKey = part !== "contents";
     const curKeys = status ? [status.focus?.key, ...(status.overlays || []).map(o => o.key)].filter(Boolean) : cycles.map(c => c.key);
@@ -86,32 +88,8 @@ function ReadingTableOfContents({ visible, birthdata, planets, cycles = [], stat
                 {showKey && <>
                 {showContents && <div style={{ textAlign: "center", color: "rgba(184,134,11,0.3)", margin: "24px 0", letterSpacing: "0.3em" }}>—</div>}
                 <div style={{ marginBottom: "8px" }}>
-                        <div style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: "10px", letterSpacing: "0.15em", textTransform: "uppercase", color: "#b8860b", marginBottom: "8px" }}>PLANETARY KEY — How To Read Your Gates</div>
-                        <div style={{ fontSize: "16px", color: "rgba(240,234,216,0.85)", fontStyle: "italic", marginBottom: "16px", lineHeight: "1.6" }}>
-                                  Each gate in your chart sits in a planetary position. The planet tells you HOW that gate expresses in your life.
-                        </div>
-                        <div className="planet-list">
-                          {PLANET_ORDER.map(planet => {
-                              const row = (planets || []).find(r => r.planet === planet);
-                              if (planets && !row) return null;            // e.g. Chiron when not in chart data
-                              const fmt = a => a ? `${a.gate}.${a.line}${a.name ? " · " + a.name : ""}` : "—";
-                              const cm = planetMeaning(planet, "Conscious"), um = planetMeaning(planet, "Unconscious");
-                              return (
-                                  <div key={planet} className="planet-row">
-                                      <div className="planet-name">{planet}</div>
-                                      {cm === um
-                                          ? <div className="planet-meaning">{cm}</div>
-                                          : <div className="planet-meaning">Conscious: {cm}<br />Unconscious: {um}</div>}
-                                      {row && (
-                                          <div className="planet-gates">
-                                              <span><b>Conscious</b> {fmt(row.conscious)}</span>
-                                              <span className="unc"><b>Unconscious</b> {fmt(row.unconscious)}</span>
-                                          </div>
-                                      )}
-                                  </div>
-                              );
-                          })}
-                        </div>
+                        <PlanetKey planets={planets} onOpenGate={setOpenGate} />
+                        {openGate && <GateModal explanation={openGate} onClose={() => setOpenGate(null)} />}
                 </div>
                 <div style={{ textAlign: "center", color: "rgba(184,134,11,0.3)", margin: "24px 0", letterSpacing: "0.3em" }}>—</div>
                 <div>
@@ -255,7 +233,7 @@ function ReadingView({ messages, charts, birthdata }) {
         {en.length > 0 && <PlanetsCurious />}
         {seg.closing && <Message role="assistant" content={seg.closing} />}
         {past.length > 0 && <div className="completed-cycles">
-            <Message role="assistant" content={seg.completed || "YOUR COMPLETED CYCLES\n\nIf you'd like to recognize or witness the cycles you've already walked, here they are."} />
+            <Message role="assistant" content={seg.completed || COMPLETED_CYCLES_INTRO} />
             {past.map(k => {
                 const e = en.find(x => x.key === k); const t = seg.past.find(c => c.key === k)?.text;
                 return <div key={k} className="cycle-section past-cycle" data-cycle={k} style={{ maxWidth: 560, margin: '0 auto' }}>
@@ -334,7 +312,7 @@ async function buildPdfDoc(birthdata, messages, charts) {
         planets: charts?.natal?.planets || [],
         cycles: current.map(k => ({ key: k, image: imgs[k] || null, enrichment: en.find(e => e.key === k) || null, text: seg.cycles.find(c => c.key === k)?.text || '' })),
         closing: seg.closing,
-        completedIntro: past.length ? (seg.completed || "YOUR COMPLETED CYCLES\n\nIf you'd like to recognize or witness the cycles you've already walked, here they are.") : '',
+        completedIntro: past.length ? (seg.completed || COMPLETED_CYCLES_INTRO) : '',
         past: past.map(k => ({ key: k, image: imgs[k] || null, enrichment: en.find(e => e.key === k) || null, text: seg.past.find(c => c.key === k)?.text || '' })),
         qa,
     });
@@ -647,8 +625,7 @@ export default function App() {
                                   <span style={{ fontSize: "clamp(24px,5vw,52px)", color: "#c9a84c", letterSpacing: "0.15em", textTransform: "uppercase" }}>Your Missing</span>
                                   <span style={{ fontSize: "clamp(32px,7vw,72px)", color: "#f0ead8", letterSpacing: "0.06em", lineHeight: 1 }}>Map</span>
                         </h1>
-                        <p style={{ margin: "12px auto 0", maxWidth: "46ch", fontSize: "clamp(14px,2.2vw,18px)", color: "rgba(240,234,216,0.75)", fontStyle: "italic", lineHeight: 1.5 }}>The map was always there. No one handed it to you.</p>
-                        <p style={{ margin: "8px auto 0", maxWidth: "46ch", fontSize: "clamp(13px,1.9vw,16px)", color: "rgba(240,234,216,0.6)", lineHeight: 1.5 }}>Your Human Design, read through the great thresholds of your life: who you are by design, and the season you're in now.</p>
+                        <p style={{ margin: "12px auto 0", maxWidth: "42ch", fontSize: "clamp(16px,2.3vw,20px)", color: "rgba(240,234,216,0.88)", fontStyle: "italic", lineHeight: 1.5 }}>{OPENING_LINE}</p>
                         <div style={{ color: "#c9a84c", fontSize: "18px", marginTop: "12px", opacity: 0.7 }}>✦</div>
                   {chartDetected && birthdata && !loading && (
                       <div style={{ marginTop: "12px", fontSize: "12px", color: "rgba(134,239,172,0.85)", background: "rgba(134,239,172,0.08)", border: "1px solid rgba(134,239,172,0.2)", borderRadius: "20px", padding: "4px 16px", display: "inline-block" }}>
@@ -842,6 +819,7 @@ export default function App() {
                                 .planet-gates { display: flex; flex-wrap: wrap; gap: 4px 18px; margin-top: 6px; font-family: var(--ui-font); font-size: 15px; color: #f5f1e8; }
                                 .planet-gates b { font-weight: 600; color: rgba(245,241,232,0.7); margin-right: 4px; }
                                 .planet-gates .unc b { color: #e98b80; }
+                                ${planetKeyCss}
 .gen-screen { text-align: center; padding: 72px 20px 60px; font-family: var(--ui-font); }
                                 .gen-orb { width: 84px; height: 84px; margin: 0 auto; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #f3dd8a, #c9a84c 45%, rgba(201,168,76,0.15) 72%); box-shadow: 0 0 40px rgba(201,168,76,0.45); animation: orb 3.2s ease-in-out infinite; }
                                 @keyframes orb { 0%,100% { transform: scale(0.92); opacity: 0.75 } 50% { transform: scale(1.06); opacity: 1 } }

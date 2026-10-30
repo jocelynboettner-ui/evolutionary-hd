@@ -45,6 +45,9 @@ assert.match(jb, /old pull toward climbing to prove you could get to the next le
 assert.match(jb, /your gift for sensing people came fully alive whenever someone who brings heart, persuasion and the willingness to make the pitch/);
 assert.match(jb, /WHERE YOU'RE HEADED\n\nYou're heading toward your gift for sensing people/);
 assert.match(jb, /Right now, in the season you're in, that gets an unusual spark.*magic/);
+assert.match(jb, /Signs you are on track at midlife\./);
+assert.ok(!/from your gut/.test(jb), 'splenic chart is not told to decide from the gut');
+assert.match(jb, /You trust the first quiet hit in your body, and you don't over-explain\./);
 assert.deepEqual(jargonHits(jb), [], 'no gate numbers or jargon in the nodes body');
 assert.deepEqual(jargonHits(closingBodyText(jr)), [], 'no jargon in journal prompts or one move');
 // Placements live only in the small "For the curious" box.
@@ -65,6 +68,10 @@ assert.deepEqual([on.cN.gate, on.cN.line, on.cS.gate, on.cS.line, on.dN.gate, on
 assert.equal(on.cN.wiring, 'superhighway'); assert.equal(on.cS.wiring, 'hanging');
 const ob = nodesBodyText(or);
 assert.match(ob, /You're heading toward your gift for being fully yourself.*superhighway you'll recognize/s);
+assert.match(ob, /Signs you are on track at midlife\. You feel steady and settled in your energy more often than restless\. You say yes and no from your gut and don't over-explain\./);
+assert.match(ob, /Your work and relationships feel like a fit rather than a performance\./);
+assert.match(ob, /You can share what you've lived through, and it helps other people\./);
+assert.match(ob, /You're curious about going deeper instead of chasing the next new thing\./);
 assert.match(ob, /roughly 2012 to 2019/); assert.deepEqual(jargonHits(ob), []);
 assert.match(or.curious.lines[0], /Conscious North Node 10\.5 \(Treading\), in channel 10-34 Exploration and 10-57 Perfected Form/);
 assert.equal(or.oneMove.text, ONE_MOVE.sacral); assert.match(or.oneMove.text, /uh-huh/);

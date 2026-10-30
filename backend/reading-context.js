@@ -243,7 +243,7 @@ export function planetMeaning(planet, side) {
 
 // [{ planet, conscious:{gate,line,name}|null, unconscious:{...}|null }]
 export function planetTable(chart) {
-  const pick = p => (p && p.gate ? { gate: p.gate, line: p.line, name: p.iChingName || '' } : null);
+  const pick = p => (p && p.gate ? { gate: p.gate, line: p.line, name: p.iChingName || '', keynote: p.gateKeynote || '', lineDescription: p.lineDescription || '' } : null);
   return PLANET_ORDER.map(planet => ({
     planet,
     conscious: pick(chart?.personality?.[planet]),

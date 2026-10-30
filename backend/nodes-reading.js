@@ -69,6 +69,26 @@ function completions(nodes, ov) {
 const ROLE_NAME = { cN: 'conscious North Node', cS: 'conscious South Node', dN: 'unconscious North Node', dS: 'unconscious South Node' };
 const bringsFor = p => orList(p.partners.slice(0, 2).map(g => plain(g).brings));
 
+// What "on track" feels like at midlife, in everyday words. The yes/no line follows natal authority
+// (a sacral chart hears the gut; other authorities are not told to decide from the gut).
+const ALIGN_DECIDE = {
+  sacral: "You say yes and no from your gut and don't over-explain.",
+  emotional: "You wait until the feeling is steady before you say yes or no, and you don't over-explain.",
+  splenic: "You trust the first quiet hit in your body, and you don't over-explain.",
+  ego: "You say yes only where you truly want to commit, and you don't over-explain.",
+  self: "You hear your direction when you say it out loud, and you don't over-explain.",
+  mental: "You talk a decision out with people you trust, then you stop explaining it.",
+  lunar: "You let a decision show itself over time, and you don't over-explain.",
+  none: "You notice what your body does first, and you don't over-explain.",
+};
+function alignmentSigns(authority, uoState) {
+  const lead = uoState === 'before'
+    ? 'As you come toward midlife, signs you are on this road.'
+    : 'Signs you are on track at midlife.';
+  const decide = ALIGN_DECIDE[authorityKey(authority)] || ALIGN_DECIDE.none;
+  return `${lead} You feel steady and settled in your energy more often than restless. ${decide} Your work and relationships feel like a fit rather than a performance. You can share what you've lived through, and it helps other people. You're curious about going deeper instead of chasing the next new thing.`;
+}
+
 // "One move for the next 24 hours", fitted to the natal authority. Everyday words only.
 export const ONE_MOVE = {
   splenic: 'Your clearest guidance is a quiet, in-the-moment hit in your body. It speaks once, softly, and doesn\'t repeat itself. Tomorrow, when someone asks you something, even something small, notice your very first instinct before your mind starts arguing, and act on it. Then notice how it felt to trust it.',
@@ -174,6 +194,7 @@ export function nodesReading(natal, { cycles = null, overlays = {}, status = nul
       : `This gift comes alive with certain people. Paired with someone who brings ${bringsFor(c)}, it switches fully on. `;
     s += `On track, ${p.on}. Off track, ${p.off}.` + (seasoning?.where === 'headed' ? ' ' + seasoning.text : '');
     headed.push(s);
+    headed.push(alignmentSigns(natal.authority, uoState));
     const d = n.dN;
     if (d && d.gate !== c.gate) {
       const q = P('dN');

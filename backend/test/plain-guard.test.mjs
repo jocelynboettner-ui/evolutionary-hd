@@ -11,7 +11,7 @@ const cases = [
   ['Natal Sun 18.4 holds.', 'Natal Sun holds.'],
   ['Gene Key 21: Shadow Control', 'Its Gene Key: Shadow Control'],
   ['The 18 sees what needs fixing.', 'The energy of Integrity sees what needs fixing.'],
-  ['It is a hanging gate in your chart.', 'It is a an energy that comes fully alive with the right people in your chart.'.replace('a an', 'a an')],
+  ['It is a hanging gate in your chart.', 'It is an energy that comes fully alive with the right people in your chart.'],
   ['Your Sun sits in Gate 18 - the Gate of Correction, the energy', 'Your Sun sits in the Gate of Correction, the energy'],
   ['The Gift of Gate 18 is Integrity.', 'Its Gift is Integrity.'],
   ['Line 4 of Gate 18 is called The Incompetent.', 'Its line is called The Incompetent.'],
@@ -24,4 +24,14 @@ for (const keep of ['Peak 2016-05-15, window 2012–2019.', 'between about 39-46
   assert.equal(plainProse(keep), keep, keep);
 assert.equal(plainProse(plainProse(cases[0][0])), cases[0][1]);   // idempotent
 assert.deepEqual(numericJargon(plainProse('Gate 8 (Throat) and the 23-43 Channel of Structuring, 8.3 and line 2.')), []);
+assert.equal(plainProse('You keep doing work that does not want you.'), "You keep doing work that you don't want to do.");
+assert.equal(plainProse("runs dry on work that doesn't want you."), "runs dry on work that you don't want to do.");
+const twice = 'Your sun gate is an energy that comes fully alive with the right people. Your sun gate is an energy that comes fully alive with the right people.';
+assert.equal(plainProse(twice), 'Your sun gate is an energy that comes fully alive with the right people.');
+assert.equal(plainProse('Your sun gate is an energy that comes fully alive with the right people.'), 'Your sun gate is an energy that comes fully alive with the right people.');
+const home = 'YOUR HOME BASE\n\nYou are a Generator. Your defined centers are the Sacral and the G center.\n\nYOUR MAGIC WAND\n\nThe Sun.';
+const homed = plainProse(home);
+assert.match(homed, /G center\. Think of this in terms of cities and maps\. These are the towns you know by heart\./);
+assert.equal(plainProse(homed), homed);
+assert.ok(!plainProse('The Sun is a town.').includes('cities and maps'));
 console.log('plain-language guard tests passed (gate/channel/line numbers out of prose; dates, ages, profiles kept)');
