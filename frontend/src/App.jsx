@@ -3,17 +3,20 @@ import { CycleCards, NatalWandCard, NodesSection, ClosingMoves, PlanetsCurious, 
 import { downloadWorkbookPdf } from "./workbookPdf.js";
 import { buildReadingPdf, SESSION_URL, SESSION_INVITE, SESSION_CTA } from "./readingPdf.js";
 import { parseBirthText } from "../../backend/birth-parse.js";
+import { nextChartMessages, chartsMatchBirth } from "../../backend/chart-identity.js";
 import { plainProse } from "../../backend/plain-guard.js"; // shared with the server (backend/plain-guard.js); the static site rebuilds only on frontend/ changes
 import { PLANET_ORDER, planetMeaning } from "../../backend/reading-context.js";
 import { renderBodygraphSVG, svgToPng } from "./bodygraph.js";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://evolutionary-hd-api.onrender.com";
 
-// Access credentials for /api/chat: paid Stripe session id or owner preview code (?preview=CODE)
-const getAccess = () => ({
-  sessionId: sessionStorage.getItem("ehd_session_id") || undefined,
-  previewCode: sessionStorage.getItem("ehd_preview_code") || undefined,
-});
+// Access credentials for /api/chat: paid Stripe session id or owner preview code (?preview=CODE).
+// Preview never sends a stored checkout id, so a previous customer's session cannot be attached.
+const getAccess = () => {
+  const previewCode = sessionStorage.getItem("ehd_preview_code") || undefined;
+  if (previewCode) return { previewCode };
+  return { sessionId: sessionStorage.getItem("ehd_session_id") || undefined };
+};
 
 function Stars() {
     const stars = Array.from({ length: 120 }, (_, i) => ({
@@ -351,7 +354,7 @@ async function handleDownloadPdf(birthdata, messages, charts) {
 async function deliverReading(sessionId, birthdata, messages, charts) {
     const doc = await buildPdfDoc(birthdata, messages, charts);
     const pdf = doc.output("datauristring").split(",")[1];
-    const res = await fetch(API_URL + "/api/reading/deliver", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sessionId, pdf }) });
+    const res = await fetch(API_URL + "/api/reading/deliver", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sessionId, pdf, birth: birthdata }) });
     return res.ok ? res.json() : { emailed: false };
 }
 
@@ -467,6 +470,7 @@ export default function App() {
     const [delivery, setDelivery] = useState(null); // { sessionId, status: sending|sent|failed|already, to, note }
     const bottomRef = useRef(null);
     const topRef = useRef(null);
+    const readGen = useRef(0);
   
     useEffect(() => {
           if (loading) {
@@ -475,6 +479,9 @@ export default function App() {
     }, [messages, loading]);
   
     useEffect(() => {
+          // Checkout return via the back-forward cache would otherwise restore the previous person's chart.
+          const onPageShow = (e) => { if (e.persisted) window.location.reload(); };
+          window.addEventListener('pageshow', onPageShow);
           const params = new URLSearchParams(window.location.search);
           const sessionId = params.get('session_id');
           const preview = params.get('preview');
@@ -489,6 +496,10 @@ export default function App() {
           }
           if (sessionId) sessionStorage.setItem('ehd_session_id', sessionId);
           if (sessionId) {
+                  setMessages([]);
+                  setCharts(null);
+                  setWorkbook(null);
+                  setBirthdata(null);
                   window.history.replaceState({}, '', '/');
                   fetch(`${API_URL}/api/verify-session/${sessionId}`)
                             .then(r => r.json())
@@ -509,6 +520,7 @@ export default function App() {
                             })
                             .catch(err => console.error('Session verify error:', err));
           }
+          return () => window.removeEventListener('pageshow', onPageShow);
     }, []);
   
     async function sendMessage(overrideText) {
@@ -523,10 +535,13 @@ export default function App() {
           if (parsed && getAccess().previewCode) {
                   // Owner preview: skip Stripe, run the reading directly (server verifies the code)
                   currentBirthdata = { birthdate: parsed.birthdate, birthtime: parsed.birthtime, location: parsed.location, name: parsed.name, arc };
+                  sessionStorage.removeItem('ehd_session_id');
                   setBirthdata(currentBirthdata);
+                  setCharts(null);
+                  setWorkbook(null);
                   setChartDetected(true);
                   setStreamingDone(false);
-                  newMessages = [...messages, userMsg];
+                  newMessages = nextChartMessages(messages, userMsg, { fresh: true });
                   setMessages(newMessages);
           } else if (!parsed && !chartDetected) {
                   // Couldn't read birth details: ask again locally instead of sending a chart-less request
@@ -549,6 +564,7 @@ export default function App() {
                           }),
                       });
                       const { url } = await res.json();
+                      if (url) sessionStorage.removeItem('ehd_session_id');
                       window.location.href = url;
                   } catch (err) {
                       console.error("Stripe redirect error:", err);
@@ -557,7 +573,7 @@ export default function App() {
                   return;
           } else {
                   currentBirthdata = chartDetected ? birthdata : null;
-                  newMessages = [...messages, userMsg];
+                  newMessages = nextChartMessages(messages, userMsg, { fresh: false });
                   setMessages(newMessages);
           }
           await runReading(newMessages, currentBirthdata, !!parsed);
@@ -566,13 +582,18 @@ export default function App() {
     // Generate (buffered) and reveal everything at once. For a new reading, part 2 ("continue")
     // is generated automatically so the complete reading appears together.
     async function runReading(newMessages, bd, full, deliverSessionId = null) {
+          const gen = ++readGen.current;
+          if (full) { setCharts(null); setWorkbook(null); }
           setMessages(newMessages);
           setLoading(true);
           setStreamingDone(false);
+          const live = () => gen === readGen.current;
           try {
                   const r1 = await streamChat(newMessages, bd);
-                  if (r1.charts) setCharts(r1.charts);
-                  if (r1.code && deliverSessionId) { setMessages([]); setDelivery({ sessionId: deliverSessionId, status: 'already' }); return; }
+                  if (!live()) return;
+                  if (r1.charts && bd && chartsMatchBirth(r1.charts, bd)) setCharts(r1.charts);
+                  else if (full) setCharts(null);
+                  if (r1.code === 'already_delivered' && deliverSessionId) { setMessages([]); setCharts(null); setWorkbook(null); setDelivery({ sessionId: deliverSessionId, status: 'already' }); return; }
                   if (r1.error || !r1.text) {
                           setMessages([...newMessages, { role: "assistant", content: "Something interrupted your reading. Please try again in a moment." + (r1.error ? "\n\n(" + r1.error + ")" : "") }]);
                           return;
@@ -582,33 +603,41 @@ export default function App() {
                           const p1 = r1.text.split("\n").filter(l => !/type\s+["']?continue/i.test(l)).join("\n").trim();
                           const withCont = [...newMessages, { role: "assistant", content: p1, main: true }, { role: "user", content: "continue", hidden: true }];
                           const r2 = await streamChat(withCont, bd);
+                          if (!live()) return;
+                          if (r2.charts && bd && chartsMatchBirth(r2.charts, bd)) setCharts(r2.charts);
                           if (r2.workbook) setWorkbook(r2.workbook);
                           final = r2.text && !r2.error ? [...withCont, { role: "assistant", content: r2.text, main: true }] : [...newMessages, { role: "assistant", content: p1, main: true }];
                   }
                   setMessages(final);
-                  if (deliverSessionId && final[final.length - 1]?.main) {
+                  if (deliverSessionId && final[final.length - 1]?.main && r1.charts && chartsMatchBirth(r1.charts, bd)) {
                           setDelivery({ sessionId: deliverSessionId, status: 'sending' });
                           deliverReading(deliverSessionId, bd, final, r1.charts)
-                                  .then(d => setDelivery({ sessionId: deliverSessionId, status: d.emailed ? 'sent' : 'failed', to: d.to }))
-                                  .catch(() => setDelivery({ sessionId: deliverSessionId, status: 'failed' }));
+                                  .then(d => { if (live()) setDelivery({ sessionId: deliverSessionId, status: d.emailed ? 'sent' : 'failed', to: d.to }); })
+                                  .catch(() => { if (live()) setDelivery({ sessionId: deliverSessionId, status: 'failed' }); });
                   }
           } catch (err) {
-                  setMessages([...newMessages, { role: "assistant", content: "Something interrupted your reading. Please try again in a moment." }]);
+                  if (live()) setMessages([...newMessages, { role: "assistant", content: "Something interrupted your reading. Please try again in a moment." }]);
           } finally {
-                  setLoading(false);
-                  setStreamingDone(true);
-                  setTimeout(() => topRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+                  if (live()) {
+                          setLoading(false);
+                          setStreamingDone(true);
+                          setTimeout(() => topRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+                  }
           }
     }
   
     function handleNewReading() {
+          readGen.current += 1;
           setMessages([]);
           setCharts(null);
           setWorkbook(null);
           setBirthdata(null);
           setChartDetected(false);
           setStreamingDone(false);
+          setDelivery(null);
+          setLoading(false);
           setInput("");
+          sessionStorage.removeItem('ehd_session_id');
     }
   
     function handleKey(e) {
