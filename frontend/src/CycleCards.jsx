@@ -89,7 +89,7 @@ export function NatalWandCard({ wand }) {
                 <div className="cc-wand-title">🪄 Your Natal Magic Wand</div>
                 <div className="cc-small">Your conscious Sun: in Human Design the Sun carries about 70% of your imprint, so it is about 70% of your soul's purpose.</div>
                 <Pt role="Sun" p={wand.sun} note="what you radiate" />
-                <H>How you wield it</H>
+                <H>How you decide</H>
                 <div className="cc-small"><b>{wand.type}</b>{wand.strategy ? ` · ${wand.strategy}` : ""} · <b>{wand.authority}</b>: {wand.wield}.</div>
             </div>
         </div>

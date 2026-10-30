@@ -8,13 +8,13 @@ const pretty = s => String(s || '').replace(/_+/g, ' ').replace(/\s+/g, ' ').tri
 
 // How each natal authority "wields" the wand (decides where its energy goes). Keyed by normalized authority.
 export const AUTHORITY_WIELD = {
-  sacral: { label: 'Sacral', how: 'through response in the moment: the gut sound (uh-huh or unh-unh) before any words decides which invitations the wand is poured into' },
-  emotional: { label: 'Emotional (Solar Plexus)', how: 'over time: ride the emotional wave and let the wand move only once clarity has arrived, never from the high or the low' },
+  sacral: { label: 'Sacral', how: 'the gut sound (uh-huh for yes, unh-unh for no) comes before any words. That sound is the decision. You do not need to explain it or talk yourself into it' },
+  emotional: { label: 'Emotional (Solar Plexus)', how: 'over time: ride the emotional wave and let the energy move only once clarity has arrived, never from the high or the low' },
   splenic: { label: 'Splenic', how: 'in the instant: the quiet, one-time intuitive hit in the body that says yes or no, trusted the first time it speaks' },
   ego: { label: 'Ego (Heart)', how: 'through the heart\'s true want and willpower: point the wand only where you actually want to commit and can keep your word' },
   self: { label: 'Self-Projected (G)', how: 'by hearing yourself speak: talk it through with someone you trust and listen for the direction your own voice reveals' },
   mental: { label: 'Mental / Environmental', how: 'through the right environment and sounding boards: talk it out with trusted people in a place that feels right, hearing yourself rather than deciding with the mind' },
-  lunar: { label: 'Lunar', how: 'across a full lunar cycle: let the wand reveal itself over about 28 days of sampling how it feels in different environments' },
+  lunar: { label: 'Lunar', how: 'across a full lunar cycle: let the decision reveal itself over about 28 days of noticing how it feels in different places' },
   none: { label: 'Inner', how: 'through the person\'s own inner authority as named in the chart facts' },
 };
 export function authorityKey(a) {
@@ -85,7 +85,7 @@ export function formatNatalWandForPrompt(chart) {
   return ['=== NATAL MAGIC WAND DATA (the conscious Personality Sun alone; the Sun carries about 70% of the neutrino imprint, so it is about 70% of the soul\'s purpose; Earth is not part of the wand) ===',
     ptLine('CONSCIOUS SUN (the Magic Wand; what you radiate)', w.sun),
     `TYPE AND STRATEGY: ${w.type} — ${w.strategy}; signature ${w.signature}; not-self ${w.notSelf}`,
-    `NATAL AUTHORITY: ${w.authority} — how it wields the wand: ${w.wield}`,
+    `NATAL AUTHORITY: ${w.authority} — how it decides, in plain words: ${w.wield}`,
     '=== END NATAL MAGIC WAND DATA ==='].join('\n');
 }
 

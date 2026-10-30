@@ -1,9 +1,11 @@
 export const SESSION_URL = "https://app.acuityscheduling.com/schedule.php?owner=40622879";
-export const SESSION_INVITE = "This is your map. If you want to walk the season you're in with me, we'll sit together 1:1 for 90 minutes. We'll read what it's asking of you, and where you've been performing instead of living.";
+export const SESSION_INVITE = "This is your map. Book a 90-minute one-on-one session to dive deeper. We'll read what's being asked of you and where you've been performing instead of living.";
 export const SESSION_CTA = "Book your 90-minute session · $333";
 // readingPdf.js — client-side PDF export of a finished reading (no server cost).
 import { jsPDF } from "jspdf";
 import { PLANET_INTRO, planetMeaning } from "../../backend/reading-context.js";
+import { OPENING_LINE, COMPLETED_CYCLES_INTRO } from "../../backend/reading-copy.js";
+import { CONSCIOUS_UNCONSCIOUS, gateExplanation } from "../../backend/gate-explain.js";
 import { writer, renderCycleSummary, renderNatalWand } from "./workbookPdf.js";
 import { PLANETS_CURIOUS } from "../../backend/planet-meanings.js";
 
@@ -58,10 +60,7 @@ export function buildReadingPdf({ name, birthdata, natal = '', natalImage = null
   doc.setFont("times", "bold"); doc.setFontSize(24); doc.setTextColor(...ink);
   doc.text("Your Missing Map", W / 2, y, { align: "center" }); y += 22;
   doc.setFont("times", "italic"); doc.setFontSize(13); doc.setTextColor(...ink);
-  doc.splitTextToSize("The map was always there. No one handed it to you.", maxW).forEach(l => { doc.text(l, W / 2, y, { align: "center" }); y += 17; });
-  y += 2;
-  doc.setFont("times", "italic"); doc.setFontSize(12); doc.setTextColor(...muted);
-  doc.splitTextToSize("Your Human Design, read through the great thresholds of your life: who you are by design, and the season you're in now.", maxW).forEach(l => { doc.text(l, W / 2, y, { align: "center" }); y += 16; });
+  doc.splitTextToSize(OPENING_LINE, maxW).forEach(l => { doc.text(l, W / 2, y, { align: "center" }); y += 17; });
   y += 14; doc.setTextColor(...ink);
   if (name) { doc.setFont("times", "normal"); doc.setFontSize(18); doc.text(clean(name), W / 2, y, { align: "center" }); y += 24; }
   doc.setFont("helvetica", "normal"); doc.setFontSize(11); doc.setTextColor(...muted);
@@ -89,14 +88,32 @@ export function buildReadingPdf({ name, birthdata, natal = '', natalImage = null
   }
   if (topImgs.length) { doc.addPage(); y = M; }
 
-  // Planetary placements (reference appendix): stacked, one planet per block (Conscious / Unconscious gate.line)
+  // Planetary placements (reference appendix). Each gate.line is an in-PDF link to a short note.
+  // Conscious = black / Personality. Unconscious = red / Design. Defined in plain words above the list.
   const renderPlanets = () => {
     doc.addPage(); y = M;
     doc.setFont("times", "bold"); doc.setFontSize(15); doc.setTextColor(...gold);
     doc.text("Your Planetary Placements", M, y); y += 20;
     doc.setFont("times", "italic"); doc.setFontSize(BODY); doc.setTextColor(...ink);
-    doc.splitTextToSize(PLANET_INTRO, maxW).forEach(l => { doc.text(l, M, y); y += LH; }); y += 6;
-    const fmt = a => a ? `${a.gate}.${a.line}${a.name ? "  " + clean(a.name) : ""}` : "-";
+    doc.splitTextToSize(PLANET_INTRO + " Select a gate number to read what it means.", maxW).forEach(l => { doc.text(l, M, y); y += LH; }); y += 4;
+    doc.setFont("times", "normal"); doc.setFontSize(BODY); doc.setTextColor(...ink);
+    doc.splitTextToSize(CONSCIOUS_UNCONSCIOUS, maxW).forEach(l => { ensure(LH); doc.text(l, M, y); y += LH; }); y += 8;
+    const pageNo = () => (typeof doc.getCurrentPageInfo === "function" ? doc.getCurrentPageInfo().pageNumber : doc.internal.getCurrentPageInfo().pageNumber);
+    const pending = [];
+    const drawGate = (label, activation, color) => {
+      doc.setFont("helvetica", "normal"); doc.setFontSize(10.5); doc.setTextColor(...color);
+      const prefix = label + ":  ";
+      doc.text(prefix, M + 100, y);
+      const x = M + 100 + doc.getTextWidth(prefix);
+      if (!activation?.gate) { doc.text("-", x, y); y += 14; return; }
+      const ex = gateExplanation(activation);
+      const title = clean(ex.title);
+      doc.setTextColor(...gold); doc.text(title, x, y);
+      const w = doc.getTextWidth(title);
+      doc.setDrawColor(...gold); doc.setLineWidth(0.4); doc.line(x, y + 1.5, x + w, y + 1.5);
+      pending.push({ page: pageNo(), x, y: y - 9, w, h: 12, id: ex.id });
+      y += 14;
+    };
     planets.forEach(r => {
       const cm = planetMeaning(r.planet, "Conscious"), um = planetMeaning(r.planet, "Unconscious");
       const meaning = doc.splitTextToSize(clean(cm === um ? cm : `Conscious: ${cm}. Unconscious: ${um}.`), maxW - 100);
@@ -104,10 +121,42 @@ export function buildReadingPdf({ name, birthdata, natal = '', natalImage = null
       doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(...gold); doc.text(r.planet, M, y);
       doc.setFont("times", "italic"); doc.setFontSize(11); doc.setTextColor(...muted);
       meaning.forEach(l => { doc.text(l, M + 100, y); y += 14; });
-      doc.setFont("helvetica", "normal"); doc.setFontSize(10.5); doc.setTextColor(...ink);
-      doc.text("Conscious:  " + fmt(r.conscious), M + 100, y); y += 14;
-      doc.setTextColor(170, 50, 40); doc.text("Unconscious:  " + fmt(r.unconscious), M + 100, y); y += 18;
+      drawGate("Conscious", r.conscious, ink);
+      drawGate("Unconscious", r.unconscious, [170, 50, 40]);
+      y += 4;
     });
+    const notes = [];
+    const seen = new Set();
+    planets.forEach(r => [r.conscious, r.unconscious].forEach(a => {
+      if (!a?.gate) return;
+      const ex = gateExplanation(a);
+      if (seen.has(ex.id)) return;
+      seen.add(ex.id);
+      notes.push(ex);
+    }));
+    if (!notes.length) return;
+    doc.addPage(); y = M;
+    doc.setFont("times", "bold"); doc.setFontSize(15); doc.setTextColor(...gold);
+    doc.text("What These Gates Mean", M, y); y += 22;
+    const anchors = {};
+    notes.forEach(ex => {
+      const body = ex.paragraphs.flatMap(p => doc.splitTextToSize(clean(p), maxW));
+      ensure(16 + 14 * body.length + 12);
+      anchors[ex.id] = { page: pageNo(), top: y };
+      doc.setFont("times", "bold"); doc.setFontSize(12); doc.setTextColor(...gold);
+      doc.text(clean(ex.title), M, y); y += 16;
+      doc.setFont("times", "normal"); doc.setFontSize(11); doc.setTextColor(...ink);
+      body.forEach(l => { ensure(14); doc.text(l, M, y); y += 14; });
+      y += 10;
+    });
+    const saved = pageNo();
+    pending.forEach(p => {
+      const dest = anchors[p.id];
+      if (!dest) return;
+      doc.setPage(p.page);
+      doc.link(p.x, p.y, p.w, p.h, { pageNumber: dest.page, top: dest.top });
+    });
+    doc.setPage(saved);
   };
 
 
@@ -194,7 +243,7 @@ export function buildReadingPdf({ name, birthdata, natal = '', natalImage = null
     doc.splitTextToSize("This reading is your map. The Living Blueprint Workbook is the companion to live it, one page and one practice at a time.", maxW).forEach(l => { doc.text(l, M, y); y += LH; }); y += LH * 0.6; }
   if (past.length) {
     doc.addPage(); y = M;
-    renderText(completedIntro || "YOUR COMPLETED CYCLES\n\nIf you'd like to recognize or witness the cycles you've already walked, here they are.");
+    renderText(completedIntro || COMPLETED_CYCLES_INTRO);
     past.forEach(c => {
       ensure(260); y += LH * 0.5;
       if (c.image) drawImage(c.image, 220);

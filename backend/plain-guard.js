@@ -7,6 +7,7 @@
 //   bare "18.4" -> removed; "hanging gate" -> plain phrase; "Gene Key 21" -> "its Gene Key"
 import { GENE_KEYS, CHANNELS } from './cycle-enrichment.js';
 import { channelLabel, normChannelKey } from './reading-context.js';
+import { ROLE_MODEL_LINE, TOWNS_SENTENCE, UNWANTED_WORK } from './reading-copy.js';
 
 const CH = new Set(CHANNELS.map(([a, b]) => `${a}-${b}`));
 const isChannel = (a, b) => CH.has(`${Math.min(a, b)}-${Math.max(a, b)}`);
@@ -47,10 +48,83 @@ export function plainProse(text) {
   t = t.replace(/\s?(?<![\w$.])\d{1,2}\.[1-6](?![\d%]|\.\d)/g, '');
   // 5. Jargon.
   t = t.replace(/\bhanging gates?\b/gi, 'an energy that comes fully alive with the right people');
+  t = t.replace(/\ba\s+an energy that comes fully alive/gi, 'an energy that comes fully alive');
+  t = dropRepeatedAlive(t);
+  t = t.replace(/doing work that does not want you/gi, UNWANTED_WORK);
+  t = t.replace(/\bwork that (?:does not|doesn't) want you\b/gi, "work that you don't want to do");
+  t = replaceObscurePath(t);
+  t = ensureRoleModelLine(t);
+  t = ensureTownsSentence(t);
   // Tidy: doubled spaces, space before punctuation, "the the", sentence-start capitals.
   t = t.replace(/[ \t]{2,}/g, ' ').replace(/ +([,.;:!?])/g, '$1').replace(/\bthe the\b/gi, 'the').replace(/,\s*,/g, ',');
   t = t.replace(/(^|[.!?]\s+|\n\s*|\n\s*[•-]\s+)(the energies of|the energy of|the Channel of|its Gene Key|this energy)/g, (m, pre, w) => pre + w[0].toUpperCase() + w.slice(1));
   return t;
+}
+
+const ALIVE = 'fully alive with the right people';
+// The sun-gate sentence is easy for the model to say twice (the prompt names it, then the
+// hanging-gate rewrite says it again). Keep the first sentence; drop later ones.
+function dropRepeatedAlive(text) {
+  const needle = ALIVE.toLowerCase();
+  if (text.toLowerCase().indexOf(needle) === text.toLowerCase().lastIndexOf(needle)) return text;
+  let seen = false;
+  return text.replace(/[^.!?\n]*fully alive with the right people[^.!?\n]*[.!?]?/gi, (m) => {
+    if (!seen) { seen = true; return m; }
+    return '';
+  });
+}
+
+// The 6th-line role-model sentence. Replaces "obscure the path…" if the model still writes it,
+// and adds the chosen line once when home base is already describing that phase.
+function replaceObscurePath(text) {
+  if (!text || !/obscure the path/i.test(text)) return text;
+  const line = ROLE_MODEL_LINE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return text
+    .replace(/[^.!?\n]*\bobscure the path\b[^.!?\n]*[.!?]?/gi, ROLE_MODEL_LINE)
+    .replace(new RegExp(line + '(?:\\s*' + line + ')+', 'g'), ROLE_MODEL_LINE);
+}
+function ensureRoleModelLine(text) {
+  if (!text || text.includes(ROLE_MODEL_LINE)) return text;
+  const head = text.search(/YOUR HOME BASE\b/);
+  if (head < 0) return text;
+  const rest = text.slice(head);
+  const nextHead = rest.slice(1).search(/\nYOUR [A-Z]/);
+  const end = nextHead < 0 ? text.length : head + 1 + nextHead;
+  const section = text.slice(head, end);
+  if (!/role model|off the roof/i.test(section)) return text;
+  const sentences = section.split(/(?<=[.!?])\s+/);
+  const target = sentences.find(s => /role model|off the roof/i.test(s));
+  if (!target) return text;
+  const at = head + section.indexOf(target) + target.length;
+  const glue = /[.!?]$/.test(target.trim()) ? ' ' : '. ';
+  return text.slice(0, at) + glue + ROLE_MODEL_LINE + text.slice(at);
+}
+
+// Backstop for YOUR HOME BASE: after the first sentence that names the Sacral and the G center,
+// add the cities-and-maps line if the model skipped it. Once only.
+const hasGCenter = s => /\bG(?:\s|-)?centers?\b|\bthe G\b/i.test(s);
+function ensureTownsSentence(text) {
+  if (!text || text.includes('towns you know by heart')) return text;
+  const head = text.search(/YOUR HOME BASE\b/);
+  if (head < 0) return text;
+  const rest = text.slice(head);
+  const nextHead = rest.slice(1).search(/\nYOUR [A-Z]/);
+  const end = nextHead < 0 ? text.length : head + 1 + nextHead;
+  const section = text.slice(head, end);
+  if (!/\bSacral\b/.test(section) || !hasGCenter(section)) return text;
+  const sentences = section.split(/(?<=[.!?])\s+/);
+  let target = sentences.find(s => /\bSacral\b/.test(s) && hasGCenter(s));
+  if (!target) {
+    let seenS = false, seenG = false;
+    for (const s of sentences) {
+      if (/\bSacral\b/.test(s)) seenS = true;
+      if (hasGCenter(s)) seenG = true;
+      if (seenS && seenG) { target = s; break; }
+    }
+  }
+  if (!target) return text;
+  const at = head + section.indexOf(target) + target.length;
+  return text.slice(0, at) + ' ' + TOWNS_SENTENCE + text.slice(at);
 }
 
 // Leftover numeric jargon in prose (for tests / QA): gate N, N-N channel pairs, gate.line codes.
